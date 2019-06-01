@@ -1,17 +1,13 @@
 [package]
 categories = ["embedded", "no-std"]
-name = "adc2tcp"
-description = "Poll ADC pin, report over TCP"
+name = "thermostat"
+description = "Thermostat firmware"
 license = "GPL-3.0-only"
 authors = ["Astro <astro@spaceboyz.net>"]
 version = "0.0.0"
-keywords = ["ethernet", "eth", "stm32", "adc", "tcp"]
-repository = "https://github.com/m-labs/adc2tcp"
+keywords = ["thermostat", "laser", "physics"]
+repository = "https://git.m-labs.hk/M-Labs/thermostat"
 edition = "2018"
-
-[badges]
-travis-ci = { repository = "astro/adc2tcp", branch = "master" }
-maintenance = { status = "experimental" }
 
 [package.metadata.docs.rs]
 features = []

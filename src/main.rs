@@ -67,7 +67,7 @@ fn init_log() {
 #[entry]
 fn main() -> ! {
     init_log();
-    info!("adc2tcp");
+    info!("Thermostat firmware");
 
     let mut cp = CorePeripherals::take().unwrap();
     cp.SCB.enable_icache();
