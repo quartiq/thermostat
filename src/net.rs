@@ -5,7 +5,7 @@ use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 use bare_metal::CriticalSection;
 use stm32f4xx_hal::{
-    stm32::{interrupt, Peripherals, NVIC, ETHERNET_MAC, ETHERNET_DMA},
+    stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
 use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
 use smoltcp::iface::{NeighborCache, EthernetInterfaceBuilder, EthernetInterface};
@@ -24,7 +24,7 @@ static NET_PENDING: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
 
 /// Run callback `f` with ethernet driver and TCP/IP stack
 pub fn run<F>(
-    nvic: &mut NVIC, ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
+    ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
     ethernet_addr: EthernetAddress, f: F
 ) where
     F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
@@ -40,7 +40,7 @@ pub fn run<F>(
         ethernet_mac, ethernet_dma,
         &mut rx_ring[..], &mut tx_ring[..]
     );
-    eth_dev.enable_interrupt(nvic);
+    eth_dev.enable_interrupt();
 
     // IP stack
     let local_addr = IpAddress::v4(192, 168, 69, 3);

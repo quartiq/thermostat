@@ -118,7 +118,7 @@ fn main() -> ! {
     info!("Net hwaddr: {}", hwaddr);
 
     info!("Net startup");
-    net::run(&mut cp.NVIC, dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
+    net::run(dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
         Server::run(iface, |server| {
             let mut last_output = 0_u32;
             loop {

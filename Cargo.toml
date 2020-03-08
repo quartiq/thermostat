@@ -22,8 +22,8 @@ cortex-m = "0.6"
 cortex-m-rt = { version = "0.6", features = ["device"] }
 cortex-m-log = { version = "0.5", features = ["log-integration"] }
 embedded-hal = "0.2"
-stm32f4xx-hal = { version = "0.5", features = ["rt", "stm32f429"] }
-stm32-eth = { version = "0.1.2", features = ["smoltcp-phy", "nucleo-f429zi"], git = "https://github.com/stm32-rs/stm32-eth.git" }
+stm32f4xx-hal = { version = "0.7", features = ["rt", "stm32f429"] }
+stm32-eth = { version = "0.1.2", features = ["smoltcp-phy", "nucleo-f429zi"], path = "../../stm32f4/stm32-eth" }
 smoltcp = { version = "0.6.0", default-features = false, features = ["proto-ipv4", "socket-tcp", "log"] }
 hash2hwaddr = { version = "0.0", optional = true }
 
