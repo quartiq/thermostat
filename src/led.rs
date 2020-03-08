@@ -1,4 +1,4 @@
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 use stm32f4xx_hal::gpio::{
     Output, PushPull,
     gpiob::{PB0, PB7, PB14},
@@ -18,11 +18,11 @@ impl<PIN: OutputPin> Led<PIN> {
     }
 
     pub fn on(&mut self) {
-        self.pin.set_high();
+        let _ = self.pin.set_high();
     }
 
     pub fn off(&mut self) {
-        self.pin.set_low();
+        let _ = self.pin.set_low();
     }
 }
 
