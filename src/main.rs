@@ -25,6 +25,7 @@ use smoltcp::{
     wire::EthernetAddress,
 };
 
+mod pins;
 mod adc_input;
 use adc_input::AdcInput;
 mod net;
@@ -100,9 +101,10 @@ fn main() -> ! {
     let mut adc_input = AdcInput::new(dp.ADC1, gpioa.pa3);
 
     info!("Eth setup");
-    stm32_eth::setup_pins(
-        gpioa.pa1, gpioa.pa2, gpioa.pa7, gpiob.pb13, gpioc.pc1,
-        gpioc.pc4, gpioc.pc5, gpiog.pg11, gpiog.pg13
+    pins::setup_ethernet(
+        gpioa.pa1, gpioa.pa2, gpioc.pc1, gpioa.pa7,
+        gpioc.pc4, gpioc.pc5, gpiob.pb11, gpiog.pg13,
+        gpiob.pb13
     );
 
     info!("Timer setup");
