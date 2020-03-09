@@ -32,8 +32,6 @@ mod net;
 mod server;
 use server::Server;
 mod timer;
-mod led;
-use led::Led;
 
 /// Interval at which to sample the ADC input and broadcast to all
 /// clients.
@@ -93,10 +91,6 @@ fn main() -> ! {
     let gpioc = dp.GPIOC.split();
     let gpiog = dp.GPIOG.split();
 
-    let mut led_green = Led::green(gpiob.pb0.into_push_pull_output());
-    let mut led_blue = Led::blue(gpiob.pb7.into_push_pull_output());
-    let mut led_red = Led::red(gpiob.pb14.into_push_pull_output());
-
     info!("ADC init");
     let mut adc_input = AdcInput::new(dp.ADC1, gpioa.pa3);
 
@@ -126,21 +120,17 @@ fn main() -> ! {
             loop {
                 let now = timer::now().0;
                 let instant = Instant::from_millis(i64::from(now));
-                led_blue.on();
                 cortex_m::interrupt::free(net::clear_pending);
                 server.poll(instant)
                     .unwrap_or_else(|e| {
                         warn!("poll: {:?}", e);
                     });
-                led_blue.off();
 
                 let now = timer::now().0;
                 if now - last_output >= OUTPUT_INTERVAL {
-                    led_red.on();
                     let adc_value = adc_input.read();
                     writeln!(server, "t={},pa3={}\r", now, adc_value).unwrap();
                     last_output = now;
-                    led_red.off();
                 }
 
                 // Update watchdog
@@ -148,10 +138,8 @@ fn main() -> ! {
 
                 cortex_m::interrupt::free(|cs| {
                     if !net::is_pending(cs) {
-                        led_green.on();
                         // Wait for interrupts
                         wfi();
-                        led_green.off();
                     }
                 });
             }
