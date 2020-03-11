@@ -38,6 +38,11 @@ mod timer;
 /// This should be a multiple of the `TIMER_RATE`.
 const OUTPUT_INTERVAL: u32 = 1000;
 
+#[cfg(not(feature = "semihosting"))]
+const WATCHDOG_INTERVAL: u32 = 100;
+#[cfg(feature = "semihosting")]
+const WATCHDOG_INTERVAL: u32 = 10_000;
+
 #[cfg(not(feature = "generate-hwaddr"))]
 const NET_HWADDR: [u8; 6] = [0x02, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 
@@ -82,7 +87,7 @@ fn main() -> ! {
         .freeze();
 
     let mut wd = IndependentWatchdog::new(dp.IWDG);
-    wd.start(1000u32.ms());
+    wd.start(WATCHDOG_INTERVAL.ms());
     wd.feed();
 
     let pins = Pins::setup(clocks, dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOG, dp.SPI2);
