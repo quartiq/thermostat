@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![deny(warnings, unused)]
+// TODO: #![deny(warnings, unused)]
 
 #[cfg(not(feature = "semihosting"))]
 use panic_abort as _;
