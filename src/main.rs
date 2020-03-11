@@ -15,7 +15,6 @@ use cortex_m_rt::entry;
 use embedded_hal::watchdog::{WatchdogEnable, Watchdog};
 use stm32f4xx_hal::{
     rcc::RccExt,
-    gpio::GpioExt,
     watchdog::IndependentWatchdog,
     time::U32Ext,
     stm32::{CorePeripherals, Peripherals},
@@ -26,8 +25,8 @@ use smoltcp::{
 };
 
 mod pins;
-mod adc_input;
-use adc_input::AdcInput;
+use pins::Pins;
+mod ad7172;
 mod net;
 mod server;
 use server::Server;
@@ -86,20 +85,11 @@ fn main() -> ! {
     wd.start(1000u32.ms());
     wd.feed();
 
-    let gpioa = dp.GPIOA.split();
-    let gpiob = dp.GPIOB.split();
-    let gpioc = dp.GPIOC.split();
-    let gpiog = dp.GPIOG.split();
+    let pins = Pins::setup(clocks, dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOG, dp.SPI2);
 
     info!("ADC init");
-    let mut adc_input = AdcInput::new(dp.ADC1, gpioa.pa3);
-
-    info!("Eth setup");
-    pins::setup_ethernet(
-        gpioa.pa1, gpioa.pa2, gpioc.pc1, gpioa.pa7,
-        gpioc.pc4, gpioc.pc5, gpiob.pb11, gpiog.pg13,
-        gpiob.pb13
-    );
+    let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
+    adc.set_checksum_mode(ad7172::ChecksumMode::Crc).unwrap();
 
     info!("Timer setup");
     timer::setup(cp.SYST, clocks);
@@ -128,8 +118,8 @@ fn main() -> ! {
 
                 let now = timer::now().0;
                 if now - last_output >= OUTPUT_INTERVAL {
-                    let adc_value = adc_input.read();
-                    writeln!(server, "t={},pa3={}\r", now, adc_value).unwrap();
+                    // let adc_value = adc_input.read();
+                    writeln!(server, "t={},pa3={}\r", now, 0.0 /*adc_value*/).unwrap();
                     last_output = now;
                 }
 
