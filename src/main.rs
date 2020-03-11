@@ -92,11 +92,8 @@ fn main() -> ! {
 
     let pins = Pins::setup(clocks, dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOG, dp.SPI2);
 
-    info!("ADC init");
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
-    adc.set_checksum_mode(ad7172::ChecksumMode::Crc).unwrap();
 
-    info!("Timer setup");
     timer::setup(cp.SYST, clocks);
 
     #[cfg(not(feature = "generate-hwaddr"))]
@@ -128,15 +125,20 @@ fn main() -> ! {
                     last_output = now;
                 }
 
+                if let Some(channel) = adc.data_ready().unwrap() {
+                    let data = adc.read_data().unwrap();
+                    info!("ADC {}: {:08X}", channel, data);
+                }
+
                 // Update watchdog
                 wd.feed();
 
-                cortex_m::interrupt::free(|cs| {
-                    if !net::is_pending(cs) {
-                        // Wait for interrupts
-                        wfi();
-                    }
-                });
+                // cortex_m::interrupt::free(|cs| {
+                //     if !net::is_pending(cs) {
+                //         // Wait for interrupts
+                //         wfi();
+                //     }
+                // });
             }
         });
     });

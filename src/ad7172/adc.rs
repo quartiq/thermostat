@@ -19,22 +19,26 @@ pub struct Adc<SPI: Transfer<u8>, NSS: OutputPin> {
 }
 
 impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> {
-    pub fn new(spi: SPI, mut nss: NSS) -> Result<Self, SPI::Error> {
+    pub fn new(spi: SPI, mut nss: NSS) -> Result<Self, AdcError<SPI::Error>> {
         let _ = nss.set_high();
         let mut adc = Adc {
             spi, nss,
             checksum_mode: ChecksumMode::Off,
         };
         adc.reset()?;
+        adc.set_checksum_mode(ChecksumMode::Crc).unwrap();
 
-        match adc.identify() {
-            Err(e) =>
-                warn!("Cannot identify ADC: {:?}", e),
-            Ok(id) if id & 0xFFF0 == 0x00D0 =>
-                info!("ADC id: {:04X}", id),
-            Ok(id) =>
-                info!("ADC id: {:04X} (corrupt)", id),
+        let mut retries = 0;
+        let mut adc_id;
+        loop {
+            adc_id = adc.identify()?;
+            if adc_id & 0xFFF0 == 0x00D0 {
+                break;
+            } else {
+                retries += 1;
+            }
         }
+        info!("ADC id: {:04X} ({} retries)", adc_id, retries);
 
         Ok(adc)
     }
