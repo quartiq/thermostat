@@ -24,6 +24,8 @@ use smoltcp::{
     wire::EthernetAddress,
 };
 
+mod init_log;
+use init_log::init_log;
 mod pins;
 use pins::Pins;
 mod ad7172;
@@ -46,25 +48,6 @@ const WATCHDOG_INTERVAL: u32 = 10_000;
 #[cfg(not(feature = "generate-hwaddr"))]
 const NET_HWADDR: [u8; 6] = [0x02, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 
-#[cfg(not(feature = "semihosting"))]
-fn init_log() {}
-
-#[cfg(feature = "semihosting")]
-fn init_log() {
-    use log::LevelFilter;
-    use cortex_m_log::log::{Logger, init};
-    use cortex_m_log::printer::semihosting::{InterruptOk, hio::HStdout};
-    static mut LOGGER: Option<Logger<InterruptOk<HStdout>>> = None;
-    let logger = Logger {
-        inner: InterruptOk::<_>::stdout().expect("semihosting stdout"),
-        level: LevelFilter::Info,
-    };
-    let logger = unsafe {
-        LOGGER.get_or_insert(logger)
-    };
-
-    init(logger).expect("set logger");
-}
 
 /// Initialization and main loop
 #[entry]
