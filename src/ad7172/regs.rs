@@ -1,3 +1,4 @@
+use core::ops::{Deref, DerefMut};
 use byteorder::{BigEndian, ByteOrder};
 use bit_field::BitField;
 
@@ -7,9 +8,8 @@ pub trait Register {
     type Data: RegisterData;
     fn address(&self) -> u8;
 }
-pub trait RegisterData {
+pub trait RegisterData: Deref<Target=[u8]> + DerefMut {
     fn empty() -> Self;
-    fn as_mut(&mut self) -> &mut [u8];
 }
 
 macro_rules! def_reg {
@@ -32,8 +32,15 @@ macro_rules! def_reg {
                 fn empty() -> Self {
                     Data([0; $size])
                 }
-                /// Borrow for SPI transfer
-                fn as_mut(&mut self) -> &mut [u8] {
+            }
+            impl core::ops::Deref for Data {
+                type Target = [u8];
+                fn deref(&self) -> &[u8] {
+                    &self.0
+                }
+            }
+            impl core::ops::DerefMut for Data {
+                fn deref_mut(&mut self) -> &mut [u8] {
                     &mut self.0
                 }
             }
@@ -53,7 +60,15 @@ macro_rules! def_reg {
                 fn empty() -> Self {
                     Data([0; $size])
                 }
-                fn as_mut(&mut self) -> &mut [u8] {
+            }
+            impl core::ops::Deref for Data {
+                type Target = [u8];
+                fn deref(&self) -> &[u8] {
+                    &self.0
+                }
+            }
+            impl core::ops::DerefMut for Data {
+                fn deref_mut(&mut self) -> &mut [u8] {
                     &mut self.0
                 }
             }

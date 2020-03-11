@@ -27,7 +27,7 @@ impl Checksum {
         Checksum { mode, state: 0 }
     }
 
-    pub fn feed(&mut self, input: u8) {
+    fn feed_byte(&mut self, input: u8) {
         match self.mode {
             ChecksumMode::Off => {},
             ChecksumMode::Xor => self.state ^= input,
@@ -42,6 +42,12 @@ impl Checksum {
                         };
                 }
             }
+        }
+    }
+
+    pub fn feed(&mut self, input: &[u8]) {
+        for &b in input {
+            self.feed_byte(b);
         }
     }
 

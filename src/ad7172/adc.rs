@@ -134,12 +134,12 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         let mut reg_data = R::Data::empty();
         let address = 0x40 | reg.address();
         let mut checksum = Checksum::new(self.checksum_mode);
-        checksum.feed(address);
+        checksum.feed(&[address]);
         let checksum_out = checksum.result();
+
         let checksum_in = self.transfer(address, reg_data.as_mut(), checksum_out)?;
-        for &mut b in reg_data.as_mut() {
-            checksum.feed(b);
-        }
+
+        checksum.feed(&reg_data);
         let checksum_expected = checksum.result();
         if checksum_expected != checksum_in {
             return Err(AdcError::ChecksumMismatch(checksum_expected, checksum_in));
@@ -155,10 +155,8 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             ChecksumMode::Xor => ChecksumMode::Crc,
             ChecksumMode::Crc => ChecksumMode::Crc,
         });
-        checksum.feed(address);
-        for &mut b in reg_data.as_mut() {
-            checksum.feed(b);
-        }
+        checksum.feed(&[address]);
+        checksum.feed(&reg_data);
         let checksum_out = checksum.result();
         self.transfer(address, reg_data.as_mut(), checksum_out)?;
         Ok(())
