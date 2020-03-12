@@ -16,7 +16,7 @@ use embedded_hal::watchdog::{WatchdogEnable, Watchdog};
 use stm32f4xx_hal::{
     rcc::RccExt,
     watchdog::IndependentWatchdog,
-    time::U32Ext,
+    time::{U32Ext, MegaHertz},
     stm32::{CorePeripherals, Peripherals},
 };
 use smoltcp::{
@@ -49,6 +49,9 @@ const WATCHDOG_INTERVAL: u32 = 10_000;
 const NET_HWADDR: [u8; 6] = [0x02, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 
 
+const HSE: MegaHertz = MegaHertz(8);
+
+
 /// Initialization and main loop
 #[entry]
 fn main() -> ! {
@@ -61,8 +64,10 @@ fn main() -> ! {
 
     let dp = Peripherals::take().unwrap();
     stm32_eth::setup(&dp.RCC, &dp.SYSCFG);
+
     let clocks = dp.RCC.constrain()
         .cfgr
+        .use_hse(HSE)
         .sysclk(168.mhz())
         .hclk(168.mhz())
         .pclk1(32.mhz())
