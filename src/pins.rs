@@ -1,17 +1,20 @@
 use stm32f4xx_hal::{
     gpio::{
         AF5, Alternate,
-        gpioa::{PA1, PA2, PA7},
-        gpiob::{PB10, PB11, PB12, PB13, PB14, PB15},
-        gpioc::{PC1, PC4, PC5},
-        gpiog::{PG13},
+        gpioa::*,
+        gpiob::*,
+        gpioc::*,
+        gpioe::*,
+        gpiog::*,
         GpioExt,
         Output, PushPull,
         Speed::VeryHigh,
     },
     rcc::Clocks,
+    pwm::{self, PwmChannels},
     spi::Spi,
-    stm32::{GPIOA, GPIOB, GPIOC, GPIOG, SPI2},
+    stm32::{GPIOA, GPIOB, GPIOC, GPIOE, GPIOG, SPI2, TIM1, TIM3},
+    time::{U32Ext, Hertz},
 };
 
 
@@ -21,14 +24,22 @@ type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Altern
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: PB12<Output<PushPull>>,
+    pub pwm: PwmPins,
 }
 
 impl Pins {
     /// Setup GPIO pins and configure MCU peripherals
-    pub fn setup(clocks: Clocks, gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiog: GPIOG, spi2: SPI2) -> Self {
+    pub fn setup(
+        clocks: Clocks,
+        tim1: TIM1,
+        tim3: TIM3,
+        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiog: GPIOG,
+        spi2: SPI2
+    ) -> Self {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
+        let gpioe = gpioe.split();
         let gpiog = gpiog.split();
 
         Self::setup_ethernet(
@@ -38,9 +49,18 @@ impl Pins {
         );
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
+
+        let pwm = PwmPins::setup(
+            clocks, tim1, tim3,
+            gpioc.pc6, gpioc.pc7,
+            gpioe.pe9, gpioe.pe11,
+            gpioe.pe13, gpioe.pe14
+        );
+
         Pins {
             adc_spi,
             adc_nss,
+            pwm,
         }
     }
 
@@ -89,5 +109,51 @@ impl Pins {
         pg13.into_alternate_af11().set_speed(VeryHigh);
         // PB13 RMII TXD1 I2S_A_CK JP7 ON
         pb13.into_alternate_af11().set_speed(VeryHigh);
+    }
+}
+
+pub struct PwmPins {
+    max_v0: PwmChannels<TIM3, pwm::C1>,
+    max_v1: PwmChannels<TIM3, pwm::C2>,
+    max_i_pos0: PwmChannels<TIM1, pwm::C1>,
+    max_i_pos1: PwmChannels<TIM1, pwm::C2>,
+    max_i_neg0: PwmChannels<TIM1, pwm::C3>,
+    max_i_neg1: PwmChannels<TIM1, pwm::C4>,
+}
+
+impl PwmPins {
+    fn setup<M1, M2, M3, M4, M5, M6>(
+        clocks: Clocks,
+        tim1: TIM1,
+        tim3: TIM3,
+        max_v0: PC6<M1>,
+        max_v1: PC7<M2>,
+        max_i_pos0: PE9<M3>,
+        max_i_pos1: PE11<M4>,
+        max_i_neg0: PE13<M5>,
+        max_i_neg1: PE14<M6>,
+    ) -> PwmPins {
+        let freq = 20u32.khz();
+
+        let channels = (
+            max_v0.into_alternate_af2(),
+            max_v1.into_alternate_af2(),
+        );
+        let (max_v0, max_v1) = pwm::tim3(tim3, channels, clocks, freq);
+
+        let channels = (
+            max_i_pos0.into_alternate_af1(),
+            max_i_pos1.into_alternate_af1(),
+            max_i_neg0.into_alternate_af1(),
+            max_i_neg1.into_alternate_af1(),
+        );
+        let (max_i_pos0, max_i_pos1, max_i_neg0, max_i_neg1) =
+            pwm::tim1(tim1, channels, clocks, freq);
+
+        PwmPins {
+            max_v0, max_v1,
+            max_i_pos0, max_i_pos1,
+            max_i_neg0, max_i_neg1,
+        }
     }
 }

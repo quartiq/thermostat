@@ -73,7 +73,11 @@ fn main() -> ! {
     wd.start(WATCHDOG_INTERVAL.ms());
     wd.feed();
 
-    let pins = Pins::setup(clocks, dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOG, dp.SPI2);
+    let pins = Pins::setup(
+        clocks, dp.TIM1, dp.TIM3,
+        dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOG,
+        dp.SPI2
+    );
 
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
 

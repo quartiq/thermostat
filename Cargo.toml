@@ -22,7 +22,8 @@ cortex-m = "0.6"
 cortex-m-rt = { version = "0.6", features = ["device"] }
 cortex-m-log = { version = "0.6", features = ["log-integration"] }
 embedded-hal = "0.2"
-stm32f4xx-hal = { version = "0.7", features = ["rt", "stm32f427"] }
+# TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/125
+stm32f4xx-hal = { git = "https://github.com/thalesfragoso/stm32f4xx-hal", branch = "pwm-impl", features = ["rt", "stm32f427"] }
 stm32-eth = { version = "0.1.2", features = ["smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
 smoltcp = { version = "0.6.0", default-features = false, features = ["proto-ipv4", "socket-tcp", "log"] }
 hash2hwaddr = { version = "0.0", optional = true }
