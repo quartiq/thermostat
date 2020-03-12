@@ -80,8 +80,8 @@ fn main() -> ! {
 
     let pins = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
-        dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOG,
-        dp.SPI2
+        dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
+        dp.SPI2, dp.SPI4, dp.SPI5
     );
 
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();

@@ -1,3 +1,7 @@
+use embedded_hal::{
+    blocking::spi::Transfer,
+    digital::v2::OutputPin,
+};
 use stm32f4xx_hal::{
     gpio::{
         AF5, Alternate,
@@ -5,6 +9,7 @@ use stm32f4xx_hal::{
         gpiob::*,
         gpioc::*,
         gpioe::*,
+        gpiof::*,
         gpiog::*,
         GpioExt,
         Output, PushPull,
@@ -12,19 +17,27 @@ use stm32f4xx_hal::{
     },
     rcc::Clocks,
     pwm::{self, PwmChannels},
-    spi::Spi,
-    stm32::{GPIOA, GPIOB, GPIOC, GPIOE, GPIOG, SPI2, TIM1, TIM3},
-    time::{U32Ext, Hertz},
+    spi::{self, Spi, NoMiso},
+    stm32::{GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    time::{U32Ext, Hertz, MegaHertz},
 };
 
 
 /// SPI peripheral used for communication with the ADC
 type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Alternate<AF5>>)>;
+type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
+type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
+
+const DAC_FREQ: MegaHertz = MegaHertz(30);
 
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: PB12<Output<PushPull>>,
     pub pwm: PwmPins,
+    pub dac0_spi: Dac0Spi,
+    pub dac0_sync: PE4<Output<PushPull>>,
+    pub dac1_spi: Dac1Spi,
+    pub dac1_sync: PF6<Output<PushPull>>,
 }
 
 impl Pins {
@@ -33,13 +46,14 @@ impl Pins {
         clocks: Clocks,
         tim1: TIM1,
         tim3: TIM3,
-        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiog: GPIOG,
-        spi2: SPI2
+        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
+        spi2: SPI2, spi4: SPI4, spi5: SPI5
     ) -> Self {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
         let gpioe = gpioe.split();
+        let gpiof = gpiof.split();
         let gpiog = gpiog.split();
 
         Self::setup_ethernet(
@@ -50,6 +64,15 @@ impl Pins {
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
+        let (dac0_spi, dac0_sync) = Self::setup_dac0(
+            clocks, spi4,
+            gpioe.pe2, gpioe.pe4, gpioe.pe6
+        );
+        let (dac1_spi, dac1_sync) = Self::setup_dac1(
+            clocks, spi5,
+            gpiof.pf7, gpiof.pf6, gpiof.pf9
+        );
+
         let pwm = PwmPins::setup(
             clocks, tim1, tim3,
             gpioc.pc6, gpioc.pc7,
@@ -58,9 +81,10 @@ impl Pins {
         );
 
         Pins {
-            adc_spi,
-            adc_nss,
+            adc_spi, adc_nss,
             pwm,
+            dac0_spi, dac0_sync,
+            dac1_spi, dac1_sync,
         }
     }
 
@@ -83,6 +107,48 @@ impl Pins {
             crate::ad7172::SPI_CLOCK.into(),
             clocks
         )
+    }
+
+    fn setup_dac0<M1, M2, M3>(
+        clocks: Clocks, spi4: SPI4,
+        sclk: PE2<M1>, sync: PE4<M2>, sdin: PE6<M3>
+    ) -> (Dac0Spi, PE4<Output<PushPull>>) {
+        let sclk = sclk.into_alternate_af5();
+        let sdin = sdin.into_alternate_af5();
+        let spi = Spi::spi4(
+            spi4,
+            (sclk, NoMiso, sdin),
+            spi::Mode {
+                polarity: spi::Polarity::IdleHigh,
+                phase: spi::Phase::CaptureOnSecondTransition,
+            },
+            DAC_FREQ.into(),
+            clocks
+        );
+        let sync = sync.into_push_pull_output();
+
+        (spi, sync)
+    }
+
+    fn setup_dac1<M1, M2, M3>(
+        clocks: Clocks, spi5: SPI5,
+        sclk: PF7<M1>, sync: PF6<M2>, sdin: PF9<M3>
+    ) -> (Dac1Spi, PF6<Output<PushPull>>) {
+        let sclk = sclk.into_alternate_af5();
+        let sdin = sdin.into_alternate_af5();
+        let spi = Spi::spi5(
+            spi5,
+            (sclk, NoMiso, sdin),
+            spi::Mode {
+                polarity: spi::Polarity::IdleHigh,
+                phase: spi::Phase::CaptureOnSecondTransition,
+            },
+            DAC_FREQ.into(),
+            clocks
+        );
+        let sync = sync.into_push_pull_output();
+
+        (spi, sync)
     }
 
     /// Configure the GPIO pins for Ethernet operation
