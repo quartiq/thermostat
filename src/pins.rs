@@ -28,8 +28,6 @@ type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Altern
 type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
 
-const DAC_FREQ: MegaHertz = MegaHertz(30);
-
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: PB12<Output<PushPull>>,
@@ -118,11 +116,8 @@ impl Pins {
         let spi = Spi::spi4(
             spi4,
             (sclk, NoMiso, sdin),
-            spi::Mode {
-                polarity: spi::Polarity::IdleHigh,
-                phase: spi::Phase::CaptureOnSecondTransition,
-            },
-            DAC_FREQ.into(),
+            crate::ad5680::SPI_MODE,
+            crate::ad5680::SPI_CLOCK.into(),
             clocks
         );
         let sync = sync.into_push_pull_output();
@@ -139,11 +134,8 @@ impl Pins {
         let spi = Spi::spi5(
             spi5,
             (sclk, NoMiso, sdin),
-            spi::Mode {
-                polarity: spi::Polarity::IdleHigh,
-                phase: spi::Phase::CaptureOnSecondTransition,
-            },
-            DAC_FREQ.into(),
+            crate::ad5680::SPI_MODE,
+            crate::ad5680::SPI_CLOCK.into(),
             clocks
         );
         let sync = sync.into_push_pull_output();

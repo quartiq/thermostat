@@ -29,6 +29,7 @@ use init_log::init_log;
 mod pins;
 use pins::Pins;
 mod ad7172;
+mod ad5680;
 mod net;
 mod server;
 use server::Server;
@@ -85,6 +86,10 @@ fn main() -> ! {
     );
 
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
+    let mut dac0 = ad5680::Dac::new(pins.dac0_spi, pins.dac0_sync);
+    dac0.set(0);
+    let mut dac1 = ad5680::Dac::new(pins.dac1_spi, pins.dac1_sync);
+    dac1.set(0);
 
     timer::setup(cp.SYST, clocks);
 
