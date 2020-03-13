@@ -43,7 +43,7 @@ pub fn run<F>(
     eth_dev.enable_interrupt();
 
     // IP stack
-    let local_addr = IpAddress::v4(192, 168, 69, 3);
+    let local_addr = IpAddress::v4(192, 168, 1, 26);
     let mut ip_addrs = [IpCidr::new(local_addr, 24)];
     let mut neighbor_storage = [None; 16];
     let neighbor_cache = NeighborCache::new(&mut neighbor_storage[..]);
