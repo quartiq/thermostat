@@ -15,7 +15,7 @@ pub struct SocketState<S> {
 /// Number of server sockets and therefore concurrent client
 /// sessions. Many data structures in `Server::run()` correspond to
 /// this const.
-const SOCKET_COUNT: usize = 8;
+const SOCKET_COUNT: usize = 4;
 
 const TCP_RX_BUFFER_SIZE: usize = 2048;
 const TCP_TX_BUFFER_SIZE: usize = 2048;
@@ -52,10 +52,6 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
         create_socket!(sockets, tcp_rx_storage1, tcp_tx_storage1, states[1].handle);
         create_socket!(sockets, tcp_rx_storage2, tcp_tx_storage2, states[2].handle);
         create_socket!(sockets, tcp_rx_storage3, tcp_tx_storage3, states[3].handle);
-        create_socket!(sockets, tcp_rx_storage4, tcp_tx_storage4, states[4].handle);
-        create_socket!(sockets, tcp_rx_storage5, tcp_tx_storage5, states[5].handle);
-        create_socket!(sockets, tcp_rx_storage6, tcp_tx_storage6, states[6].handle);
-        create_socket!(sockets, tcp_rx_storage7, tcp_tx_storage7, states[7].handle);
 
         for state in &mut states {
             state.state = S::default();
