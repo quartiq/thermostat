@@ -38,6 +38,8 @@ use session::{CHANNELS, Session, SessionOutput};
 mod command_parser;
 use command_parser::{Command, ShowCommand, PwmSetup, PwmMode};
 mod timer;
+mod pid;
+mod steinhart_hart;
 
 
 #[derive(Clone, Copy, Debug)]
