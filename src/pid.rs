@@ -1,20 +1,20 @@
 #[derive(Clone, Copy)]
 pub struct Parameters {
-    pub kp: f32,
-    pub ki: f32,
-    pub kd: f32,
-    pub output_min: f32,
-    pub output_max: f32,
-    pub integral_min: f32,
-    pub integral_max: f32
+    pub kp: f64,
+    pub ki: f64,
+    pub kd: f64,
+    pub output_min: f64,
+    pub output_max: f64,
+    pub integral_min: f64,
+    pub integral_max: f64
 }
 
 #[derive(Clone)]
 pub struct Controller {
     parameters: Parameters,
-    target: f32,
-    integral: f32,
-    last_input: Option<f32>
+    target: f64,
+    integral: f64,
+    last_input: Option<f64>
 }
 
 impl Controller {
@@ -27,7 +27,7 @@ impl Controller {
         }
     }
 
-    pub fn update(&mut self, input: f32) -> f32 {
+    pub fn update(&mut self, input: f64) -> f64 {
         let error = self.target - input;
 
         let p = self.parameters.kp * error;
@@ -57,11 +57,11 @@ impl Controller {
         output
     }
 
-    pub fn get_target(&self) -> f32 {
+    pub fn get_target(&self) -> f64 {
         self.target
     }
 
-    pub fn set_target(&mut self, target: f32) {
+    pub fn set_target(&mut self, target: f64) {
         self.target = target;
     }
 
@@ -96,9 +96,9 @@ mod test {
 
     #[test]
     fn test_controller() {
-        const DEFAULT: f32 = 0.0;
-        const TARGET: f32 = 1234.56;
-        const ERROR: f32 = 0.01;
+        const DEFAULT: f64 = 0.0;
+        const TARGET: f64 = 1234.56;
+        const ERROR: f64 = 0.01;
         const DELAY: usize = 10;
 
         let mut pid = Controller::new(PARAMETERS.clone());

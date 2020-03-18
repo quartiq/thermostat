@@ -123,12 +123,12 @@ pub enum Command {
     Pid {
         channel: usize,
         parameter: PidParameter,
-        value: f32,
+        value: f64,
     },
     SteinhartHart {
         channel: usize,
         parameter: ShParameter,
-        value: f32,
+        value: f64,
     },
     PostFilter {
         channel: usize,
@@ -158,12 +158,12 @@ fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u16, Error>> {
         })
 }
 
-fn float(input: &[u8]) -> IResult<&[u8], Result<f32, Error>> {
+fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
     let (input, sign) = opt(is_a("-"))(input)?;
     let negative = sign.is_some();
     let (input, digits) = take_while1(|c| is_digit(c) || c == '.' as u8)(input)?;
     let result = lexical::parse(digits)
-        .map(|result: f32| if negative { -result } else { result })
+        .map(|result: f64| if negative { -result } else { result })
         .map_err(|e| e.into());
     Ok((input, result))
 }
@@ -357,7 +357,8 @@ fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 let (input, rate) = float(input)?;
                 let result = rate
                     .map(|rate| Command::PostFilter {
-                        channel, rate,
+                        channel,
+                        rate: rate as f32,
                     });
                 Ok((input, result))
             }

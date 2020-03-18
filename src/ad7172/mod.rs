@@ -1,4 +1,5 @@
 use core::fmt;
+use lexical_core::Float;
 use stm32f4xx_hal::{
     time::{MegaHertz, U32Ext},
     spi,
@@ -146,18 +147,9 @@ impl PostFilter {
     ];
 
     pub fn closest(rate: f32) -> Option<Self> {
-        /// (x - y).abs()
-        fn d(x: f32, y: f32) -> f32 {
-            if x >= y {
-                x - y
-            } else {
-                y - x
-            }
-        }
-
         let mut best: Option<(f32, Self)> = None;
         for value in Self::VALID_VALUES {
-            let error = d(rate, value.output_rate().unwrap());
+            let error = (rate - value.output_rate().unwrap()).abs();
             let better = best
                 .map(|(best_error, _)| error < best_error)
                 .unwrap_or(true);
