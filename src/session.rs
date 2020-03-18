@@ -16,16 +16,13 @@ impl LineReader {
         }
     }
 
-    pub fn feed(&mut self, c: u8) -> Option<LineResult> {
+    pub fn feed(&mut self, c: u8) -> Option<&[u8]> {
         if c == 13 || c == 10 {
             // Enter
             if self.pos > 0 {
                 let len = self.pos;
                 self.pos = 0;
-                Some(LineResult {
-                    buf: self.buf.clone(),
-                    len,
-                })
+                Some(&self.buf[..len])
             } else {
                 None
             }
@@ -38,18 +35,6 @@ impl LineReader {
             // Buffer is full, ignore
             None
         }
-    }
-}
-
-pub struct LineResult {
-    buf: [u8; MAX_LINE_LEN],
-    len: usize,
-}
-
-impl Deref for LineResult {
-    type Target = [u8];
-    fn deref(&self) -> &Self::Target {
-        &self.buf[..self.len]
     }
 }
 
