@@ -1,7 +1,7 @@
 use core::fmt;
 use num_traits::float::Float;
 use stm32f4xx_hal::{
-    time::{MegaHertz, U32Ext},
+    time::MegaHertz,
     spi,
 };
 

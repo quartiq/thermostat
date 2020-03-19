@@ -37,4 +37,3 @@ impl ChannelState {
         self.dac_value = (output * (ad5680::MAX_VALUE as f64)) as u32;
     }
 }
-

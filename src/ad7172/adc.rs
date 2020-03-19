@@ -1,7 +1,7 @@
 use core::fmt;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::blocking::spi::Transfer;
-use log::{info, warn};
+use log::info;
 use super::checksum::{ChecksumMode, Checksum};
 use super::AdcError;
 use super::{

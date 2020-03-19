@@ -7,7 +7,7 @@ use nom::{
     bytes::complete::{is_a, tag, take_while1},
     character::{is_digit, complete::{char, one_of}},
     combinator::{complete, map, opt, value},
-    sequence::{preceded, separated_pair},
+    sequence::preceded,
     multi::{fold_many0, fold_many1},
     error::ErrorKind,
 };

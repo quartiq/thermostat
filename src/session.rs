@@ -1,4 +1,3 @@
-use core::ops::Deref;
 use super::command_parser::{Command, Error as ParserError};
 
 const MAX_LINE_LEN: usize = 64;

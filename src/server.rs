@@ -1,4 +1,3 @@
-use core::fmt;
 use core::mem::MaybeUninit;
 use smoltcp::{
     iface::EthernetInterface,

@@ -1,7 +1,3 @@
-use embedded_hal::{
-    blocking::spi::Transfer,
-    digital::v2::OutputPin,
-};
 use stm32f4xx_hal::{
     gpio::{
         AF5, Alternate,
@@ -17,9 +13,9 @@ use stm32f4xx_hal::{
     },
     rcc::Clocks,
     pwm::{self, PwmChannels},
-    spi::{self, Spi, NoMiso},
+    spi::{Spi, NoMiso},
     stm32::{GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
-    time::{U32Ext, Hertz, MegaHertz},
+    time::U32Ext,
 };
 
 

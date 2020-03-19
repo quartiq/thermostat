@@ -383,9 +383,6 @@ fn main() -> ! {
                             Ok(SessionOutput::Error(e)) => {
                                 let _ = writeln!(socket, "Command error: {:?}", e);
                             }
-                            Ok(o) => {
-                                let _ = writeln!(socket, "Not yet implemented");
-                            }
                             Err(_) =>
                                 socket.close(),
                         }
