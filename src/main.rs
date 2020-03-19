@@ -243,7 +243,7 @@ fn main() -> ! {
                                             channel,
                                         );
                                         let _ = writeln!(socket, "- t0={}", state.sh.t0);
-                                        let _ = writeln!(socket, "- r={}", state.sh.r);
+                                        let _ = writeln!(socket, "- b={}", state.sh.b);
                                         let _ = writeln!(socket, "- r0={}", state.sh.r0);
                                         let _ = writeln!(socket, "");
                                     }
@@ -355,10 +355,9 @@ fn main() -> ! {
                                     use command_parser::ShParameter::*;
                                     match parameter {
                                         T0 => sh.t0 = value,
-                                        R => sh.r = value,
+                                        B => sh.b = value,
                                         R0 => sh.r0 = value,
                                     }
-                                    sh.update();
                                     let _ = writeln!(socket, "Steinhart-Hart equation parameter updated");
                                 }
                                 Command::PostFilter { channel, rate } => {

@@ -110,7 +110,7 @@ pub enum PidParameter {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShParameter {
     T0,
-    R,
+    B,
     R0,
 }
 
@@ -353,7 +353,7 @@ fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Erro
     let (input, _) = whitespace(input)?;
     let (input, parameter) =
         alt((value(ShParameter::T0, tag("t0")),
-             value(ShParameter::R, tag("r")),
+             value(ShParameter::B, tag("b")),
              value(ShParameter::R0, tag("r0"))
         ))(input)?;
     let (input, _) = whitespace(input)?;
