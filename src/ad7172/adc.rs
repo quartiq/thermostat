@@ -1,7 +1,7 @@
 use core::fmt;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::blocking::spi::Transfer;
-use log::info;
+use log::{info, warn};
 use super::checksum::{ChecksumMode, Checksum};
 use super::AdcError;
 use super::{
@@ -145,12 +145,16 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         checksum.feed(&[address]);
         let checksum_out = checksum.result();
 
-        let checksum_in = self.transfer(address, reg_data.as_mut(), checksum_out)?;
+        loop {
+            let checksum_in = self.transfer(address, reg_data.as_mut(), checksum_out)?;
 
-        checksum.feed(&reg_data);
-        let checksum_expected = checksum.result();
-        if checksum_expected != checksum_in {
-            return Err(AdcError::ChecksumMismatch(checksum_expected, checksum_in));
+            checksum.feed(&reg_data);
+            let checksum_expected = checksum.result();
+            if checksum_expected == checksum_in {
+                break;
+            }
+            // Retry
+            warn!("read_reg checksum error, retrying");
         }
         Ok(reg_data)
     }
@@ -166,7 +170,13 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         checksum.feed(&[address]);
         checksum.feed(&reg_data);
         let checksum_out = checksum.result();
-        self.transfer(address, reg_data.as_mut(), checksum_out)?;
+        loop {
+            let checksum_in = self.transfer(address, reg_data.as_mut(), checksum_out)?;
+            if checksum_in.unwrap_or(0) == 0 {
+                break;
+            }
+            warn!("write_reg: checksum={:02X}, retrying", checksum_in.unwrap_or(0));
+        }
         Ok(())
     }
 
