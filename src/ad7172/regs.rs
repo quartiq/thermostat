@@ -199,21 +199,6 @@ impl channel::Data {
     }
     reg_bits!(a_in_neg, set_a_in_neg, 1, 0..=4, Input,
               "Which input is connected to negative input of this channel");
-
-    // const PROPS: &'static [Property<Self>] = &[
-    //     Property::named("enable")
-    //         .readable(&|self_: &Self| self_.enabled().into())
-    //         .writebale(&|self_: &mut Self, value| self_.set_enabled(value != 0)),
-    //     Property::named("setup")
-    //         .readable(&|self_: &Self| self_.0[0].get_bits(4..=5).into())
-    //         .writeable(&|self_: &mut Self, value| {
-    //             self_.0[0].set_bits(4..=5, value as u8);
-    //         }),
-    // ];
-
-    // pub fn props() -> &'static [Property<Self>] {
-    //     Self::PROPS
-    // }
 }
 
 def_reg!(SetupCon, u8, setup_con, 0x20, 2);
