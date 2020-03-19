@@ -1,4 +1,6 @@
 use core::fmt;
+use core::num::ParseIntError;
+use core::str::{from_utf8, Utf8Error};
 use nom::{
     IResult,
     branch::alt,
@@ -9,7 +11,7 @@ use nom::{
     multi::{fold_many0, fold_many1},
     error::ErrorKind,
 };
-use lexical_core as lexical;
+use num_traits::{Num, ParseFloatError};
 
 
 #[derive(Clone, Debug, PartialEq)]
@@ -17,7 +19,10 @@ pub enum Error {
     Parser(ErrorKind),
     Incomplete,
     UnexpectedInput(u8),
-    ParseNumber(lexical::Error)
+    Utf8(Utf8Error),
+    ParseInt(ParseIntError),
+    // `num_traits::ParseFloatError` does not impl Clone
+    ParseFloat,
 }
 
 impl<'t> From<nom::Err<(&'t [u8], ErrorKind)>> for Error {
@@ -33,9 +38,21 @@ impl<'t> From<nom::Err<(&'t [u8], ErrorKind)>> for Error {
     }
 }
 
-impl From<lexical::Error> for Error {
-    fn from(e: lexical::Error) -> Self {
-        Error::ParseNumber(e)
+impl From<Utf8Error> for Error {
+    fn from(e: Utf8Error) -> Self {
+        Error::Utf8(e)
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(e: ParseIntError) -> Self {
+        Error::ParseInt(e)
+    }
+}
+
+impl From<ParseFloatError> for Error {
+    fn from(_: ParseFloatError) -> Self {
+        Error::ParseFloat
     }
 }
 
@@ -52,9 +69,16 @@ impl fmt::Display for Error {
                 "parser: ".fmt(fmt)?;
                 (e as &dyn core::fmt::Debug).fmt(fmt)
             }
-            Error::ParseNumber(e) => {
-                "parsing number: ".fmt(fmt)?;
+            Error::Utf8(e) => {
+                "utf8: ".fmt(fmt)?;
                 (e as &dyn core::fmt::Debug).fmt(fmt)
+            }
+            Error::ParseInt(e) => {
+                "parsing int: ".fmt(fmt)?;
+                (e as &dyn core::fmt::Debug).fmt(fmt)
+            }
+            Error::ParseFloat => {
+                "parsing float".fmt(fmt)
             }
         }
     }
@@ -157,8 +181,12 @@ fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
 fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
     take_while1(is_digit)(input)
         .map(|(input, digits)| {
-            let result = lexical::parse(digits)
-                .map_err(|e| e.into());
+            let result =
+                from_utf8(digits)
+                .map_err(|e| e.into())
+                .and_then(|digits| u32::from_str_radix(digits, 10)
+                     .map_err(|e| e.into())
+                );
             (input, result)
         })
 }
@@ -167,9 +195,13 @@ fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
     let (input, sign) = opt(is_a("-"))(input)?;
     let negative = sign.is_some();
     let (input, digits) = take_while1(|c| is_digit(c) || c == '.' as u8)(input)?;
-    let result = lexical::parse(digits)
-        .map(|result: f64| if negative { -result } else { result })
-        .map_err(|e| e.into());
+    let result =
+        from_utf8(digits)
+        .map_err(|e| e.into())
+        .and_then(|digits| f64::from_str_radix(digits, 10)
+                  .map_err(|e| e.into())
+        )
+        .map(|result: f64| if negative { -result } else { result });
     Ok((input, result))
 }
 

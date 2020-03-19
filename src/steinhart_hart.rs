@@ -1,4 +1,4 @@
-use lexical_core::Float;
+use num_traits::float::Float;
 
 /// Steinhart-Hart equation parameters
 #[derive(Clone, Debug)]

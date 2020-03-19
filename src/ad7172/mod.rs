@@ -1,5 +1,5 @@
 use core::fmt;
-use lexical_core::Float;
+use num_traits::float::Float;
 use stm32f4xx_hal::{
     time::{MegaHertz, U32Ext},
     spi,
