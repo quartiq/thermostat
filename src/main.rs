@@ -44,30 +44,8 @@ use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod pid;
 mod steinhart_hart;
-use steinhart_hart as sh;
-
-
-struct ChannelState {
-    adc_data: Option<i32>,
-    adc_time: Instant,
-    dac_value: u32,
-    pid_enabled: bool,
-    pid: pid::Controller,
-    sh: sh::Parameters,
-}
-
-impl Default for ChannelState {
-    fn default() -> Self {
-        ChannelState {
-            adc_data: None,
-            adc_time: Instant::from_secs(0),
-            dac_value: 0,
-            pid_enabled: false,
-            pid: pid::Controller::new(pid::Parameters::default()),
-            sh: sh::Parameters::default(),
-        }
-    }
-}
+mod channel_state;
+use channel_state::ChannelState;
 
 
 const HSE: MegaHertz = MegaHertz(8);
@@ -151,8 +129,20 @@ fn main() -> ! {
                     let data = adc.read_data().unwrap();
 
                     let state = &mut channel_states[usize::from(channel)];
-                    state.adc_data = Some(data);
-                    state.adc_time = instant;
+                    state.update_adc(instant, data);
+
+                    if state.pid_enabled {
+                        // Forward PID output to i_set DAC
+                        match channel {
+                            0 =>
+                                dac0.set(state.dac_value).unwrap(),
+                            1 =>
+                                dac1.set(state.dac_value).unwrap(),
+                            _ =>
+                                unreachable!(),
+                        }
+                    }
+
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
                 });
 
