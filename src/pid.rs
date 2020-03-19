@@ -9,6 +9,20 @@ pub struct Parameters {
     pub integral_max: f64
 }
 
+impl Default for Parameters {
+    fn default() -> Self {
+        Parameters {
+            kp: 0.5,
+            ki: 0.05,
+            kd: 0.45,
+            output_min: 0.0,
+            output_max: 1.0,
+            integral_min: 0.0,
+            integral_max: 1.0,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Controller {
     parameters: Parameters,

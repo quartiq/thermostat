@@ -14,6 +14,8 @@ pub const SPI_MODE: spi::Mode = spi::Mode {
 /// 30 MHz
 pub const SPI_CLOCK: MegaHertz = MegaHertz(30);
 
+pub const MAX_VALUE: u32 = 0x20000;
+
 /// [AD5680](https://www.analog.com/media/en/technical-documentation/data-sheets/AD5680.pdf) DAC
 pub struct Dac<SPI: Transfer<u8>, S: OutputPin> {
     spi: SPI,

@@ -171,12 +171,12 @@ impl Pins {
 }
 
 pub struct PwmPins {
-    max_v0: PwmChannels<TIM3, pwm::C1>,
-    max_v1: PwmChannels<TIM3, pwm::C2>,
-    max_i_pos0: PwmChannels<TIM1, pwm::C1>,
-    max_i_pos1: PwmChannels<TIM1, pwm::C2>,
-    max_i_neg0: PwmChannels<TIM1, pwm::C3>,
-    max_i_neg1: PwmChannels<TIM1, pwm::C4>,
+    pub max_v0: PwmChannels<TIM3, pwm::C1>,
+    pub max_v1: PwmChannels<TIM3, pwm::C2>,
+    pub max_i_pos0: PwmChannels<TIM1, pwm::C1>,
+    pub max_i_pos1: PwmChannels<TIM1, pwm::C2>,
+    pub max_i_neg0: PwmChannels<TIM1, pwm::C3>,
+    pub max_i_neg1: PwmChannels<TIM1, pwm::C4>,
 }
 
 impl PwmPins {

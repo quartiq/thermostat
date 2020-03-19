@@ -85,30 +85,28 @@ pub enum PidParameter {
 /// Steinhart-Hart equation parameter
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShParameter {
-    A,
-    B,
-    C,
-    ParallelR,
+    T0,
+    R,
+    R0,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct PwmConfig {
-    pub width: u16,
-    pub total: u16,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PwmPin {
+    ISet,
+    MaxIPos,
+    MaxINeg,
+    MaxV,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum PwmMode {
-    Manual(PwmConfig),
-    Pid,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PwmSetup {
-    ISet(PwmMode),
-    MaxIPos(PwmConfig),
-    MaxINeg(PwmConfig),
-    MaxV(PwmConfig),
+impl PwmPin {
+    pub fn name(&self) -> &'static str {
+        match self {
+            PwmPin::ISet => "i_set",
+            PwmPin::MaxIPos => "max_i_pos",
+            PwmPin::MaxINeg => "max_i_neg",
+            PwmPin::MaxV => "max_v",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -116,10 +114,17 @@ pub enum Command {
     Quit,
     Show(ShowCommand),
     Reporting(bool),
+    /// PWM parameter setting
     Pwm {
         channel: usize,
-        setup: PwmSetup,
+        pin: PwmPin,
+        duty: u32,
     },
+    /// Enable PID control for `i_set`
+    PwmPid {
+        channel: usize,
+    },
+    /// PID parameter setting
     Pid {
         channel: usize,
         parameter: PidParameter,
@@ -149,7 +154,7 @@ fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
     fold_many1(char(' '), (), |(), _| ())(input)
 }
 
-fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u16, Error>> {
+fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
     take_while1(is_digit)(input)
         .map(|(input, digits)| {
             let result = lexical::parse(digits)
@@ -202,82 +207,77 @@ fn report(input: &[u8]) -> IResult<&[u8], Command> {
     )(input)
 }
 
-/// `pwm ... <width> <total>` - Set pwm duty cycle
-fn pwm_config(input: &[u8]) -> IResult<&[u8], Result<PwmConfig, Error>> {
-    let (input, width) = unsigned(input)?;
-    let width = match width {
-        Ok(width) => width,
-        Err(e) => return Ok((input, Err(e.into()))),
-    };
-    let (input, _) = whitespace(input)?;
-    let (input, total) = unsigned(input)?;
-    let total = match total {
-        Ok(total) => total,
-        Err(e) => return Ok((input, Err(e.into()))),
-    };
-    Ok((input, Ok(PwmConfig { width, total })))
-}
+fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, u32), Error>> {
+    let result_with_pin = |pin: PwmPin|
+        move |result: Result<u32, Error>|
+        result.map(|duty| (pin, duty));
 
-fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<PwmSetup, Error>> {
     alt((
         map(
             preceded(
                 tag("max_i_pos"),
                 preceded(
                     whitespace,
-                    pwm_config
+                    unsigned
                 )
             ),
-            |result| result.map(PwmSetup::MaxIPos)
+            result_with_pin(PwmPin::MaxIPos)
         ),
         map(
             preceded(
                 tag("max_i_neg"),
                 preceded(
                     whitespace,
-                    pwm_config
+                    unsigned
                 )
             ),
-            |result| result.map(PwmSetup::MaxINeg)
+            result_with_pin(PwmPin::MaxINeg)
         ),
         map(
             preceded(
                 tag("max_v"),
                 preceded(
                     whitespace,
-                    pwm_config
+                    unsigned
                 )
             ),
-            |result| result.map(PwmSetup::MaxV)
+            result_with_pin(PwmPin::MaxV)
         ),
-        map(pwm_config, |result| result.map(|config| {
-            PwmSetup::ISet(PwmMode::Manual(config))
-        }))
-    ))(input)
+        map(unsigned, result_with_pin(PwmPin::ISet)
+        ))
+    )(input)
 }
 
 /// `pwm <0-1> pid` - Set PWM to be controlled by PID
-fn pwm_pid(input: &[u8]) -> IResult<&[u8], Result<PwmSetup, Error>> {
-    value(Ok(PwmSetup::ISet(PwmMode::Pid)), tag("pid"))(input)
+fn pwm_pid(input: &[u8]) -> IResult<&[u8], ()> {
+    value((), tag("pid"))(input)
 }
 
 fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("pwm")(input)?;
     alt((
-        preceded(
-            whitespace,
-            map(
-                separated_pair(
-                    channel,
-                    whitespace,
-                    alt((
-                        pwm_pid,
-                        pwm_setup
-                    ))
-                ),
-                |(channel, setup)| setup.map(|setup| Command::Pwm { channel, setup })
-            )
-        ),
+        |input| {
+            let (input, _) = whitespace(input)?;
+            let (input, channel) = channel(input)?;
+            let (input, _) = whitespace(input)?;
+            let (input, result) = alt((
+                |input| {
+                    let (input, ()) = pwm_pid(input)?;
+                    Ok((input, Ok(Command::PwmPid { channel })))
+                },
+                |input| {
+                    let (input, config) = pwm_setup(input)?;
+                    match config {
+                        Ok((pin, duty)) =>
+                            Ok((input, Ok(Command::Pwm { channel, pin, duty }))),
+                        Err(e) =>
+                            Ok((input, Err(e))),
+                    }
+                },
+            ))(input)?;
+            end(input)?;
+            Ok((input, result))
+        },
         value(Ok(Command::Show(ShowCommand::Pwm)), end)
     ))(input)
 }
@@ -320,10 +320,9 @@ fn steinhart_hart_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Erro
     let (input, channel) = channel(input)?;
     let (input, _) = whitespace(input)?;
     let (input, parameter) =
-        alt((value(ShParameter::A, tag("a")),
-             value(ShParameter::B, tag("b")),
-             value(ShParameter::C, tag("c")),
-             value(ShParameter::ParallelR, tag("parallel_r"))
+        alt((value(ShParameter::T0, tag("t0")),
+             value(ShParameter::R, tag("r")),
+             value(ShParameter::R0, tag("r0"))
         ))(input)?;
     let (input, _) = whitespace(input)?;
     let (input, value) = float(input)?;
@@ -426,58 +425,50 @@ mod test {
 
     #[test]
     fn parse_pwm_manual() {
-        let command = Command::parse(b"pwm 1 16383 65535");
+        let command = Command::parse(b"pwm 1 16383");
         assert_eq!(command, Ok(Command::Pwm {
             channel: 1,
-            setup: PwmSetup::ISet(PwmMode::Manual(PwmConfig {
-                width: 16383,
-                total: 65535,
-            })),
+            pin: PwmPin::ISet,
+            duty: 16383,
         }));
     }
 
     #[test]
     fn parse_pwm_pid() {
         let command = Command::parse(b"pwm 0 pid");
-        assert_eq!(command, Ok(Command::Pwm {
+        assert_eq!(command, Ok(Command::PwmPid {
             channel: 0,
-            setup: PwmSetup::ISet(PwmMode::Pid),
+            pin: PwmPin::ISet,
         }));
     }
 
     #[test]
     fn parse_pwm_max_i_pos() {
-        let command = Command::parse(b"pwm 0 max_i_pos 7 13");
+        let command = Command::parse(b"pwm 0 max_i_pos 7");
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
-            setup: PwmSetup::MaxIPos(PwmConfig {
-                width: 7,
-                total: 13,
-            }),
+            pin: PwmPin::MaxIPos,
+            duty: 7,
         }));
     }
 
     #[test]
     fn parse_pwm_max_i_neg() {
-        let command = Command::parse(b"pwm 0 max_i_neg 128 65535");
+        let command = Command::parse(b"pwm 0 max_i_neg 128");
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
-            setup: PwmSetup::MaxINeg(PwmConfig {
-                width: 128,
-                total: 65535,
-            }),
+            pin: PwmPin::MaxINeg,
+            duty: 128,
         }));
     }
 
     #[test]
     fn parse_pwm_max_v() {
-        let command = Command::parse(b"pwm 0 max_v 32768 65535");
+        let command = Command::parse(b"pwm 0 max_v 32768");
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
-            setup: PwmSetup::MaxV(PwmConfig {
-                width: 32768,
-                total: 65535,
-            }),
+            pin: PwmPin::MaxV,
+            duty: 32768,
         }));
     }
 
@@ -515,10 +506,10 @@ mod test {
 
     #[test]
     fn parse_steinhart_hart_parallel_r() {
-        let command = Command::parse(b"s-h 1 parallel_r 23.05");
+        let command = Command::parse(b"s-h 1 t0 23.05");
         assert_eq!(command, Ok(Command::SteinhartHart {
             channel: 1,
-            parameter: ShParameter::ParallelR,
+            parameter: ShParameter::T0,
             value: 23.05,
         }));
     }
