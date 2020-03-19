@@ -160,16 +160,10 @@ impl if_mode::Data {
 
 def_reg!(Data, data, 0x04, 3);
 impl data::Data {
-    pub fn data(&self) -> i32 {
-        let raw =
-            (u32::from(self.0[0]) << 16) |
-            (u32::from(self.0[1]) << 8) |
-            u32::from(self.0[2]);
-        if raw & 0x80_0000 != 0 {
-            ((raw & 0x7F_FFFF) | 0x8000_0000) as i32
-        } else {
-            raw as i32
-        }
+    pub fn data(&self) -> u32 {
+        (u32::from(self.0[0]) << 16) |
+        (u32::from(self.0[1]) << 8) |
+        u32::from(self.0[2])
     }
 }
 

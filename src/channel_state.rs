@@ -3,7 +3,7 @@ use crate::{ad5680, ad7172, pid, steinhart_hart as sh};
 
 
 pub struct ChannelState {
-    pub adc_data: Option<i32>,
+    pub adc_data: Option<u32>,
     pub adc_time: Instant,
     pub dac_value: u32,
     pub pid_enabled: bool,
@@ -26,7 +26,7 @@ impl Default for ChannelState {
 
 impl ChannelState {
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_adc(&mut self, now: Instant, adc_data: i32) {
+    pub fn update_adc(&mut self, now: Instant, adc_data: u32) {
         self.adc_data = Some(adc_data);
         self.adc_time = now;
 

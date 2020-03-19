@@ -129,7 +129,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     /// Get data
-    pub fn read_data(&mut self) -> Result<i32, AdcError<SPI::Error>> {
+    pub fn read_data(&mut self) -> Result<u32, AdcError<SPI::Error>> {
         self.read_reg(&regs::Data)
             .map(|data| data.data())
     }
