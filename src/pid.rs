@@ -25,10 +25,11 @@ impl Default for Parameters {
 
 #[derive(Clone)]
 pub struct Controller {
-    parameters: Parameters,
-    target: f64,
+    pub parameters: Parameters,
+    pub target: f64,
     integral: f64,
-    last_input: Option<f64>
+    last_input: Option<f64>,
+    pub last_output: Option<f64>,
 }
 
 impl Controller {
@@ -37,7 +38,8 @@ impl Controller {
             parameters: parameters,
             target: 0.0,
             last_input: None,
-            integral: 0.0
+            integral: 0.0,
+            last_output: None,
         }
     }
 
@@ -68,23 +70,8 @@ impl Controller {
         if output > self.parameters.output_max {
             output = self.parameters.output_max;
         }
+        self.last_output = Some(output);
         output
-    }
-
-    pub fn get_target(&self) -> f64 {
-        self.target
-    }
-
-    pub fn set_target(&mut self, target: f64) {
-        self.target = target;
-    }
-
-    pub fn get_parameters(&self) -> &Parameters {
-        &self.parameters
-    }
-
-    pub fn update_parameters<F: FnOnce(&mut Parameters)>(&mut self, f: F) {
-        f(&mut self.parameters);
     }
 
     #[allow(dead_code)]

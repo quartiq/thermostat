@@ -187,20 +187,25 @@ fn main() -> ! {
                                     for (channel, state) in channel_states.iter().enumerate() {
                                         let _ = writeln!(socket, "PID settings for channel {}", channel);
                                         let pid = &state.pid;
-                                        let _ = writeln!(socket, "- target={:.4}", pid.get_target());
-                                        let p = pid.get_parameters();
-                                        macro_rules! out {
+                                        let _ = writeln!(socket, "- target={:.4}", pid.target);
+                                        macro_rules! show_pid_parameter {
                                             ($p: tt) => {
-                                                let _ = writeln!(socket, "- {}={:.4}", stringify!($p), p.$p);
+                                                let _ = writeln!(
+                                                    socket, "- {}={:.4}",
+                                                    stringify!($p), pid.parameters.$p
+                                                );
                                             };
                                         }
-                                        out!(kp);
-                                        out!(ki);
-                                        out!(kd);
-                                        out!(output_min);
-                                        out!(output_max);
-                                        out!(integral_min);
-                                        out!(integral_max);
+                                        show_pid_parameter!(kp);
+                                        show_pid_parameter!(ki);
+                                        show_pid_parameter!(kd);
+                                        show_pid_parameter!(output_min);
+                                        show_pid_parameter!(output_max);
+                                        show_pid_parameter!(integral_min);
+                                        show_pid_parameter!(integral_max);
+                                        if let Some(last_output) = pid.last_output {
+                                            let _ = writeln!(socket, "- output={:.4}", last_output);
+                                        }
                                         let _ = writeln!(socket, "");
                                     }
                                 }
