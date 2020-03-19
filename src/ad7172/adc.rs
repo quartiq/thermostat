@@ -5,7 +5,7 @@ use log::info;
 use super::checksum::{ChecksumMode, Checksum};
 use super::AdcError;
 use super::{
-    regs, regs::RegisterData,
+    regs::{self, Register, RegisterData},
     Input, RefSource, PostFilter, DigitalFilterOrder,
 };
 
@@ -39,6 +39,10 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             }
         }
         info!("ADC id: {:04X} ({} retries)", adc_id, retries);
+
+        let mut adc_mode = <regs::AdcMode as Register>::Data::empty();
+        adc_mode.set_ref_en(true);
+        adc.write_reg(&regs::AdcMode, &mut adc_mode);
 
         Ok(adc)
     }
@@ -74,16 +78,16 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             data.set_refbuf_neg(true);
             data.set_ainbuf_pos(true);
             data.set_ainbuf_neg(true);
-            data.set_ref_sel(RefSource::External);
+            data.set_ref_sel(RefSource::Internal);
         })?;
         self.update_reg(&regs::FiltCon { index }, |data| {
             data.set_enh_filt_en(true);
             data.set_enh_filt(PostFilter::F16SPS);
             data.set_order(DigitalFilterOrder::Sinc5Sinc1);
         })?;
-        // let mut offset = <regs::Offset as regs::Register>::Data::empty();
-        // offset.set_offset(0);
-        // self.write_reg(&regs::Offset { index }, &mut offset);
+        let mut offset = <regs::Offset as regs::Register>::Data::empty();
+        offset.set_offset(0);
+        self.write_reg(&regs::Offset { index }, &mut offset);
         self.update_reg(&regs::Channel { index }, |data| {
             data.set_setup(index);
             data.set_enabled(true);
