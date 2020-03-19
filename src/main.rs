@@ -160,7 +160,9 @@ fn main() -> ! {
                 server.for_each(|mut socket, session| {
                     if ! socket.is_open() {
                         let _ = socket.listen(TCP_PORT);
-                        session.reset();
+                        if session.is_dirty() {
+                            session.reset();
+                        }
                     } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 128 {
                         match socket.recv(|buf| session.feed(buf)) {
                             Ok(SessionOutput::Nothing) => {}
@@ -337,22 +339,24 @@ fn main() -> ! {
                                     use command_parser::PidParameter::*;
                                     match parameter {
                                         Target =>
-                                            pid.set_target(value),
+                                            pid.target = value,
                                         KP =>
-                                            pid.update_parameters(|parameters| parameters.kp = value),
+                                            pid.parameters.kp = value,
                                         KI =>
-                                            pid.update_parameters(|parameters| parameters.ki = value),
+                                            pid.parameters.ki = value,
                                         KD =>
-                                            pid.update_parameters(|parameters| parameters.kd = value),
+                                            pid.parameters.kd = value,
                                         OutputMin =>
-                                            pid.update_parameters(|parameters| parameters.output_min = value),
+                                            pid.parameters.output_min = value,
                                         OutputMax =>
-                                            pid.update_parameters(|parameters| parameters.output_max = value),
+                                            pid.parameters.output_max = value,
                                         IntegralMin =>
-                                            pid.update_parameters(|parameters| parameters.integral_min = value),
+                                            pid.parameters.integral_min = value,
                                         IntegralMax =>
-                                            pid.update_parameters(|parameters| parameters.integral_max = value),
+                                            pid.parameters.integral_max = value,
                                     }
+                                    // TODO: really reset PID state
+                                    // after each parameter change?
                                     pid.reset();
                                     let _ = writeln!(socket, "PID parameter updated");
                                 }
