@@ -154,7 +154,7 @@ fn main() -> ! {
                     if ! socket.is_open() {
                         let _ = socket.listen(TCP_PORT);
                         session.reset();
-                    } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 128 {
+                    } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 1024 {
                         match socket.recv(|buf| session.feed(buf)) {
                             Ok(SessionOutput::Nothing) => {}
                             Ok(SessionOutput::Command(command)) => match command {
