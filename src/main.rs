@@ -99,10 +99,12 @@ fn main() -> ! {
     adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
     adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
     adc.calibrate_offset().unwrap();
+
     let mut dac0 = ad5680::Dac::new(pins.dac0_spi, pins.dac0_sync);
     dac0.set(0).unwrap();
     let mut dac1 = ad5680::Dac::new(pins.dac1_spi, pins.dac1_sync);
     dac1.set(0).unwrap();
+
     let mut pwm = pins.pwm;
     let mut shdn0 = pins.shdn0;
     let mut shdn1 = pins.shdn1;
@@ -125,13 +127,6 @@ fn main() -> ! {
     net::run(dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
             loop {
-                let instant = Instant::from_millis(i64::from(timer::now()));
-                cortex_m::interrupt::free(net::clear_pending);
-                server.poll(instant)
-                    .unwrap_or_else(|e| {
-                        warn!("poll: {:?}", e);
-                    });
-
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 // ADC input
                 adc.data_ready().unwrap().map(|channel| {
@@ -158,6 +153,13 @@ fn main() -> ! {
 
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
                 });
+
+                let instant = Instant::from_millis(i64::from(timer::now()));
+                cortex_m::interrupt::free(net::clear_pending);
+                server.poll(instant)
+                    .unwrap_or_else(|e| {
+                        warn!("poll: {:?}", e);
+                    });
 
                 // TCP protocol handling
                 server.for_each(|mut socket, session| {
@@ -418,12 +420,13 @@ fn main() -> ! {
                 // Update watchdog
                 wd.feed();
 
-                // cortex_m::interrupt::free(|cs| {
-                //     if !net::is_pending(cs) {
-                //         // Wait for interrupts
-                //         wfi();
-                //     }
-                // });
+                cortex_m::interrupt::free(|cs| {
+                    if !net::is_pending(cs) {
+                        // Wait for interrupts
+                        // (Ethernet or SysTick)
+                        wfi();
+                    }
+                });
             }
         });
     });
