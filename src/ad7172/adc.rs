@@ -42,7 +42,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
 
         let mut adc_mode = <regs::AdcMode as Register>::Data::empty();
         adc_mode.set_ref_en(true);
-        adc.write_reg(&regs::AdcMode, &mut adc_mode);
+        adc.write_reg(&regs::AdcMode, &mut adc_mode)?;
 
         Ok(adc)
     }
@@ -87,7 +87,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         })?;
         let mut offset = <regs::Offset as regs::Register>::Data::empty();
         offset.set_offset(0);
-        self.write_reg(&regs::Offset { index }, &mut offset);
+        self.write_reg(&regs::Offset { index }, &mut offset)?;
         self.update_reg(&regs::Channel { index }, |data| {
             data.set_setup(index);
             data.set_enabled(true);
@@ -154,30 +154,33 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
                 break;
             }
             // Retry
-            warn!("read_reg checksum error, retrying");
+            warn!("read_reg {:02X}: checksum error: {:?}!={:?}, retrying", reg.address(), checksum_expected, checksum_in);
         }
         Ok(reg_data)
     }
 
     fn write_reg<R: regs::Register>(&mut self, reg: &R, reg_data: &mut R::Data) -> Result<(), AdcError<SPI::Error>> {
-        let address = reg.address();
-        let mut checksum = Checksum::new(match self.checksum_mode {
-            ChecksumMode::Off => ChecksumMode::Off,
-            // write checksums are always crc
-            ChecksumMode::Xor => ChecksumMode::Crc,
-            ChecksumMode::Crc => ChecksumMode::Crc,
-        });
-        checksum.feed(&[address]);
-        checksum.feed(&reg_data);
-        let checksum_out = checksum.result();
         loop {
-            let checksum_in = self.transfer(address, reg_data.as_mut(), checksum_out)?;
-            if checksum_in.unwrap_or(0) == 0 {
-                break;
+            let address = reg.address();
+            let mut checksum = Checksum::new(match self.checksum_mode {
+                ChecksumMode::Off => ChecksumMode::Off,
+                // write checksums are always crc
+                ChecksumMode::Xor => ChecksumMode::Crc,
+                ChecksumMode::Crc => ChecksumMode::Crc,
+            });
+            checksum.feed(&[address]);
+            checksum.feed(&reg_data);
+            let checksum_out = checksum.result();
+
+            let mut data = reg_data.clone();
+            let checksum_in = self.transfer(address, data.as_mut(), checksum_out)?;
+
+            let readback_data = self.read_reg(reg)?;
+            if *readback_data == **reg_data {
+                return Ok(());
             }
-            warn!("write_reg: checksum={:02X}, retrying", checksum_in.unwrap_or(0));
+            warn!("write_reg {:02X}: readback error, {:?}!={:?}, retrying", address, &*readback_data, &**reg_data);
         }
-        Ok(())
     }
 
     fn update_reg<R, F, A>(&mut self, reg: &R, f: F) -> Result<A, AdcError<SPI::Error>>

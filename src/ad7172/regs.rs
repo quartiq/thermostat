@@ -8,7 +8,8 @@ pub trait Register {
     type Data: RegisterData;
     fn address(&self) -> u8;
 }
-pub trait RegisterData: Deref<Target=[u8]> + DerefMut {
+
+pub trait RegisterData: Clone + Deref<Target=[u8]> + DerefMut {
     fn empty() -> Self;
 }
 
@@ -26,6 +27,7 @@ macro_rules! def_reg {
         }
         mod $reg {
             /// Register contents
+            #[derive(Clone)]
             pub struct Data(pub [u8; $size]);
             impl super::RegisterData for Data {
                 /// Generate zeroed register contents
@@ -55,6 +57,7 @@ macro_rules! def_reg {
             }
         }
         mod $reg {
+            #[derive(Clone)]
             pub struct Data(pub [u8; $size]);
             impl super::RegisterData for Data {
                 fn empty() -> Self {
