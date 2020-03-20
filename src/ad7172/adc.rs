@@ -78,7 +78,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             data.set_refbuf_neg(true);
             data.set_ainbuf_pos(true);
             data.set_ainbuf_neg(true);
-            data.set_ref_sel(RefSource::Internal);
+            data.set_ref_sel(RefSource::External);
         })?;
         self.update_reg(&regs::FiltCon { index }, |data| {
             data.set_enh_filt_en(true);
