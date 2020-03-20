@@ -158,12 +158,12 @@ impl status::Data {
 
 def_reg!(AdcMode, adc_mode, 0x01, 2);
 impl adc_mode::Data {
-    reg_bits!(clockset, set_clocksel, 1, 2..3, "Clock source");
-    reg_bits!(mode, set_mode, 1, 4..6, "Operating mode");
-    reg_bits!(delay, set_delay, 0, 0..2, "Delay after channel switch");
-    reg_bit!(sing_cyc, set_sing_cyc, 1, 5, "Can only used with single channel");
-    reg_bit!(hide_delay, set_hide_delay, 1, 6, "Hide delay");
+    reg_bits!(delay, set_delay, 0, 0..=2, "Delay after channel switch");
+    reg_bit!(sing_cyc, set_sing_cyc, 0, 5, "Can only used with single channel");
+    reg_bit!(hide_delay, set_hide_delay, 0, 6, "Hide delay");
     reg_bit!(ref_en, set_ref_en, 0, 7, "Enable internal reference, output buffered 2.5 V to REFOUT");
+    reg_bits!(clockset, set_clocksel, 1, 2..=3, "Clock source");
+    reg_bits!(mode, set_mode, 1, 4..=6, Mode, "Operating mode");
 }
 
 def_reg!(IfMode, if_mode, 0x02, 2);

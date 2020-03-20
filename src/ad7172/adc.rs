@@ -2,11 +2,10 @@ use core::fmt;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::blocking::spi::Transfer;
 use log::{info, warn};
-use super::checksum::{ChecksumMode, Checksum};
-use super::AdcError;
 use super::{
     regs::{self, Register, RegisterData},
-    Input, RefSource, PostFilter, DigitalFilterOrder,
+    checksum::{ChecksumMode, Checksum},
+    AdcError, Mode, Input, RefSource, PostFilter, DigitalFilterOrder,
 };
 
 /// AD7172-2 implementation
@@ -42,6 +41,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
 
         let mut adc_mode = <regs::AdcMode as Register>::Data::empty();
         adc_mode.set_ref_en(true);
+        adc_mode.set_mode(Mode::ContinuousConversion);
         adc.write_reg(&regs::AdcMode, &mut adc_mode)?;
 
         Ok(adc)
@@ -85,15 +85,26 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             data.set_enh_filt(PostFilter::F16SPS);
             data.set_order(DigitalFilterOrder::Sinc5Sinc1);
         })?;
-        let mut offset = <regs::Offset as regs::Register>::Data::empty();
-        offset.set_offset(0);
-        self.write_reg(&regs::Offset { index }, &mut offset)?;
         self.update_reg(&regs::Channel { index }, |data| {
             data.set_setup(index);
             data.set_enabled(true);
             data.set_a_in_pos(in_pos);
             data.set_a_in_neg(in_neg);
         })?;
+        Ok(())
+    }
+
+    /// Calibrates offset registers
+    pub fn calibrate_offset(&mut self) -> Result<(), AdcError<SPI::Error>> {
+        self.update_reg(&regs::AdcMode, |adc_mode| {
+            adc_mode.set_mode(Mode::SystemOffsetCalibration);
+        })?;
+        while ! self.read_reg(&regs::Status)?.ready() {}
+
+        self.update_reg(&regs::AdcMode, |adc_mode| {
+            adc_mode.set_mode(Mode::ContinuousConversion);
+        })?;
+
         Ok(())
     }
 

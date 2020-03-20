@@ -33,6 +33,37 @@ impl<SPI> From<SPI> for AdcError<SPI> {
     }
 }
 
+
+
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum Mode {
+    ContinuousConversion = 0b000,
+    SingleConversion = 0b001,
+    Standby = 0b010,
+    PowerDown = 0b011,
+    InternalOffsetCalibration = 0b100,
+    Invalid,
+    SystemOffsetCalibration = 0b110,
+    SystemGainCalibration = 0b111,
+}
+
+impl From<u8> for Mode {
+    fn from(x: u8) -> Self {
+        use Mode::*;
+        match x {
+            0b000 => ContinuousConversion,
+            0b001 => SingleConversion,
+            0b010 => Standby,
+            0b011 => PowerDown,
+            0b100 => InternalOffsetCalibration,
+            0b110 => SystemOffsetCalibration,
+            0b111 => SystemGainCalibration,
+            _ => Invalid,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum Input {
