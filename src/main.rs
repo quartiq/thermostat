@@ -161,7 +161,7 @@ fn main() -> ! {
 
                 // TCP protocol handling
                 server.for_each(|mut socket, session| {
-                    if ! socket.is_open() {
+                    if ! socket.is_active() {
                         let _ = socket.listen(TCP_PORT);
                         session.reset();
                     } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 1024 {
