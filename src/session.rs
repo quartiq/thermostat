@@ -79,10 +79,6 @@ impl Session {
         self.report_pending = [false; CHANNELS];
     }
 
-    pub fn is_dirty(&self) -> bool {
-        self.reader.pos > 0
-    }
-
     pub fn reporting(&self) -> bool {
         self.reporting
     }

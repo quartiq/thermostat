@@ -152,9 +152,7 @@ fn main() -> ! {
                 server.for_each(|mut socket, session| {
                     if ! socket.is_open() {
                         let _ = socket.listen(TCP_PORT);
-                        if session.is_dirty() {
-                            session.reset();
-                        }
+                        session.reset();
                     } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 128 {
                         match socket.recv(|buf| session.feed(buf)) {
                             Ok(SessionOutput::Nothing) => {}
