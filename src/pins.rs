@@ -1,4 +1,5 @@
 use stm32f4xx_hal::{
+    hal::digital::v2::OutputPin,
     gpio::{
         AF5, Alternate,
         gpioa::*,
@@ -30,8 +31,10 @@ pub struct Pins {
     pub pwm: PwmPins,
     pub dac0_spi: Dac0Spi,
     pub dac0_sync: PE4<Output<PushPull>>,
+    pub shdn0: PE10<Output<PushPull>>,
     pub dac1_spi: Dac1Spi,
     pub dac1_sync: PF6<Output<PushPull>>,
+    pub shdn1: PE15<Output<PushPull>>,
 }
 
 impl Pins {
@@ -58,15 +61,6 @@ impl Pins {
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
-        let (dac0_spi, dac0_sync) = Self::setup_dac0(
-            clocks, spi4,
-            gpioe.pe2, gpioe.pe4, gpioe.pe6
-        );
-        let (dac1_spi, dac1_sync) = Self::setup_dac1(
-            clocks, spi5,
-            gpiof.pf7, gpiof.pf6, gpiof.pf9
-        );
-
         let pwm = PwmPins::setup(
             clocks, tim1, tim3,
             gpioc.pc6, gpioc.pc7,
@@ -74,11 +68,24 @@ impl Pins {
             gpioe.pe13, gpioe.pe14
         );
 
+        let (dac0_spi, dac0_sync) = Self::setup_dac0(
+            clocks, spi4,
+            gpioe.pe2, gpioe.pe4, gpioe.pe6
+        );
+        let mut shdn0 = gpioe.pe10.into_push_pull_output();
+        let _ = shdn0.set_low();
+        let (dac1_spi, dac1_sync) = Self::setup_dac1(
+            clocks, spi5,
+            gpiof.pf7, gpiof.pf6, gpiof.pf9
+        );
+        let mut shdn1 = gpioe.pe15.into_push_pull_output();
+        let _ = shdn1.set_low();
+
         Pins {
             adc_spi, adc_nss,
             pwm,
-            dac0_spi, dac0_sync,
-            dac1_spi, dac1_sync,
+            dac0_spi, dac0_sync, shdn0,
+            dac1_spi, dac1_sync, shdn1,
         }
     }
 

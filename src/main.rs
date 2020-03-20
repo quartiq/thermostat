@@ -16,6 +16,7 @@ use cortex_m_rt::entry;
 use stm32f4xx_hal::{
     hal::{
         self,
+        digital::v2::OutputPin,
         watchdog::{WatchdogEnable, Watchdog},
     },
     rcc::RccExt,
@@ -100,6 +101,8 @@ fn main() -> ! {
     let mut dac1 = ad5680::Dac::new(pins.dac1_spi, pins.dac1_sync);
     dac1.set(0).unwrap();
     let mut pwm = pins.pwm;
+    let mut shdn0 = pins.shdn0;
+    let mut shdn1 = pins.shdn1;
 
     timer::setup(cp.SYST, clocks);
 
@@ -137,10 +140,14 @@ fn main() -> ! {
                     if state.pid_enabled {
                         // Forward PID output to i_set DAC
                         match channel {
-                            0 =>
-                                dac0.set(state.dac_value).unwrap(),
-                            1 =>
-                                dac1.set(state.dac_value).unwrap(),
+                            0 => {
+                                dac0.set(state.dac_value).unwrap();
+                                shdn0.set_high().unwrap();
+                            }
+                            1 => {
+                                dac1.set(state.dac_value).unwrap();
+                                shdn1.set_high().unwrap();
+                            }
                             _ =>
                                 unreachable!(),
                         }
@@ -275,8 +282,14 @@ fn main() -> ! {
                                 Command::Pwm { channel, pin: PwmPin::ISet, duty } if duty <= ad5680::MAX_VALUE => {
                                     channel_states[channel].pid_enabled = false;
                                     match channel {
-                                        0 => dac0.set(duty).unwrap(),
-                                        1 => dac1.set(duty).unwrap(),
+                                        0 => {
+                                            dac0.set(duty).unwrap();
+                                            shdn0.set_high().unwrap();
+                                        }
+                                        1 => {
+                                            dac1.set(duty).unwrap();
+                                            shdn1.set_high().unwrap();
+                                        }
                                         _ => unreachable!(),
                                     }
                                     channel_states[channel].dac_value = duty;
