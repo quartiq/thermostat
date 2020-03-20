@@ -1,15 +1,16 @@
 use core::cell::RefCell;
+use core::ops::Deref;
 use cortex_m::interrupt::Mutex;
 use cortex_m_rt::exception;
 use stm32f4xx_hal::{
     rcc::Clocks,
-    time::{U32Ext, MilliSeconds},
+    time::U32Ext,
     timer::{Timer, Event as TimerEvent},
     stm32::SYST,
 };
 
 /// Rate in Hz
-const TIMER_RATE: u32 = 20;
+const TIMER_RATE: u32 = 500;
 /// Interval duration in milliseconds
 const TIMER_DELTA: u32 = 1000 / TIMER_RATE;
 /// Elapsed time in milliseconds
@@ -31,10 +32,10 @@ fn SysTick() {
 }
 
 /// Obtain current time in milliseconds
-pub fn now() -> MilliSeconds {
-    let ms = cortex_m::interrupt::free(|cs| {
+pub fn now() -> u32 {
+    cortex_m::interrupt::free(|cs| {
         *TIMER_MS.borrow(cs)
             .borrow()
-    });
-    ms.ms()
+            .deref()
+    })
 }

@@ -119,14 +119,14 @@ fn main() -> ! {
     net::run(dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
             loop {
-                let now = timer::now().0;
-                let instant = Instant::from_millis(i64::from(now));
+                let instant = Instant::from_millis(i64::from(timer::now()));
                 cortex_m::interrupt::free(net::clear_pending);
                 server.poll(instant)
                     .unwrap_or_else(|e| {
                         warn!("poll: {:?}", e);
                     });
 
+                let instant = Instant::from_millis(i64::from(timer::now()));
                 // ADC input
                 adc.data_ready().unwrap().map(|channel| {
                     let data = adc.read_data().unwrap();
