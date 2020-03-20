@@ -21,19 +21,6 @@ pub const SPI_CLOCK: MegaHertz = MegaHertz(2);
 
 pub const MAX_VALUE: u32 = 0xFF_FFFF;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum AdcError<SPI> {
-    SPI(SPI),
-    ChecksumMismatch(Option<u8>, Option<u8>),
-}
-
-impl<SPI> From<SPI> for AdcError<SPI> {
-    fn from(e: SPI) -> Self {
-        AdcError::SPI(e)
-    }
-}
-
-
 
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]

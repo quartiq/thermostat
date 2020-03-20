@@ -5,7 +5,7 @@ use log::{info, warn};
 use super::{
     regs::{self, Register, RegisterData},
     checksum::{ChecksumMode, Checksum},
-    AdcError, Mode, Input, RefSource, PostFilter, DigitalFilterOrder,
+    Mode, Input, RefSource, PostFilter, DigitalFilterOrder,
 };
 
 /// AD7172-2 implementation
@@ -18,7 +18,7 @@ pub struct Adc<SPI: Transfer<u8>, NSS: OutputPin> {
 }
 
 impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> {
-    pub fn new(spi: SPI, mut nss: NSS) -> Result<Self, AdcError<SPI::Error>> {
+    pub fn new(spi: SPI, mut nss: NSS) -> Result<Self, SPI::Error> {
         let _ = nss.set_high();
         let mut adc = Adc {
             spi, nss,
@@ -48,12 +48,12 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     /// `0x00DX` for AD7172-2
-    pub fn identify(&mut self) -> Result<u16, AdcError<SPI::Error>> {
+    pub fn identify(&mut self) -> Result<u16, SPI::Error> {
         self.read_reg(&regs::Id)
             .map(|id| id.id())
     }
 
-    pub fn set_checksum_mode(&mut self, mode: ChecksumMode) -> Result<(), AdcError<SPI::Error>> {
+    pub fn set_checksum_mode(&mut self, mode: ChecksumMode) -> Result<(), SPI::Error> {
         // Cannot use update_reg() here because checksum_mode is
         // updated between read_reg() and write_reg().
         let mut ifmode = self.read_reg(&regs::IfMode)?;
@@ -63,7 +63,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    pub fn set_sync_enable(&mut self, enable: bool) -> Result<(), AdcError<SPI::Error>> {
+    pub fn set_sync_enable(&mut self, enable: bool) -> Result<(), SPI::Error> {
         self.update_reg(&regs::GpioCon, |data| {
             data.set_sync_en(enable);
         })
@@ -71,7 +71,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
 
     pub fn setup_channel(
         &mut self, index: u8, in_pos: Input, in_neg: Input
-    ) -> Result<(), AdcError<SPI::Error>> {
+    ) -> Result<(), SPI::Error> {
         self.update_reg(&regs::SetupCon { index }, |data| {
             data.set_bipolar(false);
             data.set_refbuf_pos(true);
@@ -95,7 +95,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     /// Calibrates offset registers
-    pub fn calibrate_offset(&mut self) -> Result<(), AdcError<SPI::Error>> {
+    pub fn calibrate_offset(&mut self) -> Result<(), SPI::Error> {
         self.update_reg(&regs::AdcMode, |adc_mode| {
             adc_mode.set_mode(Mode::SystemOffsetCalibration);
         })?;
@@ -108,7 +108,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    pub fn get_postfilter(&mut self, index: u8) -> Result<Option<PostFilter>, AdcError<SPI::Error>> {
+    pub fn get_postfilter(&mut self, index: u8) -> Result<Option<PostFilter>, SPI::Error> {
         self.read_reg(&regs::FiltCon { index })
             .map(|data| {
                 if data.enh_filt_en() {
@@ -119,7 +119,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             })
     }
 
-    pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) -> Result<(), AdcError<SPI::Error>> {
+    pub fn set_postfilter(&mut self, index: u8, filter: Option<PostFilter>) -> Result<(), SPI::Error> {
         self.update_reg(&regs::FiltCon { index }, |data| {
             match filter {
                 None => data.set_enh_filt_en(false),
@@ -132,7 +132,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     /// Returns the channel the data is from
-    pub fn data_ready(&mut self) -> Result<Option<u8>, AdcError<SPI::Error>> {
+    pub fn data_ready(&mut self) -> Result<Option<u8>, SPI::Error> {
         self.read_reg(&regs::Status)
             .map(|status| {
                 if status.ready() {
@@ -144,12 +144,12 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
     }
 
     /// Get data
-    pub fn read_data(&mut self) -> Result<u32, AdcError<SPI::Error>> {
+    pub fn read_data(&mut self) -> Result<u32, SPI::Error> {
         self.read_reg(&regs::Data)
             .map(|data| data.data())
     }
 
-    fn read_reg<R: regs::Register>(&mut self, reg: &R) -> Result<R::Data, AdcError<SPI::Error>> {
+    fn read_reg<R: regs::Register>(&mut self, reg: &R) -> Result<R::Data, SPI::Error> {
         let mut reg_data = R::Data::empty();
         let address = 0x40 | reg.address();
         let mut checksum = Checksum::new(self.checksum_mode);
@@ -170,7 +170,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(reg_data)
     }
 
-    fn write_reg<R: regs::Register>(&mut self, reg: &R, reg_data: &mut R::Data) -> Result<(), AdcError<SPI::Error>> {
+    fn write_reg<R: regs::Register>(&mut self, reg: &R, reg_data: &mut R::Data) -> Result<(), SPI::Error> {
         loop {
             let address = reg.address();
             let mut checksum = Checksum::new(match self.checksum_mode {
@@ -194,7 +194,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         }
     }
 
-    fn update_reg<R, F, A>(&mut self, reg: &R, f: F) -> Result<A, AdcError<SPI::Error>>
+    fn update_reg<R, F, A>(&mut self, reg: &R, f: F) -> Result<A, SPI::Error>
     where
         R: regs::Register,
         F: FnOnce(&mut R::Data) -> A,
