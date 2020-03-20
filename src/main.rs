@@ -93,6 +93,9 @@ fn main() -> ! {
     );
 
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
+    // Feature not used
+    adc.set_sync_enable(false).unwrap();
+    // Setup channels
     adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
     adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
     adc.calibrate_offset().unwrap();
