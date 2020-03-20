@@ -1,7 +1,9 @@
 use core::fmt;
-use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::blocking::spi::Transfer;
 use log::{info, warn};
+use stm32f4xx_hal::hal::{
+    blocking::spi::Transfer,
+    digital::v2::OutputPin,
+};
 use super::{
     regs::{self, Register, RegisterData},
     checksum::{ChecksumMode, Checksum},

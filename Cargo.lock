@@ -355,7 +355,6 @@ dependencies = [
  "cortex-m",
  "cortex-m-log",
  "cortex-m-rt",
- "embedded-hal",
  "hash2hwaddr",
  "log",
  "nom",

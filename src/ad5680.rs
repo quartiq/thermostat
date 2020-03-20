@@ -1,8 +1,8 @@
-use embedded_hal::{
-    blocking::spi::Transfer,
-    digital::v2::OutputPin,
-};
 use stm32f4xx_hal::{
+    hal::{
+        blocking::spi::Transfer,
+        digital::v2::OutputPin,
+    },
     time::MegaHertz,
     spi,
 };

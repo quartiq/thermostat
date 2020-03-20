@@ -21,7 +21,6 @@ bare-metal = "0.2"
 cortex-m = "0.6"
 cortex-m-rt = { version = "0.6", features = ["device"] }
 cortex-m-log = { version = "0.6", features = ["log-integration"] }
-embedded-hal = "0.2"
 # TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/125
 stm32f4xx-hal = { git = "https://github.com/thalesfragoso/stm32f4xx-hal", branch = "pwm-impl", features = ["rt", "stm32f427"] }
 stm32-eth = { version = "0.1.2", features = ["smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
