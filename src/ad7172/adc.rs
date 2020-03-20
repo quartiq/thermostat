@@ -186,8 +186,9 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             let checksum_out = checksum.result();
 
             let mut data = reg_data.clone();
-            let checksum_in = self.transfer(address, data.as_mut(), checksum_out)?;
+            self.transfer(address, data.as_mut(), checksum_out)?;
 
+            // Verification
             let readback_data = self.read_reg(reg)?;
             if *readback_data == **reg_data {
                 return Ok(());
