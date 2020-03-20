@@ -390,7 +390,7 @@ fn main() -> ! {
                         while let Some(channel) = session.is_report_pending() {
                             let state = &mut channel_states[usize::from(channel)];
                             let _ = writeln!(
-                                socket, "t={} raw{}=0x{:04X}",
+                                socket, "t={} raw{}=0x{:06X}",
                                 state.adc_time, channel, state.adc_data.unwrap_or(0)
                             ).map(|_| {
                                 session.mark_report_sent(channel);
