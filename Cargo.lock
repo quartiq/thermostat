@@ -298,6 +298,7 @@ checksum = "dba1a27d3efae4351c8051072d619e3ade2820635c3958d826bfea39d59b54c8"
 [[package]]
 name = "stm32-eth"
 version = "0.1.2"
+source = "git+https://github.com/stm32-rs/stm32-eth.git#2c5dce379b85a31fb0b9c58a028b6454be1727aa"
 dependencies = [
  "aligned",
  "log",
@@ -336,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.16"
+version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "123bd9499cfb380418d509322d7a6d52e5315f064fe4b3ad18a53d6b92c07859"
+checksum = "0df0eb663f387145cab623dea85b09c2c5b4b0aef44e945d928e682fce71bb03"
 dependencies = [
  "proc-macro2",
  "quote",
