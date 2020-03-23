@@ -1,5 +1,9 @@
 # Thermostat v2 prototype firmware
 
+- [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
+- [x] [Download latest firmware build](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download-by-type/file/binary-dist)
+
+
 ## Building
 
 ### Debian-based systems (tested on Ubuntu 19.10)
@@ -15,16 +19,19 @@ rustup default nightly
 cargo build --release
 ```
 
-The built ELF file will be at `target/thumbv7em-none-eabihf/release/thermostat`
+The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`
 
 
 ## Network
 
-### Setup
+### Connecting
 
 Ethernet, IP: 192.168.1.26/24
 
 Use netcat to connect to port 23/tcp (telnet)
+```sh
+nc -vv 192.168.1.26 23
+```
 
 telnet clients send binary data after connect. Enter \n once to
 invalidate the first line of input.
