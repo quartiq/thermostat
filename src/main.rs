@@ -204,12 +204,12 @@ fn main() -> ! {
                                         show_pid_parameter!(kp);
                                         show_pid_parameter!(ki);
                                         show_pid_parameter!(kd);
-                                        show_pid_parameter!(output_min);
-                                        show_pid_parameter!(output_max);
                                         show_pid_parameter!(integral_min);
                                         show_pid_parameter!(integral_max);
+                                        show_pid_parameter!(output_min);
+                                        show_pid_parameter!(output_max);
                                         if let Some(last_output) = pid.last_output {
-                                            let _ = writeln!(socket, "- output={:.4}", last_output);
+                                            let _ = writeln!(socket, "- last_output={:.4}", last_output);
                                         }
                                         let _ = writeln!(socket, "");
                                     }
