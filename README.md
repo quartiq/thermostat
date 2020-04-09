@@ -1,4 +1,4 @@
-# Thermostat v2 prototype firmware
+# Firmware for the Sinara 8451 Thermostat
 
 - [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
 - [x] [Download latest firmware build](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download-by-type/file/binary-dist)
