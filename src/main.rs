@@ -89,7 +89,8 @@ fn main() -> ! {
     let pins = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
-        dp.SPI2, dp.SPI4, dp.SPI5
+        dp.SPI2, dp.SPI4, dp.SPI5,
+        dp.ADC1, dp.ADC2,
     );
 
     let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
@@ -187,6 +188,11 @@ fn main() -> ! {
                                             );
                                         }
                                     }
+
+                                    let ref0 = pins.ref0_adc.convert(
+                                        &pins.ref0_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                                    );
+                                    let _ = writeln!(socket, "ref0={}", ref0);
                                 }
                                 Command::Show(ShowCommand::Pid) => {
                                     for (channel, state) in channel_states.iter().enumerate() {

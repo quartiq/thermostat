@@ -1,7 +1,8 @@
 use stm32f4xx_hal::{
+    adc::Adc,
     hal::digital::v2::OutputPin,
     gpio::{
-        AF5, Alternate,
+        AF5, Alternate, Analog,
         gpioa::*,
         gpiob::*,
         gpioc::*,
@@ -15,9 +16,10 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
-    stm32::{GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    stm32::{ADC1, ADC2, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
     time::U32Ext,
 };
+use crate::channel::{Channel0, Channel1};
 
 
 /// SPI peripheral used for communication with the ADC
@@ -32,19 +34,23 @@ pub struct Pins {
     pub dac0_spi: Dac0Spi,
     pub dac0_sync: PE4<Output<PushPull>>,
     pub shdn0: PE10<Output<PushPull>>,
+    pub ref0_adc: Adc<ADC1>,
+    pub ref0_pin: PA0<Analog>,
     pub dac1_spi: Dac1Spi,
     pub dac1_sync: PF6<Output<PushPull>>,
     pub shdn1: PE15<Output<PushPull>>,
+    pub ref1_adc: Adc<ADC2>,
+    pub ref1_pin: PA3<Analog>,
 }
 
 impl Pins {
     /// Setup GPIO pins and configure MCU peripherals
     pub fn setup(
         clocks: Clocks,
-        tim1: TIM1,
-        tim3: TIM3,
+        tim1: TIM1, tim3: TIM3,
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
-        spi2: SPI2, spi4: SPI4, spi5: SPI5
+        spi2: SPI2, spi4: SPI4, spi5: SPI5,
+        adc1: ADC1, adc2: ADC2,
     ) -> Self {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
@@ -74,18 +80,25 @@ impl Pins {
         );
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
         let _ = shdn0.set_low();
+        let mut ref0_adc = Adc::adc1(adc1, true, Default::default());
+        ref0_adc.enable();
+        let ref0_pin = gpioa.pa0.into_analog();
+
         let (dac1_spi, dac1_sync) = Self::setup_dac1(
             clocks, spi5,
             gpiof.pf7, gpiof.pf6, gpiof.pf9
         );
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
+        let mut ref1_adc = Adc::adc2(adc2, true, Default::default());
+        let ref1_pin = gpioa.pa3.into_analog();
+        ref1_adc.enable();
 
         Pins {
             adc_spi, adc_nss,
             pwm,
-            dac0_spi, dac0_sync, shdn0,
-            dac1_spi, dac1_sync, shdn1,
+            dac0_spi, dac0_sync, shdn0, ref0_adc, ref0_pin,
+            dac1_spi, dac1_sync, shdn1, ref1_adc, ref1_pin,
         }
     }
 
