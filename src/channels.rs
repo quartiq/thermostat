@@ -1,8 +1,13 @@
+use stm32f4xx_hal::hal::digital::v2::OutputPin;
+use smoltcp::time::Instant;
 use crate::{
     ad7172,
     channel::{Channel, Channel0, Channel1},
+    channel_state::ChannelState,
     pins,
 };
+
+pub const CHANNELS: usize = 2;
 
 pub struct Channels {
     pub channel0: Channel<Channel0>,
@@ -26,5 +31,48 @@ impl Channels {
         adc.calibrate_offset().unwrap();
 
         Channels { channel0, channel1, adc, pwm }
+    }
+
+    pub fn channel_state<I: Into<usize>>(&mut self, channel: I) -> &mut ChannelState {
+        match channel.into() {
+            0 => &mut self.channel0.state,
+            1 => &mut self.channel1.state,
+            _ => unreachable!(),
+        }
+    }
+
+    /// ADC input + PID processing
+    pub fn poll_adc(&mut self, instant: Instant) -> Option<u8> {
+        self.adc.data_ready().unwrap().map(|channel| {
+            let data = self.adc.read_data().unwrap();
+
+            let dac_value = {
+                let state = self.channel_state(channel);
+                state.update_pid(instant, data);
+
+                if state.pid_engaged {
+                    Some(state.dac_value)
+                } else {
+                    None
+                }
+            };
+            if let Some(dac_value) = dac_value {
+                // Forward PID output to i_set DAC
+                match channel {
+                    0 => {
+                        self.channel0.dac.set(dac_value).unwrap();
+                        self.channel0.shdn.set_high().unwrap();
+                    }
+                    1 => {
+                        self.channel1.dac.set(dac_value).unwrap();
+                        self.channel1.shdn.set_high().unwrap();
+                    }
+                    _ =>
+                        unreachable!(),
+                }
+            }
+
+            channel
+        })
     }
 }

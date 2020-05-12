@@ -1,4 +1,5 @@
 use super::command_parser::{Command, Error as ParserError};
+use super::channels::CHANNELS;
 
 const MAX_LINE_LEN: usize = 64;
 
@@ -49,8 +50,6 @@ impl From<Result<Command, ParserError>> for SessionOutput {
             .unwrap_or_else(SessionOutput::Error)
     }
 }
-
-pub const CHANNELS: usize = 2;
 
 pub struct Session {
     reader: LineReader,

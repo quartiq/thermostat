@@ -6,7 +6,7 @@ pub struct ChannelState {
     pub adc_data: Option<u32>,
     pub adc_time: Instant,
     pub dac_value: u32,
-    pub pid_enabled: bool,
+    pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
 }
@@ -17,7 +17,7 @@ impl Default for ChannelState {
             adc_data: None,
             adc_time: Instant::from_secs(0),
             dac_value: 0,
-            pid_enabled: false,
+            pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),
         }
@@ -26,7 +26,7 @@ impl Default for ChannelState {
 
 impl ChannelState {
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_adc(&mut self, now: Instant, adc_data: u32) {
+    pub fn update_pid(&mut self, now: Instant, adc_data: u32) {
         self.adc_data = Some(adc_data);
         self.adc_time = now;
 

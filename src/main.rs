@@ -39,17 +39,16 @@ mod net;
 mod server;
 use server::Server;
 mod session;
-use session::{CHANNELS, Session, SessionOutput};
+use session::{Session, SessionOutput};
 mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod pid;
 mod steinhart_hart;
 mod channels;
-use channels::Channels;
+use channels::{CHANNELS, Channels};
 mod channel;
 mod channel_state;
-use channel_state::ChannelState;
 
 
 const HSE: MegaHertz = MegaHertz(8);
@@ -96,9 +95,6 @@ fn main() -> ! {
         dp.ADC1, dp.ADC2,
     );
     let mut channels = Channels::new(pins);
-    let mut channel_states: [ChannelState; CHANNELS] = [
-        ChannelState::default(), ChannelState::default()
-    ];
     timer::setup(cp.SYST, clocks);
 
     #[cfg(not(feature = "generate-hwaddr"))]
@@ -114,31 +110,10 @@ fn main() -> ! {
         Server::<Session>::run(iface, |server| {
             loop {
                 let instant = Instant::from_millis(i64::from(timer::now()));
-                // ADC input
-                channels.adc.data_ready().unwrap().map(|channel| {
-                    let data = channels.adc.read_data().unwrap();
-
-                    let state = &mut channel_states[usize::from(channel)];
-                    state.update_adc(instant, data);
-
-                    if state.pid_enabled {
-                        // Forward PID output to i_set DAC
-                        match channel {
-                            0 => {
-                                channels.channel0.dac.set(state.dac_value).unwrap();
-                                channels.channel0.shdn.set_high().unwrap();
-                            }
-                            1 => {
-                                channels.channel1.dac.set(state.dac_value).unwrap();
-                                channels.channel1.shdn.set_high().unwrap();
-                            }
-                            _ =>
-                                unreachable!(),
-                        }
-                    }
-
+                let updated_channel = channels.poll_adc(instant);
+                if let Some(channel) = updated_channel {
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
-                });
+                }
 
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 cortex_m::interrupt::free(net::clear_pending);
@@ -165,7 +140,8 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "report={}", if session.reporting() { "on" } else { "off" });
                                 }
                                 Command::Show(ShowCommand::Input) => {
-                                    for (channel, state) in channel_states.iter().enumerate() {
+                                    for channel in 0..CHANNELS {
+                                        let state = channels.channel_state(channel);
                                         if let Some(adc_data) = state.adc_data {
                                             let _ = writeln!(
                                                 socket, "t={} raw{}=0x{:06X}",
@@ -180,7 +156,8 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "ref0={}", ref0);
                                 }
                                 Command::Show(ShowCommand::Pid) => {
-                                    for (channel, state) in channel_states.iter().enumerate() {
+                                    for channel in 0..CHANNELS {
+                                        let state = channels.channel_state(channel);
                                         let _ = writeln!(socket, "PID settings for channel {}", channel);
                                         let pid = &state.pid;
                                         let _ = writeln!(socket, "- target={:.4}", pid.target);
@@ -206,11 +183,12 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::Show(ShowCommand::Pwm) => {
-                                    for (channel, state) in channel_states.iter().enumerate() {
+                                    for channel in 0..CHANNELS {
+                                        let state = channels.channel_state(channel);
                                         let _ = writeln!(
                                             socket, "channel {}: PID={}",
                                             channel,
-                                            if state.pid_enabled { "engaged" } else { "disengaged" }
+                                            if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
                                         let _ = writeln!(socket, "- i_set={}/{}", state.dac_value, ad5680::MAX_VALUE);
                                         fn show_pwm_channel<S, P>(mut socket: S, name: &str, pin: &P)
@@ -241,7 +219,8 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::Show(ShowCommand::SteinhartHart) => {
-                                    for (channel, state) in channel_states.iter().enumerate() {
+                                    for channel in 0..CHANNELS {
+                                        let state = channels.channel_state(channel);
                                         let _ = writeln!(
                                             socket, "channel {}: Steinhart-Hart equation parameters",
                                             channel,
@@ -253,7 +232,7 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::Show(ShowCommand::PostFilter) => {
-                                    for (channel, _) in channel_states.iter().enumerate() {
+                                    for channel in 0..CHANNELS {
                                         match channels.adc.get_postfilter(channel as u8).unwrap() {
                                             Some(filter) => {
                                                 let _ = writeln!(
@@ -271,12 +250,12 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::PwmPid { channel } => {
-                                    channel_states[channel].pid_enabled = true;
+                                    channels.channel_state(channel).pid_engaged = true;
                                     let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
                                     );
                                 }
                                 Command::Pwm { channel, pin: PwmPin::ISet, duty } if duty <= ad5680::MAX_VALUE => {
-                                    channel_states[channel].pid_enabled = false;
+                                    channels.channel_state(channel).pid_engaged = false;
                                     match channel {
                                         0 => {
                                             channels.channel0.dac.set(duty).unwrap();
@@ -288,7 +267,7 @@ fn main() -> ! {
                                         }
                                         _ => unreachable!(),
                                     }
-                                    channel_states[channel].dac_value = duty;
+                                    channels.channel_state(channel).dac_value = duty;
                                     let _ = writeln!(
                                         socket, "channel {}: PWM duty cycle manually set to {}/{}",
                                         channel, duty, ad5680::MAX_VALUE
@@ -335,7 +314,7 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "error: PWM duty range must fit 16 bits");
                                 }
                                 Command::Pid { channel, parameter, value } => {
-                                    let pid = &mut channel_states[channel].pid;
+                                    let pid = &mut channels.channel_state(channel).pid;
                                     use command_parser::PidParameter::*;
                                     match parameter {
                                         Target =>
@@ -361,7 +340,7 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "PID parameter updated");
                                 }
                                 Command::SteinhartHart { channel, parameter, value } => {
-                                    let sh = &mut channel_states[channel].sh;
+                                    let sh = &mut channels.channel_state(channel).sh;
                                     use command_parser::ShParameter::*;
                                     match parameter {
                                         T0 => sh.t0 = value,
@@ -397,7 +376,7 @@ fn main() -> ! {
                         }
                     } else if socket.can_send() && socket.send_capacity() - socket.send_queue() > 256 {
                         while let Some(channel) = session.is_report_pending() {
-                            let state = &mut channel_states[usize::from(channel)];
+                            let state = &mut channels.channel_state(usize::from(channel));
                             let _ = writeln!(
                                 socket, "t={} raw{}=0x{:06X}",
                                 state.adc_time, channel, state.adc_data.unwrap_or(0)
