@@ -141,19 +141,16 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
-                                        let state = channels.channel_state(channel);
-                                        if let Some(adc_data) = state.adc_data {
+                                        if let Some(adc_data) = channels.channel_state(channel).adc_data {
+                                            let ref_adc_data = channels.read_ref_adc(channel);
+                                            let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X}",
-                                                state.adc_time, channel, adc_data
+                                                socket, "t={} raw{}=0x{:06X} ref_adc={}",
+                                                state.adc_time, channel, adc_data,
+                                                ref_adc_data
                                             );
                                         }
                                     }
-
-                                    let ref0 = channels.channel0.ref_adc.convert(
-                                        &channels.channel0.ref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-                                    );
-                                    let _ = writeln!(socket, "ref0={}", ref0);
                                 }
                                 Command::Show(ShowCommand::Pid) => {
                                     for channel in 0..CHANNELS {

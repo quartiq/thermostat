@@ -75,4 +75,18 @@ impl Channels {
             channel
         })
     }
+
+    pub fn read_ref_adc(&mut self, channel: usize) -> u16 {
+        match channel {
+            0 => self.channel0.ref_adc.convert(
+                &self.channel0.ref_pin,
+                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+            ),
+            1 => self.channel1.ref_adc.convert(
+                &self.channel1.ref_pin,
+                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+            ),
+            _ => unreachable!(),
+        }
+    }
 }
