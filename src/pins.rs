@@ -1,6 +1,6 @@
 use stm32f4xx_hal::{
     adc::Adc,
-    hal::digital::v2::OutputPin,
+    hal::{blocking::spi::Transfer, digital::v2::OutputPin},
     gpio::{
         AF5, Alternate, Analog,
         gpioa::*,
@@ -22,25 +22,51 @@ use stm32f4xx_hal::{
 use crate::channel::{Channel0, Channel1};
 
 
+pub trait ChannelPins {
+    type DacSpi: Transfer<u8>;
+    type DacSync: OutputPin;
+    type Shdn: OutputPin;
+    type RefAdc;
+    type RefPin;
+}
+
+impl ChannelPins for Channel0 {
+    type DacSpi = Dac0Spi;
+    type DacSync = PE4<Output<PushPull>>;
+    type Shdn = PE10<Output<PushPull>>;
+    type RefAdc = Adc<ADC1>;
+    type RefPin = PA0<Analog>;
+}
+
+impl ChannelPins for Channel1 {
+    type DacSpi = Dac1Spi;
+    type DacSync = PF6<Output<PushPull>>;
+    type Shdn = PE15<Output<PushPull>>;
+    type RefAdc = Adc<ADC2>;
+    type RefPin = PA3<Analog>;
+}
+
 /// SPI peripheral used for communication with the ADC
-type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Alternate<AF5>>)>;
+pub type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Alternate<AF5>>)>;
+pub type AdcNss = PB12<Output<PushPull>>;
 type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
 
+
+pub struct ChannelPinSet<C: ChannelPins> {
+    pub dac_spi: C::DacSpi,
+    pub dac_sync: C::DacSync,
+    pub shdn: C::Shdn,
+    pub ref_adc: C::RefAdc,
+    pub ref_pin: C::RefPin,
+}
+
 pub struct Pins {
     pub adc_spi: AdcSpi,
-    pub adc_nss: PB12<Output<PushPull>>,
+    pub adc_nss: AdcNss,
     pub pwm: PwmPins,
-    pub dac0_spi: Dac0Spi,
-    pub dac0_sync: PE4<Output<PushPull>>,
-    pub shdn0: PE10<Output<PushPull>>,
-    pub ref0_adc: Adc<ADC1>,
-    pub ref0_pin: PA0<Analog>,
-    pub dac1_spi: Dac1Spi,
-    pub dac1_sync: PF6<Output<PushPull>>,
-    pub shdn1: PE15<Output<PushPull>>,
-    pub ref1_adc: Adc<ADC2>,
-    pub ref1_pin: PA3<Analog>,
+    pub channel0: ChannelPinSet<Channel0>,
+    pub channel1: ChannelPinSet<Channel1>,
 }
 
 impl Pins {
@@ -83,6 +109,13 @@ impl Pins {
         let mut ref0_adc = Adc::adc1(adc1, true, Default::default());
         ref0_adc.enable();
         let ref0_pin = gpioa.pa0.into_analog();
+        let channel0 = ChannelPinSet {
+            dac_spi: dac0_spi,
+            dac_sync: dac0_sync,
+            shdn: shdn0,
+            ref_adc: ref0_adc,
+            ref_pin: ref0_pin,
+        };
 
         let (dac1_spi, dac1_sync) = Self::setup_dac1(
             clocks, spi5,
@@ -91,14 +124,21 @@ impl Pins {
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
         let mut ref1_adc = Adc::adc2(adc2, true, Default::default());
-        let ref1_pin = gpioa.pa3.into_analog();
         ref1_adc.enable();
+        let ref1_pin = gpioa.pa3.into_analog();
+        let channel1 = ChannelPinSet {
+            dac_spi: dac1_spi,
+            dac_sync: dac1_sync,
+            shdn: shdn1,
+            ref_adc: ref1_adc,
+            ref_pin: ref1_pin,
+        };
 
         Pins {
             adc_spi, adc_nss,
             pwm,
-            dac0_spi, dac0_sync, shdn0, ref0_adc, ref0_pin,
-            dac1_spi, dac1_sync, shdn1, ref1_adc, ref1_pin,
+            channel0,
+            channel1,
         }
     }
 

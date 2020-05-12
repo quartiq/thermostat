@@ -45,6 +45,9 @@ use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod pid;
 mod steinhart_hart;
+mod channels;
+use channels::Channels;
+mod channel;
 mod channel_state;
 use channel_state::ChannelState;
 
@@ -92,24 +95,10 @@ fn main() -> ! {
         dp.SPI2, dp.SPI4, dp.SPI5,
         dp.ADC1, dp.ADC2,
     );
-
-    let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
-    // Feature not used
-    adc.set_sync_enable(false).unwrap();
-    // Setup channels
-    adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
-    adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
-    adc.calibrate_offset().unwrap();
-
-    let mut dac0 = ad5680::Dac::new(pins.dac0_spi, pins.dac0_sync);
-    dac0.set(0).unwrap();
-    let mut dac1 = ad5680::Dac::new(pins.dac1_spi, pins.dac1_sync);
-    dac1.set(0).unwrap();
-
-    let mut pwm = pins.pwm;
-    let mut shdn0 = pins.shdn0;
-    let mut shdn1 = pins.shdn1;
-
+    let mut channels = Channels::new(pins);
+    let mut channel_states: [ChannelState; CHANNELS] = [
+        ChannelState::default(), ChannelState::default()
+    ];
     timer::setup(cp.SYST, clocks);
 
     #[cfg(not(feature = "generate-hwaddr"))]
@@ -121,17 +110,13 @@ fn main() -> ! {
     };
     info!("Net hwaddr: {}", hwaddr);
 
-    let mut channel_states: [ChannelState; CHANNELS] = [
-        ChannelState::default(), ChannelState::default()
-    ];
-
     net::run(dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
             loop {
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 // ADC input
-                adc.data_ready().unwrap().map(|channel| {
-                    let data = adc.read_data().unwrap();
+                channels.adc.data_ready().unwrap().map(|channel| {
+                    let data = channels.adc.read_data().unwrap();
 
                     let state = &mut channel_states[usize::from(channel)];
                     state.update_adc(instant, data);
@@ -140,12 +125,12 @@ fn main() -> ! {
                         // Forward PID output to i_set DAC
                         match channel {
                             0 => {
-                                dac0.set(state.dac_value).unwrap();
-                                shdn0.set_high().unwrap();
+                                channels.channel0.dac.set(state.dac_value).unwrap();
+                                channels.channel0.shdn.set_high().unwrap();
                             }
                             1 => {
-                                dac1.set(state.dac_value).unwrap();
-                                shdn1.set_high().unwrap();
+                                channels.channel1.dac.set(state.dac_value).unwrap();
+                                channels.channel1.shdn.set_high().unwrap();
                             }
                             _ =>
                                 unreachable!(),
@@ -189,8 +174,8 @@ fn main() -> ! {
                                         }
                                     }
 
-                                    let ref0 = pins.ref0_adc.convert(
-                                        &pins.ref0_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                                    let ref0 = channels.channel0.ref_adc.convert(
+                                        &channels.channel0.ref_pin, stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                                     );
                                     let _ = writeln!(socket, "ref0={}", ref0);
                                 }
@@ -241,14 +226,14 @@ fn main() -> ! {
                                         }
                                         match channel {
                                             0 => {
-                                                show_pwm_channel(socket.deref_mut(), "max_v", &pwm.max_v0);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &pwm.max_i_pos0);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &pwm.max_i_neg0);
+                                                show_pwm_channel(socket.deref_mut(), "max_v", &channels.pwm.max_v0);
+                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &channels.pwm.max_i_pos0);
+                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &channels.pwm.max_i_neg0);
                                             }
                                             1 => {
-                                                show_pwm_channel(socket.deref_mut(), "max_v", &pwm.max_v1);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &pwm.max_i_pos1);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &pwm.max_i_neg1);
+                                                show_pwm_channel(socket.deref_mut(), "max_v", &channels.pwm.max_v1);
+                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &channels.pwm.max_i_pos1);
+                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &channels.pwm.max_i_neg1);
                                             }
                                             _ => unreachable!(),
                                         }
@@ -269,7 +254,7 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::PostFilter) => {
                                     for (channel, _) in channel_states.iter().enumerate() {
-                                        match adc.get_postfilter(channel as u8).unwrap() {
+                                        match channels.adc.get_postfilter(channel as u8).unwrap() {
                                             Some(filter) => {
                                                 let _ = writeln!(
                                                     socket, "channel {}: postfilter={:.2} SPS",
@@ -294,12 +279,12 @@ fn main() -> ! {
                                     channel_states[channel].pid_enabled = false;
                                     match channel {
                                         0 => {
-                                            dac0.set(duty).unwrap();
-                                            shdn0.set_high().unwrap();
+                                            channels.channel0.dac.set(duty).unwrap();
+                                            channels.channel0.shdn.set_high().unwrap();
                                         }
                                         1 => {
-                                            dac1.set(duty).unwrap();
-                                            shdn1.set_high().unwrap();
+                                            channels.channel1.dac.set(duty).unwrap();
+                                            channels.channel1.shdn.set_high().unwrap();
                                         }
                                         _ => unreachable!(),
                                     }
@@ -327,17 +312,17 @@ fn main() -> ! {
                                             // Handled above
                                             unreachable!(),
                                         (0, PwmPin::MaxIPos) =>
-                                            set_pwm_channel(&mut pwm.max_i_pos0, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_i_pos0, duty),
                                         (0, PwmPin::MaxINeg) =>
-                                            set_pwm_channel(&mut pwm.max_i_neg0, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_i_neg0, duty),
                                         (0, PwmPin::MaxV) =>
-                                            set_pwm_channel(&mut pwm.max_v0, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_v0, duty),
                                         (1, PwmPin::MaxIPos) =>
-                                            set_pwm_channel(&mut pwm.max_i_pos1, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_i_pos1, duty),
                                         (1, PwmPin::MaxINeg) =>
-                                            set_pwm_channel(&mut pwm.max_i_neg1, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_i_neg1, duty),
                                         (1, PwmPin::MaxV) =>
-                                            set_pwm_channel(&mut pwm.max_v1, duty),
+                                            set_pwm_channel(&mut channels.pwm.max_v1, duty),
                                         _ =>
                                             unreachable!(),
                                     };
@@ -389,7 +374,7 @@ fn main() -> ! {
                                     let filter = ad7172::PostFilter::closest(rate);
                                     match filter {
                                         Some(filter) => {
-                                            adc.set_postfilter(channel as u8, Some(filter)).unwrap();
+                                            channels.adc.set_postfilter(channel as u8, Some(filter)).unwrap();
                                             let _ = writeln!(
                                                 socket, "channel {}: postfilter set to {:.2} SPS",
                                                 channel, filter.output_rate().unwrap()
