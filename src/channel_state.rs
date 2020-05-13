@@ -26,7 +26,7 @@ impl Default for ChannelState {
 
 impl ChannelState {
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_pid(&mut self, now: Instant, adc_data: u32) {
+    pub fn update_pid(&mut self, now: Instant, adc_data: u32) -> u32 {
         self.adc_data = Some(adc_data);
         self.adc_time = now;
 
@@ -34,6 +34,6 @@ impl ChannelState {
         let input = (adc_data as f64) / (ad7172::MAX_VALUE as f64);
         let temperature = self.sh.get_temperature(input);
         let output = self.pid.update(temperature);
-        self.dac_value = (output * (ad5680::MAX_VALUE as f64)) as u32;
+        (output * (ad5680::MAX_VALUE as f64)) as u32
     }
 }

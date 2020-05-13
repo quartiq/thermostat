@@ -48,10 +48,10 @@ impl Channels {
 
             let dac_value = {
                 let state = self.channel_state(channel);
-                state.update_pid(instant, data);
+                let pid_output = state.update_pid(instant, data);
 
                 if state.pid_engaged {
-                    Some(state.dac_value)
+                    Some(pid_output)
                 } else {
                     None
                 }
