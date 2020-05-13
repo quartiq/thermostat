@@ -7,9 +7,10 @@ use stm32f4xx_hal::{
     spi,
 };
 
+/// SPI Mode 1
 pub const SPI_MODE: spi::Mode = spi::Mode {
-    polarity: spi::Polarity::IdleHigh,
-    phase: spi::Phase::CaptureOnFirstTransition,
+    polarity: spi::Polarity::IdleLow,
+    phase: spi::Phase::CaptureOnSecondTransition,
 };
 /// 30 MHz
 pub const SPI_CLOCK: MegaHertz = MegaHertz(30);
