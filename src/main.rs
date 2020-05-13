@@ -16,7 +16,6 @@ use cortex_m_rt::entry;
 use stm32f4xx_hal::{
     hal::{
         self,
-        digital::v2::OutputPin,
         watchdog::{WatchdogEnable, Watchdog},
     },
     rcc::RccExt,
@@ -253,18 +252,7 @@ fn main() -> ! {
                                 }
                                 Command::Pwm { channel, pin: PwmPin::ISet, duty } if duty <= ad5680::MAX_VALUE => {
                                     channels.channel_state(channel).pid_engaged = false;
-                                    match channel {
-                                        0 => {
-                                            channels.channel0.dac.set(duty).unwrap();
-                                            channels.channel0.shdn.set_high().unwrap();
-                                        }
-                                        1 => {
-                                            channels.channel1.dac.set(duty).unwrap();
-                                            channels.channel1.shdn.set_high().unwrap();
-                                        }
-                                        _ => unreachable!(),
-                                    }
-                                    channels.channel_state(channel).dac_value = duty;
+                                    channels.set_dac(channel, duty);
                                     let _ = writeln!(
                                         socket, "channel {}: PWM duty cycle manually set to {}/{}",
                                         channel, duty, ad5680::MAX_VALUE

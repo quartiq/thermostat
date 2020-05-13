@@ -58,22 +58,28 @@ impl Channels {
             };
             if let Some(dac_value) = dac_value {
                 // Forward PID output to i_set DAC
-                match channel {
-                    0 => {
-                        self.channel0.dac.set(dac_value).unwrap();
-                        self.channel0.shdn.set_high().unwrap();
-                    }
-                    1 => {
-                        self.channel1.dac.set(dac_value).unwrap();
-                        self.channel1.shdn.set_high().unwrap();
-                    }
-                    _ =>
-                        unreachable!(),
-                }
+                self.set_dac(channel.into(), dac_value);
             }
 
             channel
         })
+    }
+
+    /// i_set DAC
+    pub fn set_dac(&mut self, channel: usize, duty: u32) {
+        match channel {
+            0 => {
+                self.channel0.dac.set(duty).unwrap();
+                self.channel0.state.dac_value = duty;
+                self.channel0.shdn.set_high().unwrap();
+            }
+            1 => {
+                self.channel1.dac.set(duty).unwrap();
+                self.channel1.state.dac_value = duty;
+                self.channel1.shdn.set_high().unwrap();
+            }
+            _ => unreachable!(),
+        }
     }
 
     pub fn read_ref_adc(&mut self, channel: usize) -> u16 {
