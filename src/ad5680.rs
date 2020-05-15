@@ -25,7 +25,7 @@ pub struct Dac<SPI: Transfer<u8>, S: OutputPin> {
 
 impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
     pub fn new(spi: SPI, mut sync: S) -> Self {
-        let _ = sync.set_high();
+        let _ = sync.set_low();
         
         Dac {
             spi,
@@ -34,11 +34,14 @@ impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
     }
 
     fn write(&mut self, mut buf: [u8; 3]) -> Result<(), SPI::Error> {
-        let _ = self.sync.set_low();
-        let result = self.spi.transfer(&mut buf);
+        // pulse sync to start a new transfer. leave sync idle low
+        // afterwards to save power as recommended per datasheet.
         let _ = self.sync.set_high();
+        cortex_m::asm::nop();
+        let _ = self.sync.set_low();
 
-        result.map(|_| ())
+        self.spi.transfer(&mut buf)?;
+        Ok(())
     }
 
     /// value: `0..0x20_000`

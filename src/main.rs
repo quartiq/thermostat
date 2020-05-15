@@ -144,7 +144,7 @@ fn main() -> ! {
                                             let ref_adc_data = channels.read_ref_adc(channel);
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} ref_adc={}",
+                                                socket, "t={} raw{}=0x{:06X} ref_adc=0x{:X}",
                                                 state.adc_time, channel, adc_data,
                                                 ref_adc_data
                                             );
