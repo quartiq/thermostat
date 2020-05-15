@@ -35,7 +35,7 @@ impl ChannelPins for Channel0 {
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
     type RefAdc = Adc<ADC1>;
-    type RefPin = PA0<Analog>;
+    type RefPin = PA4<Analog>;
 }
 
 impl ChannelPins for Channel1 {
@@ -43,7 +43,7 @@ impl ChannelPins for Channel1 {
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
     type RefAdc = Adc<ADC2>;
-    type RefPin = PA3<Analog>;
+    type RefPin = PA5<Analog>;
 }
 
 /// SPI peripheral used for communication with the ADC
@@ -108,7 +108,7 @@ impl Pins {
         let _ = shdn0.set_low();
         let mut ref0_adc = Adc::adc1(adc1, true, Default::default());
         ref0_adc.enable();
-        let ref0_pin = gpioa.pa0.into_analog();
+        let ref0_pin = gpioa.pa4.into_analog();
         let channel0 = ChannelPinSet {
             dac_spi: dac0_spi,
             dac_sync: dac0_sync,
@@ -125,7 +125,7 @@ impl Pins {
         let _ = shdn1.set_low();
         let mut ref1_adc = Adc::adc2(adc2, true, Default::default());
         ref1_adc.enable();
-        let ref1_pin = gpioa.pa3.into_analog();
+        let ref1_pin = gpioa.pa5.into_analog();
         let channel1 = ChannelPinSet {
             dac_spi: dac1_spi,
             dac_sync: dac1_sync,
