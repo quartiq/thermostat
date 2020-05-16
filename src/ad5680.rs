@@ -6,6 +6,7 @@ use stm32f4xx_hal::{
     time::MegaHertz,
     spi,
 };
+use crate::units::Volts;
 
 /// SPI Mode 1
 pub const SPI_MODE: spi::Mode = spi::Mode {
@@ -44,8 +45,9 @@ impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
         Ok(())
     }
 
-    /// value: `0..0x20_000`
-    pub fn set(&mut self, value: u32) -> Result<(), SPI::Error> {
+    pub fn set(&mut self, voltage: Volts) -> Result<(), SPI::Error> {
+        let value = ((voltage.0 * (MAX_VALUE as f64) / 5.0) as u32)
+            .min(MAX_VALUE);
         let buf = [
             (value >> 14) as u8,
             (value >> 6) as u8,

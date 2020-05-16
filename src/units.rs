@@ -3,7 +3,7 @@ use core::{
     ops::Div,
 };
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Volts(pub f64);
 
 impl fmt::Display for Volts {
@@ -19,7 +19,7 @@ impl Div<Ohms> for Volts {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Amps(pub f64);
 
 impl fmt::Display for Amps {
@@ -27,7 +27,7 @@ impl fmt::Display for Amps {
         write!(f, "{:.3}A", self.0)
     }
 }
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Ohms(pub f64);
 
 impl fmt::Display for Ohms {

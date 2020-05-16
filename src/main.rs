@@ -43,7 +43,7 @@ mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod units;
-use units::{Amps, Ohms};
+use units::{Amps, Ohms, Volts};
 mod pid;
 mod steinhart_hart;
 mod channels;
@@ -144,7 +144,7 @@ fn main() -> ! {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
                                             let dac_loopback = channels.read_dac_loopback(channel);
-                                            let dac_i = dac_loopback.clone() / Ohms(5.0);
+                                            let dac_i = dac_loopback / Ohms(5.0);
 
                                             let itec = channels.read_itec(channel);
                                             let tec_i = Amps((itec.0 - 1.5) / 8.0);
@@ -194,7 +194,7 @@ fn main() -> ! {
                                             channel,
                                             if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
-                                        let _ = writeln!(socket, "- i_set={}/{}", state.dac_value, ad5680::MAX_VALUE);
+                                        let _ = writeln!(socket, "- i_set={}", state.dac_value);
                                         fn show_pwm_channel<S, P>(mut socket: S, name: &str, pin: &P)
                                         where
                                             S: core::fmt::Write,
@@ -258,21 +258,16 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
                                     );
                                 }
-                                Command::Pwm { channel, pin: PwmPin::ISet, duty } if duty <= ad5680::MAX_VALUE => {
+                                Command::Pwm { channel, pin: PwmPin::ISet, duty } => {
                                     channels.channel_state(channel).pid_engaged = false;
-                                    channels.set_dac(channel, duty);
+                                    let voltage = Volts(duty);
+                                    channels.set_dac(channel, voltage);
                                     let _ = writeln!(
-                                        socket, "channel {}: PWM duty cycle manually set to {}/{}",
-                                        channel, duty, ad5680::MAX_VALUE
+                                        socket, "channel {}: PWM duty cycle manually set to {}",
+                                        channel, voltage
                                     );
                                 }
-                                Command::Pwm { pin: PwmPin::ISet, duty, .. } if duty > ad5680::MAX_VALUE => {
-                                    let _ = writeln!(
-                                        socket, "error: PWM duty range must not exceed {}",
-                                        ad5680::MAX_VALUE
-                                    );
-                                }
-                                Command::Pwm { channel, pin, duty } if duty <= 0xFFFF => {
+                                Command::Pwm { channel, pin, duty } => {
                                     let duty = duty as u16;
 
                                     fn set_pwm_channel<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: u16) -> u16 {
@@ -302,9 +297,6 @@ fn main() -> ! {
                                         socket, "channel {}: PWM {} reconfigured to {}/{}",
                                         channel, pin.name(), duty, max
                                     );
-                                }
-                                Command::Pwm { duty, .. } if duty > 0xFFFF => {
-                                    let _ = writeln!(socket, "error: PWM duty range must fit 16 bits");
                                 }
                                 Command::Pid { channel, parameter, value } => {
                                     let pid = &mut channels.channel_state(channel).pid;
@@ -356,9 +348,6 @@ fn main() -> ! {
                                             let _ = writeln!(socket, "Unable to choose postfilter");
                                         }
                                     }
-                                }
-                                cmd => {
-                                    let _ = writeln!(socket, "Not yet implemented: {:?}", cmd);
                                 }
                             }
                             Ok(SessionOutput::Error(e)) => {

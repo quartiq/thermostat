@@ -59,7 +59,7 @@ impl Channels {
             };
             if let Some(dac_value) = dac_value {
                 // Forward PID output to i_set DAC
-                self.set_dac(channel.into(), dac_value);
+                self.set_dac(channel.into(), Volts(dac_value));
             }
 
             channel
@@ -67,16 +67,16 @@ impl Channels {
     }
 
     /// i_set DAC
-    pub fn set_dac(&mut self, channel: usize, duty: u32) {
+    pub fn set_dac(&mut self, channel: usize, voltage: Volts) {
         match channel {
             0 => {
-                self.channel0.dac.set(duty).unwrap();
-                self.channel0.state.dac_value = duty;
+                self.channel0.dac.set(voltage).unwrap();
+                self.channel0.state.dac_value = voltage;
                 self.channel0.shdn.set_high().unwrap();
             }
             1 => {
-                self.channel1.dac.set(duty).unwrap();
-                self.channel1.state.dac_value = duty;
+                self.channel1.dac.set(voltage).unwrap();
+                self.channel1.state.dac_value = voltage;
                 self.channel1.shdn.set_high().unwrap();
             }
             _ => unreachable!(),

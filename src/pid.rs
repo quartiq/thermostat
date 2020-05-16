@@ -16,7 +16,7 @@ impl Default for Parameters {
             ki: 0.05,
             kd: 0.45,
             output_min: 0.0,
-            output_max: 1.0,
+            output_max: 5.0,
             integral_min: 0.0,
             integral_max: 1.0,
         }

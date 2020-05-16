@@ -142,7 +142,7 @@ pub enum Command {
     Pwm {
         channel: usize,
         pin: PwmPin,
-        duty: u32,
+        duty: f64,
     },
     /// Enable PID control for `i_set`
     PwmPid {
@@ -239,9 +239,9 @@ fn report(input: &[u8]) -> IResult<&[u8], Command> {
     )(input)
 }
 
-fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, u32), Error>> {
+fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
     let result_with_pin = |pin: PwmPin|
-        move |result: Result<u32, Error>|
+        move |result: Result<f64, Error>|
         result.map(|duty| (pin, duty));
 
     alt((
@@ -250,7 +250,7 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, u32), Error>> {
                 tag("max_i_pos"),
                 preceded(
                     whitespace,
-                    unsigned
+                    float
                 )
             ),
             result_with_pin(PwmPin::MaxIPos)
@@ -260,7 +260,7 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, u32), Error>> {
                 tag("max_i_neg"),
                 preceded(
                     whitespace,
-                    unsigned
+                    float
                 )
             ),
             result_with_pin(PwmPin::MaxINeg)
@@ -270,12 +270,12 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, u32), Error>> {
                 tag("max_v"),
                 preceded(
                     whitespace,
-                    unsigned
+                    float
                 )
             ),
             result_with_pin(PwmPin::MaxV)
         ),
-        map(unsigned, result_with_pin(PwmPin::ISet)
+        map(float, result_with_pin(PwmPin::ISet)
         ))
     )(input)
 }

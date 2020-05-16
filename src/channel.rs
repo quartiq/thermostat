@@ -1,6 +1,9 @@
-use crate::pins::{ChannelPins, ChannelPinSet};
-use crate::channel_state::ChannelState;
-use crate::ad5680;
+use crate::{
+    ad5680,
+    channel_state::ChannelState,
+    pins::{ChannelPins, ChannelPinSet},
+    units::Volts,
+};
 
 /// Marker type for the first channel
 pub struct Channel0;
@@ -25,7 +28,7 @@ impl<C: ChannelPins> Channel<C> {
     pub fn new(pins: ChannelPinSet<C>) -> Self {
         let state = ChannelState::default();
         let mut dac = ad5680::Dac::new(pins.dac_spi, pins.dac_sync);
-        let _ = dac.set(0);
+        let _ = dac.set(Volts(0.0));
 
         Channel {
             state,
