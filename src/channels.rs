@@ -84,12 +84,26 @@ impl Channels {
 
     pub fn read_dac_loopback(&mut self, channel: usize) -> u16 {
         match channel {
-            0 => self.channel0.dac_loopback.convert(
+            0 => self.channel0.adc.convert(
                 &self.channel0.dac_loopback_pin,
                 stm32f4xx_hal::adc::config::SampleTime::Cycles_480
             ),
-            1 => self.channel1.dac_loopback.convert(
+            1 => self.channel1.adc.convert(
                 &self.channel1.dac_loopback_pin,
+                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+            ),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn read_itec(&mut self, channel: usize) -> u16 {
+        match channel {
+            0 => self.channel0.adc.convert(
+                &self.channel0.itec_pin,
+                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+            ),
+            1 => self.channel1.adc.convert(
+                &self.channel1.itec_pin,
                 stm32f4xx_hal::adc::config::SampleTime::Cycles_480
             ),
             _ => unreachable!(),

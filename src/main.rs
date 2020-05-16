@@ -142,11 +142,18 @@ fn main() -> ! {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
                                             let dac_loopback = channels.read_dac_loopback(channel);
+                                            let itec = channels.read_itec(channel);
+                                            let dcc_u = 5.0;
+                                            let itec_u = dcc_u * (itec as f64) / (0xFFF as f64);
+                                            let tec_u = (itec_u - 1.5) / 8.0;
+                                            let tec_r = 5.0;
+                                            let tec_i = tec_u / tec_r;
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} dac_loopback=0x{:X}",
+                                                socket, "t={} raw{}=0x{:06X} dac_loopback=0x{:X} itec=0x{:X} tec={:.2}V/{:.2}A",
                                                 state.adc_time, channel, adc_data,
-                                                dac_loopback
+                                                dac_loopback, itec,
+                                                tec_u, tec_i,
                                             );
                                         }
                                     }

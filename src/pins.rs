@@ -26,7 +26,8 @@ pub trait ChannelPins {
     type DacSpi: Transfer<u8>;
     type DacSync: OutputPin;
     type Shdn: OutputPin;
-    type DacLoopback;
+    type Adc;
+    type ItecPin;
     type DacLoopbackPin;
 }
 
@@ -34,7 +35,8 @@ impl ChannelPins for Channel0 {
     type DacSpi = Dac0Spi;
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
-    type DacLoopback = Adc<ADC1>;
+    type Adc = Adc<ADC1>;
+    type ItecPin = PA6<Analog>;
     type DacLoopbackPin = PA4<Analog>;
 }
 
@@ -42,7 +44,8 @@ impl ChannelPins for Channel1 {
     type DacSpi = Dac1Spi;
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
-    type DacLoopback = Adc<ADC2>;
+    type Adc = Adc<ADC2>;
+    type ItecPin = PB0<Analog>;
     type DacLoopbackPin = PA5<Analog>;
 }
 
@@ -57,7 +60,8 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_spi: C::DacSpi,
     pub dac_sync: C::DacSync,
     pub shdn: C::Shdn,
-    pub dac_loopback: C::DacLoopback,
+    pub adc: C::Adc,
+    pub itec_pin: C::ItecPin,
     pub dac_loopback_pin: C::DacLoopbackPin,
 }
 
@@ -106,14 +110,16 @@ impl Pins {
         );
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
         let _ = shdn0.set_low();
-        let mut dac_loopback0 = Adc::adc1(adc1, true, Default::default());
-        dac_loopback0.enable();
+        let mut adc0 = Adc::adc1(adc1, true, Default::default());
+        adc0.enable();
+        let itec0_pin = gpioa.pa6.into_analog();
         let dac_loopback0_pin = gpioa.pa4.into_analog();
         let channel0 = ChannelPinSet {
             dac_spi: dac0_spi,
             dac_sync: dac0_sync,
             shdn: shdn0,
-            dac_loopback: dac_loopback0,
+            adc: adc0,
+            itec_pin: itec0_pin,
             dac_loopback_pin: dac_loopback0_pin,
         };
 
@@ -123,14 +129,16 @@ impl Pins {
         );
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
-        let mut dac_loopback1 = Adc::adc2(adc2, true, Default::default());
-        dac_loopback1.enable();
+        let mut adc1 = Adc::adc2(adc2, true, Default::default());
+        adc1.enable();
+        let itec1_pin = gpiob.pb0.into_analog();
         let dac_loopback1_pin = gpioa.pa5.into_analog();
         let channel1 = ChannelPinSet {
             dac_spi: dac1_spi,
             dac_sync: dac1_sync,
             shdn: shdn1,
-            dac_loopback: dac_loopback1,
+            adc: adc1,
+            itec_pin: itec1_pin,
             dac_loopback_pin: dac_loopback1_pin,
         };
 

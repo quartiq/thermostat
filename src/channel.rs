@@ -14,8 +14,10 @@ pub struct Channel<C: ChannelPins> {
     /// for `i_set`
     pub dac: ad5680::Dac<C::DacSpi, C::DacSync>,
     pub shdn: C::Shdn,
+    /// stm32f4 integrated adc
+    pub adc: C::Adc,
+    pub itec_pin: C::ItecPin,
     /// feedback from `dac` output
-    pub dac_loopback: C::DacLoopback,
     pub dac_loopback_pin: C::DacLoopbackPin,
 }
 
@@ -29,7 +31,8 @@ impl<C: ChannelPins> Channel<C> {
             state,
             dac,
             shdn: pins.shdn,
-            dac_loopback: pins.dac_loopback,
+            adc: pins.adc,
+            itec_pin: pins.itec_pin,
             dac_loopback_pin: pins.dac_loopback_pin,
         }
     }
