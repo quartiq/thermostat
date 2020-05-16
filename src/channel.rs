@@ -11,10 +11,12 @@ pub struct Channel1;
 
 pub struct Channel<C: ChannelPins> {
     pub state: ChannelState,
+    /// for `i_set`
     pub dac: ad5680::Dac<C::DacSpi, C::DacSync>,
     pub shdn: C::Shdn,
-    pub ref_adc: C::RefAdc,
-    pub ref_pin: C::RefPin,
+    /// feedback from `dac` output
+    pub dac_loopback: C::DacLoopback,
+    pub dac_loopback_pin: C::DacLoopbackPin,
 }
 
 impl<C: ChannelPins> Channel<C> {
@@ -27,8 +29,8 @@ impl<C: ChannelPins> Channel<C> {
             state,
             dac,
             shdn: pins.shdn,
-            ref_adc: pins.ref_adc,
-            ref_pin: pins.ref_pin,
+            dac_loopback: pins.dac_loopback,
+            dac_loopback_pin: pins.dac_loopback_pin,
         }
     }
 }

@@ -141,12 +141,12 @@ fn main() -> ! {
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
-                                            let ref_adc_data = channels.read_ref_adc(channel);
+                                            let dac_loopback = channels.read_dac_loopback(channel);
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} ref_adc=0x{:X}",
+                                                socket, "t={} raw{}=0x{:06X} dac_loopback=0x{:X}",
                                                 state.adc_time, channel, adc_data,
-                                                ref_adc_data
+                                                dac_loopback
                                             );
                                         }
                                     }
