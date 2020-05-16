@@ -5,6 +5,7 @@ use crate::{
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
     pins,
+    units::Volts,
 };
 
 pub const CHANNELS: usize = 2;
@@ -82,30 +83,46 @@ impl Channels {
         }
     }
 
-    pub fn read_dac_loopback(&mut self, channel: usize) -> u16 {
+    pub fn read_dac_loopback(&mut self, channel: usize) -> Volts {
         match channel {
-            0 => self.channel0.adc.convert(
-                &self.channel0.dac_loopback_pin,
-                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-            ),
-            1 => self.channel1.adc.convert(
-                &self.channel1.dac_loopback_pin,
-                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-            ),
+            0 => {
+                let sample = self.channel0.adc.convert(
+                    &self.channel0.dac_loopback_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            1 => {
+                let sample = self.channel1.adc.convert(
+                    &self.channel1.dac_loopback_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
             _ => unreachable!(),
         }
     }
 
-    pub fn read_itec(&mut self, channel: usize) -> u16 {
+    pub fn read_itec(&mut self, channel: usize) -> Volts {
         match channel {
-            0 => self.channel0.adc.convert(
-                &self.channel0.itec_pin,
-                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-            ),
-            1 => self.channel1.adc.convert(
-                &self.channel1.itec_pin,
-                stm32f4xx_hal::adc::config::SampleTime::Cycles_480
-            ),
+            0 => {
+                let sample = self.channel0.adc.convert(
+                    &self.channel0.itec_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            1 => {
+                let sample = self.channel1.adc.convert(
+                    &self.channel1.itec_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
             _ => unreachable!(),
         }
     }
