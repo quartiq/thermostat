@@ -43,6 +43,7 @@ mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod units;
+use units::{Amps, Ohms};
 mod pid;
 mod steinhart_hart;
 mod channels;
@@ -143,17 +144,17 @@ fn main() -> ! {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
                                             let dac_loopback = channels.read_dac_loopback(channel);
+                                            let dac_i = dac_loopback.clone() / Ohms(5.0);
+
                                             let itec = channels.read_itec(channel);
-                                            let itec_u = itec.0;
-                                            let tec_u = (itec_u - 1.5) / 8.0;
-                                            let tec_r = 5.0;
-                                            let tec_i = tec_u / tec_r;
+                                            let tec_i = Amps((itec.0 - 1.5) / 8.0);
+
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} dac_loopback={} itec={} tec={:.3}V/{:.3}A",
+                                                socket, "t={} raw{}=0x{:06X} dac_loopback={}/{} itec={} tec={}",
                                                 state.adc_time, channel, adc_data,
-                                                dac_loopback, itec,
-                                                tec_u, tec_i,
+                                                dac_loopback, dac_i,
+                                                itec, tec_i,
                                             );
                                         }
                                     }
