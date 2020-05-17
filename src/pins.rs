@@ -28,7 +28,7 @@ pub trait ChannelPins {
     type Shdn: OutputPin;
     type Adc;
     type ItecPin;
-    type DacLoopbackPin;
+    type DacFeedbackPin;
 }
 
 impl ChannelPins for Channel0 {
@@ -37,7 +37,7 @@ impl ChannelPins for Channel0 {
     type Shdn = PE10<Output<PushPull>>;
     type Adc = Adc<ADC1>;
     type ItecPin = PA6<Analog>;
-    type DacLoopbackPin = PA4<Analog>;
+    type DacFeedbackPin = PA4<Analog>;
 }
 
 impl ChannelPins for Channel1 {
@@ -46,7 +46,7 @@ impl ChannelPins for Channel1 {
     type Shdn = PE15<Output<PushPull>>;
     type Adc = Adc<ADC2>;
     type ItecPin = PB0<Analog>;
-    type DacLoopbackPin = PA5<Analog>;
+    type DacFeedbackPin = PA5<Analog>;
 }
 
 /// SPI peripheral used for communication with the ADC
@@ -62,7 +62,7 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub shdn: C::Shdn,
     pub adc: C::Adc,
     pub itec_pin: C::ItecPin,
-    pub dac_loopback_pin: C::DacLoopbackPin,
+    pub dac_feedback_pin: C::DacFeedbackPin,
 }
 
 pub struct Pins {
@@ -113,14 +113,14 @@ impl Pins {
         let mut adc0 = Adc::adc1(adc1, true, Default::default());
         adc0.enable();
         let itec0_pin = gpioa.pa6.into_analog();
-        let dac_loopback0_pin = gpioa.pa4.into_analog();
+        let dac_feedback0_pin = gpioa.pa4.into_analog();
         let channel0 = ChannelPinSet {
             dac_spi: dac0_spi,
             dac_sync: dac0_sync,
             shdn: shdn0,
             adc: adc0,
             itec_pin: itec0_pin,
-            dac_loopback_pin: dac_loopback0_pin,
+            dac_feedback_pin: dac_feedback0_pin,
         };
 
         let (dac1_spi, dac1_sync) = Self::setup_dac1(
@@ -132,14 +132,14 @@ impl Pins {
         let mut adc1 = Adc::adc2(adc2, true, Default::default());
         adc1.enable();
         let itec1_pin = gpiob.pb0.into_analog();
-        let dac_loopback1_pin = gpioa.pa5.into_analog();
+        let dac_feedback1_pin = gpioa.pa5.into_analog();
         let channel1 = ChannelPinSet {
             dac_spi: dac1_spi,
             dac_sync: dac1_sync,
             shdn: shdn1,
             adc: adc1,
             itec_pin: itec1_pin,
-            dac_loopback_pin: dac_loopback1_pin,
+            dac_feedback_pin: dac_feedback1_pin,
         };
 
         Pins {

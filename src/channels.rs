@@ -95,11 +95,11 @@ impl Channels {
         }
     }
 
-    pub fn read_dac_loopback(&mut self, channel: usize) -> Volts {
+    pub fn read_dac_feedback(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
                 let sample = self.channel0.adc.convert(
-                    &self.channel0.dac_loopback_pin,
+                    &self.channel0.dac_feedback_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.channel0.adc.sample_to_millivolts(sample);
@@ -107,7 +107,7 @@ impl Channels {
             }
             1 => {
                 let sample = self.channel1.adc.convert(
-                    &self.channel1.dac_loopback_pin,
+                    &self.channel1.dac_feedback_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.channel1.adc.sample_to_millivolts(sample);

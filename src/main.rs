@@ -143,17 +143,17 @@ fn main() -> ! {
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
-                                            let dac_loopback = channels.read_dac_loopback(channel);
-                                            let dac_i = dac_loopback / Ohms(5.0);
+                                            let dac_feedback = channels.read_dac_feedback(channel);
+                                            let dac_i = dac_feedback / Ohms(5.0);
 
                                             let itec = channels.read_itec(channel);
                                             let tec_i = Amps((itec.0 - 1.5) / 8.0);
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} dac_loopback={}/{} itec={} tec={}",
+                                                socket, "t={} raw{}=0x{:06X} dac_feedback={}/{} itec={} tec={}",
                                                 state.adc_time, channel, adc_data,
-                                                dac_loopback, dac_i,
+                                                dac_feedback, dac_i,
                                                 itec, tec_i,
                                             );
                                         }
