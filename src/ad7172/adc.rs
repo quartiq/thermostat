@@ -43,7 +43,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
 
         let mut adc_mode = <regs::AdcMode as Register>::Data::empty();
         adc_mode.set_ref_en(true);
-        adc_mode.set_mode(Mode::ContinuousConversion);
+        adc_mode.set_mode(Mode::Standby);
         adc.write_reg(&regs::AdcMode, &mut adc_mode)?;
 
         Ok(adc)
@@ -96,16 +96,52 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
+    pub fn disable_channel(
+        &mut self, index: u8
+    ) -> Result<(), SPI::Error> {
+        self.update_reg(&regs::Channel { index }, |data| {
+            data.set_enabled(false);
+        })?;
+        Ok(())
+    }
+
+    pub fn disable_all_channels(&mut self) -> Result<(), SPI::Error> {
+        for index in 0..4 {
+            self.update_reg(&regs::Channel { index }, |data| {
+                data.set_enabled(false);
+            })?;
+        }
+        Ok(())
+    }
+
     /// Calibrates offset registers
-    pub fn calibrate_offset(&mut self) -> Result<(), SPI::Error> {
+    pub fn calibrate(&mut self) -> Result<(), SPI::Error> {
+        // internal offset calibration
+        self.update_reg(&regs::AdcMode, |adc_mode| {
+            adc_mode.set_mode(Mode::InternalOffsetCalibration);
+        })?;
+        while ! self.read_reg(&regs::Status)?.ready() {}
+
+        // system offset calibration
         self.update_reg(&regs::AdcMode, |adc_mode| {
             adc_mode.set_mode(Mode::SystemOffsetCalibration);
         })?;
         while ! self.read_reg(&regs::Status)?.ready() {}
 
+        // system gain calibration
         self.update_reg(&regs::AdcMode, |adc_mode| {
-            adc_mode.set_mode(Mode::ContinuousConversion);
+            adc_mode.set_mode(Mode::SystemGainCalibration);
         })?;
+        while ! self.read_reg(&regs::Status)?.ready() {}
+
+        Ok(())
+    }
+
+    pub fn start_continuous_conversion(&mut self) -> Result<(), SPI::Error> {
+        let mut adc_mode = <regs::AdcMode as Register>::Data::empty();
+        adc_mode.set_ref_en(true);
+        adc_mode.set_mode(Mode::ContinuousConversion);
+        self.write_reg(&regs::AdcMode, &mut adc_mode)?;
 
         Ok(())
     }

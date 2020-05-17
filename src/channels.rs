@@ -26,10 +26,22 @@ impl Channels {
         let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
         // Feature not used
         adc.set_sync_enable(false).unwrap();
-        // Setup channels
+
+        // Calibrate ADC channels individually
+        adc.disable_all_channels().unwrap();
+
+        adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
+        adc.calibrate().unwrap();
+        adc.disable_channel(0).unwrap();
+
+        adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
+        adc.calibrate().unwrap();
+        adc.disable_channel(1).unwrap();
+
+        // Setup channels and start ADC
         adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
-        adc.calibrate_offset().unwrap();
+        adc.start_continuous_conversion().unwrap();
 
         Channels { channel0, channel1, adc, pwm }
     }
