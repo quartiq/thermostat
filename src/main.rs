@@ -147,7 +147,7 @@ fn main() -> ! {
                                             let dac_i = dac_feedback / Ohms(5.0);
 
                                             let itec = channels.read_itec(channel);
-                                            let tec_i = Amps((itec.0 - 1.5) / 8.0);
+                                            let tec_i = (itec - Volts(1.5)) / Ohms(0.4);
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
