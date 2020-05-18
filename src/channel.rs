@@ -19,6 +19,7 @@ pub struct Channel<C: ChannelPins> {
     pub shdn: C::Shdn,
     /// stm32f4 integrated adc
     pub adc: C::Adc,
+    pub vref_pin: C::VRefPin,
     pub itec_pin: C::ItecPin,
     /// feedback from `dac` output
     pub dac_feedback_pin: C::DacFeedbackPin,
@@ -36,6 +37,7 @@ impl<C: ChannelPins> Channel<C> {
             dac,
             shdn: pins.shdn,
             adc: pins.adc,
+            vref_pin: pins.vref_pin,
             itec_pin: pins.itec_pin,
             dac_feedback_pin: pins.dac_feedback_pin,
             tec_u_meas_pin: pins.tec_u_meas_pin,

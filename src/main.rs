@@ -43,7 +43,7 @@ mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod units;
-use units::{Amps, Ohms, Volts};
+use units::{Ohms, Volts};
 mod pid;
 mod steinhart_hart;
 mod channels;
@@ -143,19 +143,19 @@ fn main() -> ! {
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_data) = channels.channel_state(channel).adc_data {
+                                            let vref = channels.read_vref(channel);
                                             let dac_feedback = channels.read_dac_feedback(channel);
-                                            let dac_i = dac_feedback / Ohms(5.0);
 
                                             let itec = channels.read_itec(channel);
-                                            let tec_i = (itec - Volts(1.5)) / Ohms(0.4);
+                                            let tec_i = -(itec - Volts(1.5)) / Ohms(0.4);
 
                                             let tec_u_meas = channels.read_tec_u_meas(channel);
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} dac_feedback={}/{} itec={} tec={} tec_u_meas={}",
+                                                socket, "t={} adc_raw{}=0x{:06X} vref={} dac_feedback={} itec={} tec={} tec_u_meas={}",
                                                 state.adc_time, channel, adc_data,
-                                                dac_feedback, dac_i,
+                                                vref, dac_feedback,
                                                 itec, tec_i,
                                                 tec_u_meas,
                                             );

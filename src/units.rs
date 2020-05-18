@@ -1,6 +1,6 @@
 use core::{
     fmt,
-    ops::{Add, Div, Sub},
+    ops::{Add, Div, Neg, Sub},
 };
 
 macro_rules! impl_add_sub {
@@ -16,6 +16,13 @@ macro_rules! impl_add_sub {
             type Output = $Type;
             fn sub(self, rhs: $Type) -> $Type {
                 $Type(self.0 - rhs.0)
+            }
+        }
+
+        impl Neg for $Type {
+            type Output = $Type;
+            fn neg(self) -> $Type {
+                $Type(-self.0)
             }
         }
     }

@@ -27,6 +27,7 @@ pub trait ChannelPins {
     type DacSync: OutputPin;
     type Shdn: OutputPin;
     type Adc;
+    type VRefPin;
     type ItecPin;
     type DacFeedbackPin;
     type TecUMeasPin;
@@ -37,6 +38,7 @@ impl ChannelPins for Channel0 {
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
     type Adc = Adc<ADC1>;
+    type VRefPin = PA0<Analog>;
     type ItecPin = PA6<Analog>;
     type DacFeedbackPin = PA4<Analog>;
     type TecUMeasPin = PC2<Analog>;
@@ -47,6 +49,7 @@ impl ChannelPins for Channel1 {
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
     type Adc = Adc<ADC2>;
+    type VRefPin = PA3<Analog>;
     type ItecPin = PB0<Analog>;
     type DacFeedbackPin = PA5<Analog>;
     type TecUMeasPin = PC3<Analog>;
@@ -65,6 +68,7 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_sync: C::DacSync,
     pub shdn: C::Shdn,
     pub adc: C::Adc,
+    pub vref_pin: C::VRefPin,
     pub itec_pin: C::ItecPin,
     pub dac_feedback_pin: C::DacFeedbackPin,
     pub tec_u_meas_pin: C::TecUMeasPin,
@@ -120,6 +124,7 @@ impl Pins {
         let _ = shdn0.set_low();
         let mut adc0 = Adc::adc1(adc1, true, Default::default());
         adc0.enable();
+        let vref0_pin = gpioa.pa0.into_analog();
         let itec0_pin = gpioa.pa6.into_analog();
         let dac_feedback0_pin = gpioa.pa4.into_analog();
         let tec_u_meas0_pin = gpioc.pc2.into_analog();
@@ -128,6 +133,7 @@ impl Pins {
             dac_sync: dac0_sync,
             shdn: shdn0,
             adc: adc0,
+            vref_pin: vref0_pin,
             itec_pin: itec0_pin,
             dac_feedback_pin: dac_feedback0_pin,
             tec_u_meas_pin: tec_u_meas0_pin,
@@ -141,6 +147,7 @@ impl Pins {
         let _ = shdn1.set_low();
         let mut adc1 = Adc::adc2(adc2, true, Default::default());
         adc1.enable();
+        let vref1_pin = gpioa.pa3.into_analog();
         let itec1_pin = gpiob.pb0.into_analog();
         let dac_feedback1_pin = gpioa.pa5.into_analog();
         let tec_u_meas1_pin = gpioc.pc3.into_analog();
@@ -149,6 +156,7 @@ impl Pins {
             dac_sync: dac1_sync,
             shdn: shdn1,
             adc: adc1,
+            vref_pin: vref1_pin,
             itec_pin: itec1_pin,
             dac_feedback_pin: dac_feedback1_pin,
             tec_u_meas_pin: tec_u_meas1_pin,

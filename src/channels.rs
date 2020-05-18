@@ -142,6 +142,28 @@ impl Channels {
         }
     }
 
+    pub fn read_vref(&mut self, channel: usize) -> Volts {
+        match channel {
+            0 => {
+                let sample = self.channel0.adc.convert(
+                    &self.channel0.vref_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            1 => {
+                let sample = self.channel1.adc.convert(
+                    &self.channel1.vref_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            _ => unreachable!(),
+        }
+    }
+
     pub fn read_tec_u_meas(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
