@@ -96,6 +96,8 @@ fn main() -> ! {
         dp.ADC1, dp.ADC2, dp.ADC3,
     );
     let mut channels = Channels::new(pins);
+    channels.calibrate_dac_value(0);
+
     timer::setup(cp.SYST, clocks);
 
     #[cfg(not(feature = "generate-hwaddr"))]

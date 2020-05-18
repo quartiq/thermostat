@@ -2,7 +2,6 @@ use crate::{
     ad5680,
     channel_state::ChannelState,
     pins::{ChannelPins, ChannelPinSet},
-    units::Volts,
 };
 
 /// Marker type for the first channel
@@ -16,6 +15,8 @@ pub struct Channel<C: ChannelPins> {
     pub state: ChannelState,
     /// for `i_set`
     pub dac: ad5680::Dac<C::DacSpi, C::DacSync>,
+    /// 1 / Volts
+    pub dac_factor: f64,
     pub shdn: C::Shdn,
     /// stm32f4 integrated adc
     pub adc: C::Adc,
@@ -30,11 +31,13 @@ impl<C: ChannelPins> Channel<C> {
     pub fn new(pins: ChannelPinSet<C>) -> Self {
         let state = ChannelState::default();
         let mut dac = ad5680::Dac::new(pins.dac_spi, pins.dac_sync);
-        let _ = dac.set(Volts(0.0));
+        let _ = dac.set(0);
+        // sensible dummy preset. calibrate_i_set() must be used.
+        let dac_factor = ad5680::MAX_VALUE as f64 / 5.0;
 
         Channel {
             state,
-            dac,
+            dac, dac_factor,
             shdn: pins.shdn,
             adc: pins.adc,
             vref_pin: pins.vref_pin,
