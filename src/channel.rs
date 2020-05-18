@@ -22,6 +22,7 @@ pub struct Channel<C: ChannelPins> {
     pub itec_pin: C::ItecPin,
     /// feedback from `dac` output
     pub dac_feedback_pin: C::DacFeedbackPin,
+    pub tec_u_meas_pin: C::TecUMeasPin,
 }
 
 impl<C: ChannelPins> Channel<C> {
@@ -37,6 +38,7 @@ impl<C: ChannelPins> Channel<C> {
             adc: pins.adc,
             itec_pin: pins.itec_pin,
             dac_feedback_pin: pins.dac_feedback_pin,
+            tec_u_meas_pin: pins.tec_u_meas_pin,
         }
     }
 }

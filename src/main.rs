@@ -93,7 +93,7 @@ fn main() -> ! {
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.SPI2, dp.SPI4, dp.SPI5,
-        dp.ADC1, dp.ADC2,
+        dp.ADC1, dp.ADC2, dp.ADC3,
     );
     let mut channels = Channels::new(pins);
     timer::setup(cp.SYST, clocks);
@@ -149,12 +149,15 @@ fn main() -> ! {
                                             let itec = channels.read_itec(channel);
                                             let tec_i = (itec - Volts(1.5)) / Ohms(0.4);
 
+                                            let tec_u_meas = channels.read_tec_u_meas(channel);
+
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} raw{}=0x{:06X} dac_feedback={}/{} itec={} tec={}",
+                                                socket, "t={} raw{}=0x{:06X} dac_feedback={}/{} itec={} tec={} tec_u_meas={}",
                                                 state.adc_time, channel, adc_data,
                                                 dac_feedback, dac_i,
                                                 itec, tec_i,
+                                                tec_u_meas,
                                             );
                                         }
                                     }

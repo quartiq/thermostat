@@ -16,7 +16,7 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
-    stm32::{ADC1, ADC2, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    stm32::{ADC1, ADC2, ADC3, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
     time::U32Ext,
 };
 use crate::channel::{Channel0, Channel1};
@@ -29,6 +29,7 @@ pub trait ChannelPins {
     type Adc;
     type ItecPin;
     type DacFeedbackPin;
+    type TecUMeasPin;
 }
 
 impl ChannelPins for Channel0 {
@@ -38,6 +39,7 @@ impl ChannelPins for Channel0 {
     type Adc = Adc<ADC1>;
     type ItecPin = PA6<Analog>;
     type DacFeedbackPin = PA4<Analog>;
+    type TecUMeasPin = PC2<Analog>;
 }
 
 impl ChannelPins for Channel1 {
@@ -47,6 +49,7 @@ impl ChannelPins for Channel1 {
     type Adc = Adc<ADC2>;
     type ItecPin = PB0<Analog>;
     type DacFeedbackPin = PA5<Analog>;
+    type TecUMeasPin = PC3<Analog>;
 }
 
 /// SPI peripheral used for communication with the ADC
@@ -55,6 +58,7 @@ pub type AdcNss = PB12<Output<PushPull>>;
 type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
 
+pub type TecUMeasAdc = Adc<ADC3>;
 
 pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_spi: C::DacSpi,
@@ -63,11 +67,13 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub adc: C::Adc,
     pub itec_pin: C::ItecPin,
     pub dac_feedback_pin: C::DacFeedbackPin,
+    pub tec_u_meas_pin: C::TecUMeasPin,
 }
 
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: AdcNss,
+    pub tec_u_meas_adc: TecUMeasAdc,
     pub pwm: PwmPins,
     pub channel0: ChannelPinSet<Channel0>,
     pub channel1: ChannelPinSet<Channel1>,
@@ -80,7 +86,7 @@ impl Pins {
         tim1: TIM1, tim3: TIM3,
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
-        adc1: ADC1, adc2: ADC2,
+        adc1: ADC1, adc2: ADC2, adc3: ADC3,
     ) -> Self {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
@@ -96,6 +102,8 @@ impl Pins {
         );
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
+
+        let tec_u_meas_adc = Adc::adc3(adc3, true, Default::default());
 
         let pwm = PwmPins::setup(
             clocks, tim1, tim3,
@@ -114,6 +122,7 @@ impl Pins {
         adc0.enable();
         let itec0_pin = gpioa.pa6.into_analog();
         let dac_feedback0_pin = gpioa.pa4.into_analog();
+        let tec_u_meas0_pin = gpioc.pc2.into_analog();
         let channel0 = ChannelPinSet {
             dac_spi: dac0_spi,
             dac_sync: dac0_sync,
@@ -121,6 +130,7 @@ impl Pins {
             adc: adc0,
             itec_pin: itec0_pin,
             dac_feedback_pin: dac_feedback0_pin,
+            tec_u_meas_pin: tec_u_meas0_pin,
         };
 
         let (dac1_spi, dac1_sync) = Self::setup_dac1(
@@ -133,6 +143,7 @@ impl Pins {
         adc1.enable();
         let itec1_pin = gpiob.pb0.into_analog();
         let dac_feedback1_pin = gpioa.pa5.into_analog();
+        let tec_u_meas1_pin = gpioc.pc3.into_analog();
         let channel1 = ChannelPinSet {
             dac_spi: dac1_spi,
             dac_sync: dac1_sync,
@@ -140,10 +151,12 @@ impl Pins {
             adc: adc1,
             itec_pin: itec1_pin,
             dac_feedback_pin: dac_feedback1_pin,
+            tec_u_meas_pin: tec_u_meas1_pin,
         };
 
         Pins {
             adc_spi, adc_nss,
+            tec_u_meas_adc,
             pwm,
             channel0,
             channel1,

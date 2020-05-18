@@ -10,10 +10,12 @@ use crate::{
 
 pub const CHANNELS: usize = 2;
 
+// TODO: -pub
 pub struct Channels {
     pub channel0: Channel<Channel0>,
     pub channel1: Channel<Channel1>,
     pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
+    pub tec_u_meas_adc: pins::TecUMeasAdc,
     pub pwm: pins::PwmPins,
 }
 
@@ -21,6 +23,7 @@ impl Channels {
     pub fn new(pins: pins::Pins) -> Self {
         let channel0 = Channel::new(pins.channel0);
         let channel1 = Channel::new(pins.channel1);
+        let tec_u_meas_adc = pins.tec_u_meas_adc;
         let pwm = pins.pwm;
 
         let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
@@ -43,7 +46,7 @@ impl Channels {
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
         adc.start_continuous_conversion().unwrap();
 
-        Channels { channel0, channel1, adc, pwm }
+        Channels { channel0, channel1, adc, tec_u_meas_adc, pwm }
     }
 
     pub fn channel_state<I: Into<usize>>(&mut self, channel: I) -> &mut ChannelState {
@@ -133,6 +136,28 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.channel1.adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn read_tec_u_meas(&mut self, channel: usize) -> Volts {
+        match channel {
+            0 => {
+                let sample = self.tec_u_meas_adc.convert(
+                    &self.channel0.tec_u_meas_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.tec_u_meas_adc.sample_to_millivolts(sample);
+                Volts(mv as f64 / 1000.0)
+            }
+            1 => {
+                let sample = self.tec_u_meas_adc.convert(
+                    &self.channel1.tec_u_meas_pin,
+                    stm32f4xx_hal::adc::config::SampleTime::Cycles_480
+                );
+                let mv = self.tec_u_meas_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
