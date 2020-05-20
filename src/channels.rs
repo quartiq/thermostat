@@ -1,4 +1,3 @@
-use stm32f4xx_hal::hal::digital::v2::OutputPin;
 use smoltcp::time::Instant;
 use log::info;
 use crate::{
@@ -91,7 +90,6 @@ impl Channels {
             _ => unreachable!(),
         };
         let value = (voltage.0 * dac_factor) as u32;
-        info!("set_dac {} {}", voltage, value);
         match channel {
             0 => {
                 self.channel0.dac.set(value).unwrap();
@@ -124,6 +122,18 @@ impl Channels {
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
+        }
+    }
+
+    pub fn read_dac_feedback_until_stable(&mut self, channel: usize, tolerance: f64) -> Volts {
+        let mut prev = self.read_dac_feedback(channel);
+        loop {
+            let current = self.read_dac_feedback(channel);
+            use num_traits::float::Float;
+            if (current - prev).0.abs() < tolerance {
+                return current;
+            }
+            prev = current;
         }
     }
 
@@ -197,40 +207,47 @@ impl Channels {
     /// for i_set
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let vref = self.read_vref(channel);
-        let mut best_value = 0;
-        let mut best_error = Volts(100.0);
-        for value in 1..=ad5680::MAX_VALUE {
-            match channel {
-                0 => {
-                    self.channel0.dac.set(value).unwrap();
-                    self.channel0.shdn.set_high().unwrap();
-                }
-                1 => {
-                    self.channel1.dac.set(value).unwrap();
-                    self.channel1.shdn.set_high().unwrap();
-                }
-                _ => unreachable!(),
-            }
+        let value = self.calibrate_dac_value_for_voltage(channel, vref);
+        info!("best dac value for {}: {}", vref, value);
 
-            let dac_feedback = self.read_dac_feedback(channel);
-            let error = vref - dac_feedback;
-            if error < Volts(0.0) {
-                info!("calibration done at {} > {}", dac_feedback, vref);
-                break;
-            } else if error < best_error {
-                best_value = value;
-                best_error = error;
-            }
-        }
-
-        self.set_dac(channel, Volts(0.0));
-        info!("best dac value for {}: {}, itec={}", vref, best_value, self.read_itec(channel));
-
-        let dac_factor = best_value as f64 / vref.0;
+        let dac_factor = value as f64 / vref.0;
         match channel {
             0 => self.channel0.dac_factor = dac_factor,
             1 => self.channel1.dac_factor = dac_factor,
             _ => unreachable!(),
         }
+    }
+
+    fn calibrate_dac_value_for_voltage(&mut self, channel: usize, voltage: Volts) -> u32 {
+        let mut best_value = 0;
+        let mut best_error = Volts(100.0);
+
+        for step in (1..=12).rev() {
+            for value in (best_value..=ad5680::MAX_VALUE).step_by(2usize.pow(step)) {
+                match channel {
+                    0 => {
+                        self.channel0.dac.set(value).unwrap();
+                        // self.channel0.shdn.set_high().unwrap();
+                    }
+                    1 => {
+                        self.channel1.dac.set(value).unwrap();
+                        // self.channel1.shdn.set_high().unwrap();
+                    }
+                    _ => unreachable!(),
+                }
+
+                let dac_feedback = self.read_dac_feedback_until_stable(channel, 0.001);
+                let error = voltage - dac_feedback;
+                if error < Volts(0.0) {
+                    break;
+                } else if error < best_error {
+                    best_value = value;
+                    best_error = error;
+                }
+            }
+        }
+
+        self.set_dac(channel, Volts(0.0));
+        best_value
     }
 }

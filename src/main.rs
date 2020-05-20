@@ -56,7 +56,7 @@ const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
 const WATCHDOG_INTERVAL: u32 = 100;
 #[cfg(feature = "semihosting")]
-const WATCHDOG_INTERVAL: u32 = 10_000;
+const WATCHDOG_INTERVAL: u32 = 30_000;
 
 #[cfg(not(feature = "generate-hwaddr"))]
 const NET_HWADDR: [u8; 6] = [0x02, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];

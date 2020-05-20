@@ -1,3 +1,4 @@
+use stm32f4xx_hal::hal::digital::v2::OutputPin;
 use crate::{
     ad5680,
     channel_state::ChannelState,
