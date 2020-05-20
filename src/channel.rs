@@ -28,10 +28,12 @@ pub struct Channel<C: ChannelPins> {
 }
 
 impl<C: ChannelPins> Channel<C> {
-    pub fn new(pins: ChannelPinSet<C>) -> Self {
+    pub fn new(mut pins: ChannelPinSet<C>) -> Self {
         let state = ChannelState::default();
         let mut dac = ad5680::Dac::new(pins.dac_spi, pins.dac_sync);
         let _ = dac.set(0);
+        // power up TEC
+        let _ = pins.shdn.set_high();
         // sensible dummy preset. calibrate_i_set() must be used.
         let dac_factor = ad5680::MAX_VALUE as f64 / 5.0;
 
