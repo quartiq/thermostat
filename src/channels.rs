@@ -14,10 +14,10 @@ pub const CHANNELS: usize = 2;
 
 // TODO: -pub
 pub struct Channels {
-    pub channel0: Channel<Channel0>,
-    pub channel1: Channel<Channel1>,
+    channel0: Channel<Channel0>,
+    channel1: Channel<Channel1>,
     pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
-    pub tec_u_meas_adc: pins::TecUMeasAdc,
+    tec_u_meas_adc: pins::TecUMeasAdc,
     pub pwm: pins::PwmPins,
 }
 
