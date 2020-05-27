@@ -273,13 +273,13 @@ fn main() -> ! {
                                     );
                                 }
                                 Command::Pwm { channel, pin, duty } => {
-                                    let duty = duty as u16;
-
-                                    fn set_pwm_channel<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: u16) -> u16 {
-                                        pin.set_duty(duty);
-                                        pin.get_max_duty()
+                                    fn set_pwm_channel<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: f64) -> (u16, u16) {
+                                        let max = pin.get_max_duty();
+                                        let value = (duty * (max as f64)) as u16;
+                                        pin.set_duty(value);
+                                        (value, max)
                                     }
-                                    let max = match (channel, pin) {
+                                    let (value, max) = match (channel, pin) {
                                         (_, PwmPin::ISet) =>
                                             // Handled above
                                             unreachable!(),
@@ -300,7 +300,7 @@ fn main() -> ! {
                                     };
                                     let _ = writeln!(
                                         socket, "channel {}: PWM {} reconfigured to {}/{}",
-                                        channel, pin.name(), duty, max
+                                        channel, pin.name(), value, max
                                     );
                                 }
                                 Command::Pid { channel, parameter, value } => {
