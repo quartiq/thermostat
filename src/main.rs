@@ -93,7 +93,7 @@ fn main() -> ! {
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.SPI2, dp.SPI4, dp.SPI5,
-        dp.ADC1, dp.ADC2, dp.ADC3,
+        dp.ADC1,
     );
     let mut channels = Channels::new(pins);
     channels.calibrate_dac_value(0);
