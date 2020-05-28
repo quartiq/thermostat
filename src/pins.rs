@@ -26,7 +26,6 @@ pub trait ChannelPins {
     type DacSpi: Transfer<u8>;
     type DacSync: OutputPin;
     type Shdn: OutputPin;
-    type Adc;
     type VRefPin;
     type ItecPin;
     type DacFeedbackPin;
@@ -37,7 +36,6 @@ impl ChannelPins for Channel0 {
     type DacSpi = Dac0Spi;
     type DacSync = PE4<Output<PushPull>>;
     type Shdn = PE10<Output<PushPull>>;
-    type Adc = Adc<ADC1>;
     type VRefPin = PA0<Analog>;
     type ItecPin = PA6<Analog>;
     type DacFeedbackPin = PA4<Analog>;
@@ -48,7 +46,6 @@ impl ChannelPins for Channel1 {
     type DacSpi = Dac1Spi;
     type DacSync = PF6<Output<PushPull>>;
     type Shdn = PE15<Output<PushPull>>;
-    type Adc = Adc<ADC2>;
     type VRefPin = PA3<Analog>;
     type ItecPin = PB0<Analog>;
     type DacFeedbackPin = PA5<Analog>;
@@ -60,6 +57,7 @@ pub type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Al
 pub type AdcNss = PB12<Output<PushPull>>;
 type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
+pub type PinsAdc = Adc<ADC1>;
 
 pub type TecUMeasAdc = Adc<ADC3>;
 
@@ -67,7 +65,6 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_spi: C::DacSpi,
     pub dac_sync: C::DacSync,
     pub shdn: C::Shdn,
-    pub adc: C::Adc,
     pub vref_pin: C::VRefPin,
     pub itec_pin: C::ItecPin,
     pub dac_feedback_pin: C::DacFeedbackPin,
@@ -78,6 +75,7 @@ pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: AdcNss,
     pub tec_u_meas_adc: TecUMeasAdc,
+    pub pins_adc: PinsAdc,
     pub pwm: PwmPins,
     pub channel0: ChannelPinSet<Channel0>,
     pub channel1: ChannelPinSet<Channel1>,
@@ -107,6 +105,7 @@ impl Pins {
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
+        let pins_adc = Adc::adc1(adc1, true, Default::default());
         let tec_u_meas_adc = Adc::adc3(adc3, true, Default::default());
 
         let pwm = PwmPins::setup(
@@ -122,8 +121,6 @@ impl Pins {
         );
         let mut shdn0 = gpioe.pe10.into_push_pull_output();
         let _ = shdn0.set_low();
-        let mut adc0 = Adc::adc1(adc1, true, Default::default());
-        adc0.enable();
         let vref0_pin = gpioa.pa0.into_analog();
         let itec0_pin = gpioa.pa6.into_analog();
         let dac_feedback0_pin = gpioa.pa4.into_analog();
@@ -132,7 +129,6 @@ impl Pins {
             dac_spi: dac0_spi,
             dac_sync: dac0_sync,
             shdn: shdn0,
-            adc: adc0,
             vref_pin: vref0_pin,
             itec_pin: itec0_pin,
             dac_feedback_pin: dac_feedback0_pin,
@@ -145,8 +141,6 @@ impl Pins {
         );
         let mut shdn1 = gpioe.pe15.into_push_pull_output();
         let _ = shdn1.set_low();
-        let mut adc1 = Adc::adc2(adc2, true, Default::default());
-        adc1.enable();
         let vref1_pin = gpioa.pa3.into_analog();
         let itec1_pin = gpiob.pb0.into_analog();
         let dac_feedback1_pin = gpioa.pa5.into_analog();
@@ -155,7 +149,6 @@ impl Pins {
             dac_spi: dac1_spi,
             dac_sync: dac1_sync,
             shdn: shdn1,
-            adc: adc1,
             vref_pin: vref1_pin,
             itec_pin: itec1_pin,
             dac_feedback_pin: dac_feedback1_pin,
@@ -164,7 +157,7 @@ impl Pins {
 
         Pins {
             adc_spi, adc_nss,
-            tec_u_meas_adc,
+            pins_adc, tec_u_meas_adc,
             pwm,
             channel0,
             channel1,

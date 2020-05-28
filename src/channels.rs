@@ -16,6 +16,8 @@ pub struct Channels {
     channel0: Channel<Channel0>,
     channel1: Channel<Channel1>,
     pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
+    /// stm32f4 integrated adc
+    pins_adc: pins::PinsAdc,
     tec_u_meas_adc: pins::TecUMeasAdc,
     pub pwm: pins::PwmPins,
 }
@@ -24,6 +26,7 @@ impl Channels {
     pub fn new(pins: pins::Pins) -> Self {
         let channel0 = Channel::new(pins.channel0);
         let channel1 = Channel::new(pins.channel1);
+        let pins_adc = pins.pins_adc;
         let tec_u_meas_adc = pins.tec_u_meas_adc;
         let pwm = pins.pwm;
 
@@ -47,7 +50,7 @@ impl Channels {
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
         adc.start_continuous_conversion().unwrap();
 
-        Channels { channel0, channel1, adc, tec_u_meas_adc, pwm }
+        Channels { channel0, channel1, adc, pins_adc, tec_u_meas_adc, pwm }
     }
 
     pub fn channel_state<I: Into<usize>>(&mut self, channel: I) -> &mut ChannelState {
@@ -106,19 +109,21 @@ impl Channels {
     pub fn read_dac_feedback(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
-                let sample = self.channel0.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel0.dac_feedback_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
+                info!("dac0_fb: {}/{:03X}", mv, sample);
                 Volts(mv as f64 / 1000.0)
             }
             1 => {
-                let sample = self.channel1.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel1.dac_feedback_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
+                info!("dac1_fb: {}/{:03X}", mv, sample);
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
@@ -140,19 +145,19 @@ impl Channels {
     pub fn read_itec(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
-                let sample = self.channel0.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel0.itec_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             1 => {
-                let sample = self.channel1.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel1.itec_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
@@ -163,19 +168,19 @@ impl Channels {
     pub fn read_vref(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
-                let sample = self.channel0.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel0.vref_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel0.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             1 => {
-                let sample = self.channel1.adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel1.vref_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.channel1.adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
