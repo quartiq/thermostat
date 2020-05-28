@@ -6,6 +6,7 @@ use stm32f4xx_hal::{
     time::MegaHertz,
     spi,
 };
+use crate::timer::sleep;
 
 /// SPI Mode 1
 pub const SPI_MODE: spi::Mode = spi::Mode {
@@ -33,23 +34,23 @@ impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
         }
     }
 
-    fn write(&mut self, mut buf: [u8; 3]) -> Result<(), SPI::Error> {
+    fn write(&mut self, buf: &mut [u8]) -> Result<(), SPI::Error> {
         // pulse sync to start a new transfer. leave sync idle low
         // afterwards to save power as recommended per datasheet.
         let _ = self.sync.set_high();
-        cortex_m::asm::nop();
+        // must be high for >= 33 ns
+        sleep(1);
         let _ = self.sync.set_low();
-
-        self.spi.transfer(&mut buf)?;
+        self.spi.transfer(buf)?;
         Ok(())
     }
 
     pub fn set(&mut self, value: u32) -> Result<(), SPI::Error> {
-        let buf = [
+        let mut buf = [
             (value >> 14) as u8,
             (value >> 6) as u8,
             (value << 2) as u8,
         ];
-        self.write(buf)
+        self.write(&mut buf)
     }
 }

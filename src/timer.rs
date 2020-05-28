@@ -39,3 +39,10 @@ pub fn now() -> u32 {
             .deref()
     })
 }
+
+/// block for at least `amount` milliseconds
+fn sleep(amount: u32) {
+    use crate::timer::now;
+    let start = now();
+    while now() - start <= amount {}
+}
