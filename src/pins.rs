@@ -16,7 +16,7 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
-    stm32::{ADC1, ADC2, ADC3, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    stm32::{ADC1, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
     time::U32Ext,
 };
 use crate::channel::{Channel0, Channel1};
@@ -59,8 +59,6 @@ type Dac0Spi = Spi<SPI4, (PE2<Alternate<AF5>>, NoMiso, PE6<Alternate<AF5>>)>;
 type Dac1Spi = Spi<SPI5, (PF7<Alternate<AF5>>, NoMiso, PF9<Alternate<AF5>>)>;
 pub type PinsAdc = Adc<ADC1>;
 
-pub type TecUMeasAdc = Adc<ADC3>;
-
 pub struct ChannelPinSet<C: ChannelPins> {
     pub dac_spi: C::DacSpi,
     pub dac_sync: C::DacSync,
@@ -74,7 +72,6 @@ pub struct ChannelPinSet<C: ChannelPins> {
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: AdcNss,
-    pub tec_u_meas_adc: TecUMeasAdc,
     pub pins_adc: PinsAdc,
     pub pwm: PwmPins,
     pub channel0: ChannelPinSet<Channel0>,
@@ -88,7 +85,7 @@ impl Pins {
         tim1: TIM1, tim3: TIM3,
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
-        adc1: ADC1, adc2: ADC2, adc3: ADC3,
+        adc1: ADC1,
     ) -> Self {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
@@ -106,7 +103,6 @@ impl Pins {
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
         let pins_adc = Adc::adc1(adc1, true, Default::default());
-        let tec_u_meas_adc = Adc::adc3(adc3, true, Default::default());
 
         let pwm = PwmPins::setup(
             clocks, tim1, tim3,
@@ -157,7 +153,7 @@ impl Pins {
 
         Pins {
             adc_spi, adc_nss,
-            pins_adc, tec_u_meas_adc,
+            pins_adc,
             pwm,
             channel0,
             channel1,

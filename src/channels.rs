@@ -18,7 +18,6 @@ pub struct Channels {
     pub adc: ad7172::Adc<pins::AdcSpi, pins::AdcNss>,
     /// stm32f4 integrated adc
     pins_adc: pins::PinsAdc,
-    tec_u_meas_adc: pins::TecUMeasAdc,
     pub pwm: pins::PwmPins,
 }
 
@@ -27,7 +26,6 @@ impl Channels {
         let channel0 = Channel::new(pins.channel0);
         let channel1 = Channel::new(pins.channel1);
         let pins_adc = pins.pins_adc;
-        let tec_u_meas_adc = pins.tec_u_meas_adc;
         let pwm = pins.pwm;
 
         let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
@@ -50,7 +48,7 @@ impl Channels {
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
         adc.start_continuous_conversion().unwrap();
 
-        Channels { channel0, channel1, adc, pins_adc, tec_u_meas_adc, pwm }
+        Channels { channel0, channel1, adc, pins_adc, pwm }
     }
 
     pub fn channel_state<I: Into<usize>>(&mut self, channel: I) -> &mut ChannelState {
@@ -190,19 +188,19 @@ impl Channels {
     pub fn read_tec_u_meas(&mut self, channel: usize) -> Volts {
         match channel {
             0 => {
-                let sample = self.tec_u_meas_adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel0.tec_u_meas_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.tec_u_meas_adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             1 => {
-                let sample = self.tec_u_meas_adc.convert(
+                let sample = self.pins_adc.convert(
                     &self.channel1.tec_u_meas_pin,
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
-                let mv = self.tec_u_meas_adc.sample_to_millivolts(sample);
+                let mv = self.pins_adc.sample_to_millivolts(sample);
                 Volts(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
