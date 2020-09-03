@@ -5,11 +5,13 @@ use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
 use bare_metal::CriticalSection;
 use stm32f4xx_hal::{
+    rcc::Clocks,
     stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
 use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
 use smoltcp::iface::{NeighborCache, EthernetInterfaceBuilder, EthernetInterface};
-use stm32_eth::{Eth, RingEntry, RxDescriptor, TxDescriptor};
+use stm32_eth::{Eth, RingEntry, PhyAddress, RxDescriptor, TxDescriptor};
+use crate::pins::EthernetPins;
 
 /// Not on the stack so that stack can be placed in CCMRAM (which the
 /// ethernet peripheral cannot access)
@@ -24,7 +26,9 @@ static NET_PENDING: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
 
 /// Run callback `f` with ethernet driver and TCP/IP stack
 pub fn run<F>(
+    clocks: Clocks,
     ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
+    eth_pins: EthernetPins,
     ethernet_addr: EthernetAddress, f: F
 ) where
     F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
@@ -38,8 +42,11 @@ pub fn run<F>(
     // Ethernet driver
     let mut eth_dev = Eth::new(
         ethernet_mac, ethernet_dma,
-        &mut rx_ring[..], &mut tx_ring[..]
-    );
+        &mut rx_ring[..], &mut tx_ring[..],
+        PhyAddress::_0,
+        clocks,
+        eth_pins,
+    ).unwrap();
     eth_dev.enable_interrupt();
 
     // IP stack

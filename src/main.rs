@@ -74,8 +74,6 @@ fn main() -> ! {
     cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let dp = Peripherals::take().unwrap();
-    stm32_eth::setup(&dp.RCC, &dp.SYSCFG);
-
     let clocks = dp.RCC.constrain()
         .cfgr
         .use_hse(HSE)
@@ -91,7 +89,7 @@ fn main() -> ! {
 
     timer::setup(cp.SYST, clocks);
 
-    let pins = Pins::setup(
+    let (pins, eth_pins) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.SPI2, dp.SPI4, dp.SPI5,
@@ -110,7 +108,7 @@ fn main() -> ! {
     };
     info!("Net hwaddr: {}", hwaddr);
 
-    net::run(dp.ETHERNET_MAC, dp.ETHERNET_DMA, hwaddr, |iface| {
+    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
             loop {
                 let instant = Instant::from_millis(i64::from(timer::now()));

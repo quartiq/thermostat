@@ -2,7 +2,7 @@ use stm32f4xx_hal::{
     adc::Adc,
     hal::{blocking::spi::Transfer, digital::v2::OutputPin},
     gpio::{
-        AF5, Alternate, Analog,
+        AF5, Alternate, Analog, Floating, Input,
         gpioa::*,
         gpiob::*,
         gpioc::*,
@@ -19,8 +19,21 @@ use stm32f4xx_hal::{
     stm32::{ADC1, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
     time::U32Ext,
 };
+use stm32_eth::EthPins;
 use crate::channel::{Channel0, Channel1};
 
+
+pub type EthernetPins = EthPins<
+    PA1<Input<Floating>>,
+    PA2<Input<Floating>>,
+    PC1<Input<Floating>>,
+    PA7<Input<Floating>>,
+    PB11<Input<Floating>>,
+    PG13<Input<Floating>>,
+    PB13<Input<Floating>>,
+    PC4<Input<Floating>>,
+    PC5<Input<Floating>>,
+ >;
 
 pub trait ChannelPins {
     type DacSpi: Transfer<u8>;
@@ -86,7 +99,7 @@ impl Pins {
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
-    ) -> Self {
+    ) -> (Self, EthernetPins) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -94,11 +107,6 @@ impl Pins {
         let gpiof = gpiof.split();
         let gpiog = gpiog.split();
 
-        Self::setup_ethernet(
-            gpioa.pa1, gpioa.pa2, gpioc.pc1, gpioa.pa7,
-            gpioc.pc4, gpioc.pc5, gpiob.pb11, gpiog.pg13,
-            gpiob.pb13
-        );
         let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
@@ -151,13 +159,27 @@ impl Pins {
             tec_u_meas_pin: tec_u_meas1_pin,
         };
 
-        Pins {
+        let pins = Pins {
             adc_spi, adc_nss,
             pins_adc,
             pwm,
             channel0,
             channel1,
-        }
+        };
+
+        let eth_pins = EthPins {
+            ref_clk: gpioa.pa1,
+            md_io: gpioa.pa2,
+            md_clk: gpioc.pc1,
+            crs: gpioa.pa7,
+            tx_en: gpiob.pb11,
+            tx_d0: gpiog.pg13,
+            tx_d1: gpiob.pb13,
+            rx_d0: gpioc.pc4,
+            rx_d1: gpioc.pc5,
+        };
+
+        (pins, eth_pins)
     }
 
     /// Configure the GPIO pins for SPI operation, and initialize SPI
@@ -215,32 +237,6 @@ impl Pins {
         let sync = sync.into_push_pull_output();
 
         (spi, sync)
-    }
-
-    /// Configure the GPIO pins for Ethernet operation
-    fn setup_ethernet<M1, M2, M3, M4, M5, M6, M7, M8, M9>(
-        pa1: PA1<M1>, pa2: PA2<M2>, pc1: PC1<M3>, pa7: PA7<M4>,
-        pc4: PC4<M5>, pc5: PC5<M6>, pb11: PB11<M7>, pg13: PG13<M8>,
-        pb13: PB13<M9>
-    ) {
-        // PA1 RMII Reference Clock - SB13 ON
-        pa1.into_alternate_af11().set_speed(VeryHigh);
-        // PA2 RMII MDIO - SB160 ON
-        pa2.into_alternate_af11().set_speed(VeryHigh);
-        // PC1 RMII MDC - SB164 ON
-        pc1.into_alternate_af11().set_speed(VeryHigh);
-        // PA7 RMII RX Data Valid D11 JP6 ON
-        pa7.into_alternate_af11().set_speed(VeryHigh);
-        // PC4 RMII RXD0 - SB178 ON
-        pc4.into_alternate_af11().set_speed(VeryHigh);
-        // PC5 RMII RXD1 - SB181 ON
-        pc5.into_alternate_af11().set_speed(VeryHigh);
-        // PB11 RMII TX Enable - SB183 ON
-        pb11.into_alternate_af11().set_speed(VeryHigh);
-        // PG13 RXII TXD0 - SB182 ON
-        pg13.into_alternate_af11().set_speed(VeryHigh);
-        // PB13 RMII TXD1 I2S_A_CK JP7 ON
-        pb13.into_alternate_af11().set_speed(VeryHigh);
     }
 }
 
