@@ -30,6 +30,7 @@ use smoltcp::{
 
 mod init_log;
 use init_log::init_log;
+mod leds;
 mod pins;
 use pins::Pins;
 mod ad7172;
@@ -89,12 +90,17 @@ fn main() -> ! {
 
     timer::setup(cp.SYST, clocks);
 
-    let (pins, eth_pins) = Pins::setup(
+    let (pins, mut leds, eth_pins) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
-        dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOE, dp.GPIOF, dp.GPIOG,
+        dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.SPI2, dp.SPI4, dp.SPI5,
         dp.ADC1,
     );
+
+    leds.r1.on();
+    leds.g3.off();
+    leds.g4.off();
+
     let mut channels = Channels::new(pins);
     channels.calibrate_dac_value(0);
     channels.calibrate_dac_value(1);
@@ -110,6 +116,8 @@ fn main() -> ! {
 
     net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
+            leds.r1.off();
+
             loop {
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 let updated_channel = channels.poll_adc(instant);
@@ -259,11 +267,13 @@ fn main() -> ! {
                                 }
                                 Command::PwmPid { channel } => {
                                     channels.channel_state(channel).pid_engaged = true;
+                                    leds.g3.on();
                                     let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
                                     );
                                 }
                                 Command::Pwm { channel, pin: PwmPin::ISet, duty } => {
                                     channels.channel_state(channel).pid_engaged = false;
+                                    leds.g3.off();
                                     let voltage = Volts(duty);
                                     channels.set_dac(channel, voltage);
                                     let _ = writeln!(
@@ -376,6 +386,7 @@ fn main() -> ! {
                 // Update watchdog
                 wd.feed();
 
+                leds.g4.off();
                 cortex_m::interrupt::free(|cs| {
                     if !net::is_pending(cs) {
                         // Wait for interrupts
@@ -383,6 +394,7 @@ fn main() -> ! {
                         wfi();
                     }
                 });
+                leds.g4.on();
             }
         });
     });

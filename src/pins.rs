@@ -6,6 +6,7 @@ use stm32f4xx_hal::{
         gpioa::*,
         gpiob::*,
         gpioc::*,
+        gpiod::*,
         gpioe::*,
         gpiof::*,
         gpiog::*,
@@ -16,11 +17,14 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
-    stm32::{ADC1, GPIOA, GPIOB, GPIOC, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    stm32::{ADC1, GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
     time::U32Ext,
 };
 use stm32_eth::EthPins;
-use crate::channel::{Channel0, Channel1};
+use crate::{
+    channel::{Channel0, Channel1},
+    leds::Leds,
+};
 
 
 pub type EthernetPins = EthPins<
@@ -96,13 +100,14 @@ impl Pins {
     pub fn setup(
         clocks: Clocks,
         tim1: TIM1, tim3: TIM3,
-        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
+        gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiod: GPIOD, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
-    ) -> (Self, EthernetPins) {
+    ) -> (Self, Leds, EthernetPins) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
+        let gpiod = gpiod.split();
         let gpioe = gpioe.split();
         let gpiof = gpiof.split();
         let gpiog = gpiog.split();
@@ -167,6 +172,8 @@ impl Pins {
             channel1,
         };
 
+        let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
+
         let eth_pins = EthPins {
             ref_clk: gpioa.pa1,
             md_io: gpioa.pa2,
@@ -179,7 +186,7 @@ impl Pins {
             rx_d1: gpioc.pc5,
         };
 
-        (pins, eth_pins)
+        (pins, leds, eth_pins)
     }
 
     /// Configure the GPIO pins for SPI operation, and initialize SPI
