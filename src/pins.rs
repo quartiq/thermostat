@@ -206,7 +206,7 @@ impl Pins {
     fn setup_dac0<M1, M2, M3>(
         clocks: Clocks, spi4: SPI4,
         sclk: PE2<M1>, sync: PE4<M2>, sdin: PE6<M3>
-    ) -> (Dac0Spi, PE4<Output<PushPull>>) {
+    ) -> (Dac0Spi, <Channel0 as ChannelPins>::DacSync) {
         let sclk = sclk.into_alternate_af5();
         let sdin = sdin.into_alternate_af5();
         let spi = Spi::spi4(
@@ -224,7 +224,7 @@ impl Pins {
     fn setup_dac1<M1, M2, M3>(
         clocks: Clocks, spi5: SPI5,
         sclk: PF7<M1>, sync: PF6<M2>, sdin: PF9<M3>
-    ) -> (Dac1Spi, PF6<Output<PushPull>>) {
+    ) -> (Dac1Spi, <Channel1 as ChannelPins>::DacSync) {
         let sclk = sclk.into_alternate_af5();
         let sdin = sdin.into_alternate_af5();
         let spi = Spi::spi5(
