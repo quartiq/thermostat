@@ -97,7 +97,7 @@ fn main() -> ! {
     );
     let mut channels = Channels::new(pins);
     channels.calibrate_dac_value(0);
-
+    channels.calibrate_dac_value(1);
 
     #[cfg(not(feature = "generate-hwaddr"))]
     let hwaddr = EthernetAddress(NET_HWADDR);

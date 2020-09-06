@@ -207,50 +207,49 @@ impl Channels {
         }
     }
 
-    /// for i_set
+    /// Calibrate the I_SET DAC using the DAC_FB ADC pin.
+    ///
+    /// These loops perform a width-first search for the DAC setting
+    /// that will produce a `target_voltage`.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
-        let vref = self.read_vref(channel);
-        let value = self.calibrate_dac_value_for_voltage(channel, vref);
-        info!("best dac value for {}: {}", vref, value);
-
-        let dac_factor = value as f64 / vref.0;
-        match channel {
-            0 => self.channel0.dac_factor = dac_factor,
-            1 => self.channel1.dac_factor = dac_factor,
-            _ => unreachable!(),
-        }
-    }
-
-    fn calibrate_dac_value_for_voltage(&mut self, channel: usize, voltage: Volts) -> u32 {
-        let mut best_value = 0;
+        let target_voltage = Volts(2.5);
+        let mut start_value = 1;
         let mut best_error = Volts(100.0);
 
-        for step in (1..=12).rev() {
-            for value in (best_value..=ad5680::MAX_VALUE).step_by(2usize.pow(step)) {
+        for step in (0..18).rev() {
+            let mut prev_value = start_value;
+            for value in (start_value..=ad5680::MAX_VALUE).step_by(1 << step) {
                 match channel {
                     0 => {
                         self.channel0.dac.set(value).unwrap();
-                        // self.channel0.shdn.set_high().unwrap();
                     }
                     1 => {
                         self.channel1.dac.set(value).unwrap();
-                        // self.channel1.shdn.set_high().unwrap();
                     }
                     _ => unreachable!(),
                 }
 
                 let dac_feedback = self.read_dac_feedback_until_stable(channel, 0.001);
-                let error = voltage - dac_feedback;
+                let error = target_voltage - dac_feedback;
                 if error < Volts(0.0) {
                     break;
                 } else if error < best_error {
-                    best_value = value;
                     best_error = error;
+                    start_value = prev_value;
+
+                    let dac_factor = value as f64 / dac_feedback.0;
+                    match channel {
+                        0 => self.channel0.dac_factor = dac_factor,
+                        1 => self.channel1.dac_factor = dac_factor,
+                        _ => unreachable!(),
+                    }
                 }
+
+                prev_value = value;
             }
         }
 
+        // Reset
         self.set_dac(channel, Volts(0.0));
-        best_value
     }
 }
