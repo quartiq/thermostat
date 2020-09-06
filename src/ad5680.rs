@@ -46,6 +46,7 @@ impl<SPI: Transfer<u8>, S: OutputPin> Dac<SPI, S> {
     }
 
     pub fn set(&mut self, value: u32) -> Result<(), SPI::Error> {
+        let value = value.min(MAX_VALUE);
         let mut buf = [
             (value >> 14) as u8,
             (value >> 6) as u8,
