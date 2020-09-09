@@ -32,23 +32,16 @@ impl Channels {
         // Feature not used
         adc.set_sync_enable(false).unwrap();
 
-        // Calibrate ADC channels individually
-        adc.disable_all_channels().unwrap();
-
-        adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
-        adc.calibrate().unwrap();
-        adc.disable_channel(0).unwrap();
-
-        adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
-        adc.calibrate().unwrap();
-        adc.disable_channel(1).unwrap();
-
         // Setup channels and start ADC
         adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
         adc.start_continuous_conversion().unwrap();
 
-        Channels { channel0, channel1, adc, pins_adc, pwm }
+        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
+        for channel in 0..CHANNELS {
+            channels.calibrate_dac_value(channel);
+        }
+        channels
     }
 
     pub fn channel_state<I: Into<usize>>(&mut self, channel: I) -> &mut ChannelState {

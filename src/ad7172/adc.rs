@@ -114,27 +114,11 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    /// Calibrates offset registers
-    pub fn calibrate(&mut self) -> Result<(), SPI::Error> {
-        // internal offset calibration
-        self.update_reg(&regs::AdcMode, |adc_mode| {
-            adc_mode.set_mode(Mode::InternalOffsetCalibration);
-        })?;
-        while ! self.read_reg(&regs::Status)?.ready() {}
-
-        // system offset calibration
-        self.update_reg(&regs::AdcMode, |adc_mode| {
-            adc_mode.set_mode(Mode::SystemOffsetCalibration);
-        })?;
-        while ! self.read_reg(&regs::Status)?.ready() {}
-
-        // system gain calibration
-        self.update_reg(&regs::AdcMode, |adc_mode| {
-            adc_mode.set_mode(Mode::SystemGainCalibration);
-        })?;
-        while ! self.read_reg(&regs::Status)?.ready() {}
-
-        Ok(())
+    pub fn get_calibration(&mut self, index: u8) -> Result<ChannelCalibration, SPI::Error> {
+        let offset = self.read_reg(&regs::Offset { index })?.offset();
+        let gain = self.read_reg(&regs::Gain { index })?.gain();
+        let bipolar = self.read_reg(&regs::SetupCon { index })?.bipolar();
+        Ok(ChannelCalibration { offset, gain, bipolar })
     }
 
     pub fn start_continuous_conversion(&mut self) -> Result<(), SPI::Error> {
@@ -262,7 +246,7 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             Err(e) => Err(e),
         };
         let result = match (result, checksum) {
-            (Ok(_),None) =>
+            (Ok(_), None) =>
                 Ok(None),
             (Ok(_), Some(checksum_out)) => {
                 let mut checksum_buf = [checksum_out; 1];
@@ -277,5 +261,28 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         let _ = self.nss.set_high();
 
         result
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ChannelCalibration {
+    offset: u32,
+    gain: u32,
+    bipolar: bool,
+}
+
+impl ChannelCalibration {
+    pub fn convert_data(&self, data: u32) -> f64 {
+        let data = if self.bipolar {
+            (data as i32 - 0x80_0000) as f64
+        } else {
+            data as f64 / 2.0
+        };
+        let data = data / (self.gain as f64 / (0x40_0000 as f64));
+        let data = data + (self.offset as i32 - 0x80_0000) as f64;
+        let data = data / (2 << 23) as f64;
+
+        const V_REF: f64 = 3.0;
+        data * V_REF / 0.75
     }
 }

@@ -102,8 +102,10 @@ fn main() -> ! {
     leds.g4.off();
 
     let mut channels = Channels::new(pins);
-    channels.calibrate_dac_value(0);
-    channels.calibrate_dac_value(1);
+    let adc_calibration = [
+        channels.adc.get_calibration(0).unwrap(),
+        channels.adc.get_calibration(1).unwrap(),
+    ];
 
     #[cfg(not(feature = "generate-hwaddr"))]
     let hwaddr = EthernetAddress(NET_HWADDR);
@@ -162,12 +164,16 @@ fn main() -> ! {
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "t={} adc_raw{}=0x{:06X} vref={} dac_feedback={} itec={} tec={} tec_u_meas={}",
+                                                socket, "channel {}: t={} adc_raw{}=0x{:06X} adc{}={:.3}V vref={} dac_feedback={} itec={} tec={} tec_u_meas={}",
+                                                channel,
                                                 state.adc_time, channel, adc_data,
+                                                channel, adc_calibration[channel].convert_data(adc_data),
                                                 vref, dac_feedback,
                                                 itec, tec_i,
                                                 tec_u_meas,
                                             );
+                                        } else {
+                                            let _ = writeln!(socket, "channel {}: no adc input", channel);
                                         }
                                     }
                                 }
@@ -373,9 +379,11 @@ fn main() -> ! {
                     } else if socket.can_send() && socket.send_capacity() - socket.send_queue() > 256 {
                         while let Some(channel) = session.is_report_pending() {
                             let state = &mut channels.channel_state(usize::from(channel));
+                            let adc_data = state.adc_data.unwrap_or(0);
                             let _ = writeln!(
-                                socket, "t={} raw{}=0x{:06X}",
-                                state.adc_time, channel, state.adc_data.unwrap_or(0)
+                                socket, "t={} raw{}=0x{:06X} value={:.3}V",
+                                state.adc_time, channel, adc_data,
+                                adc_calibration[channel].convert_data(adc_data),
                             ).map(|_| {
                                 session.mark_report_sent(channel);
                             });
