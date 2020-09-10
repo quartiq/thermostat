@@ -57,7 +57,7 @@ mod channel_state;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
-const WATCHDOG_INTERVAL: u32 = 100;
+const WATCHDOG_INTERVAL: u32 = 1_000;
 #[cfg(feature = "semihosting")]
 const WATCHDOG_INTERVAL: u32 = 30_000;
 
