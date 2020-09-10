@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(maybe_uninit_extra, maybe_uninit_ref)]
 // TODO: #![deny(warnings, unused)]
 
 #[cfg(not(feature = "semihosting"))]
@@ -30,6 +31,7 @@ use smoltcp::{
 
 mod init_log;
 use init_log::init_log;
+mod usb;
 mod leds;
 mod pins;
 use pins::Pins;
@@ -90,16 +92,21 @@ fn main() -> ! {
 
     timer::setup(cp.SYST, clocks);
 
-    let (pins, mut leds, eth_pins) = Pins::setup(
+    let (pins, mut leds, eth_pins, usb) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.SPI2, dp.SPI4, dp.SPI5,
         dp.ADC1,
+        dp.OTG_FS_GLOBAL,
+        dp.OTG_FS_DEVICE,
+        dp.OTG_FS_PWRCLK,
     );
 
     leds.r1.on();
     leds.g3.off();
     leds.g4.off();
+
+    usb::State::setup(usb);
 
     let mut channels = Channels::new(pins);
     let adc_calibration = [
@@ -398,7 +405,7 @@ fn main() -> ! {
                 cortex_m::interrupt::free(|cs| {
                     if !net::is_pending(cs) {
                         // Wait for interrupts
-                        // (Ethernet or SysTick)
+                        // (Ethernet, SysTick, or USB)
                         wfi();
                     }
                 });

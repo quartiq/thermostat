@@ -14,10 +14,17 @@ use stm32f4xx_hal::{
         Output, PushPull,
         Speed::VeryHigh,
     },
+    otg_fs::USB,
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
-    stm32::{ADC1, GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, SPI2, SPI4, SPI5, TIM1, TIM3},
+    stm32::{
+        ADC1,
+        GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG,
+        OTG_FS_GLOBAL, OTG_FS_DEVICE, OTG_FS_PWRCLK,
+        SPI2, SPI4, SPI5,
+        TIM1, TIM3,
+    },
     time::U32Ext,
 };
 use stm32_eth::EthPins;
@@ -103,7 +110,8 @@ impl Pins {
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiod: GPIOD, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
-    ) -> (Self, Leds, EthernetPins) {
+        otg_fs_global: OTG_FS_GLOBAL, otg_fs_device: OTG_FS_DEVICE, otg_fs_pwrclk: OTG_FS_PWRCLK,
+    ) -> (Self, Leds, EthernetPins, USB) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -186,7 +194,16 @@ impl Pins {
             rx_d1: gpioc.pc5,
         };
 
-        (pins, leds, eth_pins)
+        let usb = USB {
+            usb_global: otg_fs_global,
+            usb_device: otg_fs_device,
+            usb_pwrclk: otg_fs_pwrclk,
+            pin_dm: gpioa.pa11.into_alternate_af10(),
+            pin_dp: gpioa.pa12.into_alternate_af10(),
+            hclk: clocks.hclk(),
+        };
+
+        (pins, leds, eth_pins, usb)
     }
 
     /// Configure the GPIO pins for SPI operation, and initialize SPI
