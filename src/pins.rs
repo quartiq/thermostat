@@ -1,6 +1,6 @@
 use stm32f4xx_hal::{
     adc::Adc,
-    hal::{blocking::spi::Transfer, digital::v2::OutputPin},
+    hal::{self, blocking::spi::Transfer, digital::v2::OutputPin},
     gpio::{
         AF5, Alternate, Analog, Floating, Input,
         gpioa::*,
@@ -287,11 +287,17 @@ impl PwmPins {
     ) -> PwmPins {
         let freq = 20u32.khz();
 
+        fn init_pwm_pin<P: hal::PwmPin<Duty=u16>>(pin: &mut P) {
+            pin.set_duty(0);
+            pin.enable();
+        }
         let channels = (
             max_v0.into_alternate_af2(),
             max_v1.into_alternate_af2(),
         );
-        let (max_v0, max_v1) = pwm::tim3(tim3, channels, clocks, freq);
+        let (mut max_v0, mut max_v1) = pwm::tim3(tim3, channels, clocks, freq);
+        init_pwm_pin(&mut max_v0);
+        init_pwm_pin(&mut max_v1);
 
         let channels = (
             max_i_pos0.into_alternate_af1(),
@@ -299,8 +305,12 @@ impl PwmPins {
             max_i_neg0.into_alternate_af1(),
             max_i_neg1.into_alternate_af1(),
         );
-        let (max_i_pos0, max_i_pos1, max_i_neg0, max_i_neg1) =
+        let (mut max_i_pos0, mut max_i_pos1, mut max_i_neg0, mut max_i_neg1) =
             pwm::tim1(tim1, channels, clocks, freq);
+        init_pwm_pin(&mut max_i_pos0);
+        init_pwm_pin(&mut max_i_neg0);
+        init_pwm_pin(&mut max_i_pos1);
+        init_pwm_pin(&mut max_i_neg1);
 
         PwmPins {
             max_v0, max_v1,
