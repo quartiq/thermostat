@@ -1,6 +1,7 @@
 use stm32f4xx_hal::hal::digital::v2::OutputPin;
 use crate::{
     ad5680,
+    ad7172,
     channel_state::ChannelState,
     pins::{ChannelPins, ChannelPinSet},
 };
@@ -27,8 +28,8 @@ pub struct Channel<C: ChannelPins> {
 }
 
 impl<C: ChannelPins> Channel<C> {
-    pub fn new(mut pins: ChannelPinSet<C>) -> Self {
-        let state = ChannelState::default();
+    pub fn new(mut pins: ChannelPinSet<C>, adc_calibration: ad7172::ChannelCalibration) -> Self {
+        let state = ChannelState::new(adc_calibration);
         let mut dac = ad5680::Dac::new(pins.dac_spi, pins.dac_sync);
         let _ = dac.set(0);
         // power up TEC

@@ -119,10 +119,6 @@ fn main() -> ! {
     usb::State::setup(usb);
 
     let mut channels = Channels::new(pins);
-    let adc_calibration = [
-        channels.adc.get_calibration(0).unwrap(),
-        channels.adc.get_calibration(1).unwrap(),
-    ];
 
     #[cfg(not(feature = "generate-hwaddr"))]
     let hwaddr = EthernetAddress(NET_HWADDR);
@@ -181,13 +177,13 @@ fn main() -> ! {
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "channel {}: t={} adc_raw{}=0x{:06X} adc{}={:.3}V vref={} dac_feedback={} itec={} tec={} tec_u_meas={}",
+                                                socket, "channel {}: t={} adc{}={} vref={} dac_feedback={} itec={} tec={} tec_u_meas={} r={:03}",
                                                 channel,
                                                 state.adc_time, channel, adc_data,
-                                                channel, adc_calibration[channel].convert_data(adc_data),
                                                 vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
                                                 itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
                                                 tec_u_meas.into_format_args(volt, Abbreviation),
+                                                (tec_u_meas / tec_i).into_format_args(ohm, Abbreviation),
                                             );
                                         } else {
                                             let _ = writeln!(socket, "channel {}: no adc input", channel);
@@ -398,9 +394,9 @@ fn main() -> ! {
                             let state = &mut channels.channel_state(usize::from(channel));
                             let adc_data = state.adc_data.unwrap_or(0);
                             let _ = writeln!(
-                                socket, "t={} raw{}=0x{:06X} value={:.3}V",
+                                socket, "t={} raw{}=0x{:06X} value={}",
                                 state.adc_time, channel, adc_data,
-                                adc_calibration[channel].convert_data(adc_data),
+                                state.get_adc().unwrap().into_format_args(volt, Abbreviation),
                             ).map(|_| {
                                 session.mark_report_sent(channel);
                             });

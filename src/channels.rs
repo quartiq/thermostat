@@ -26,20 +26,23 @@ pub struct Channels {
 
 impl Channels {
     pub fn new(pins: pins::Pins) -> Self {
-        let channel0 = Channel::new(pins.channel0);
-        let channel1 = Channel::new(pins.channel1);
-        let pins_adc = pins.pins_adc;
-        let pwm = pins.pwm;
-
         let mut adc = ad7172::Adc::new(pins.adc_spi, pins.adc_nss).unwrap();
         // Feature not used
         adc.set_sync_enable(false).unwrap();
 
         // Setup channels and start ADC
         adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
+        let adc_calibration0 = adc.get_calibration(0)
+            .expect("adc_calibration0");
         adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
+        let adc_calibration1 = adc.get_calibration(1)
+            .expect("adc_calibration1");
         adc.start_continuous_conversion().unwrap();
 
+        let mut channel0 = Channel::new(pins.channel0, adc_calibration0);
+        let mut channel1 = Channel::new(pins.channel1, adc_calibration1);
+        let pins_adc = pins.pins_adc;
+        let pwm = pins.pwm;
         let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
         for channel in 0..CHANNELS {
             channels.calibrate_dac_value(channel);
