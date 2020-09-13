@@ -1,16 +1,19 @@
 use smoltcp::time::Instant;
+use uom::si::{
+    f64::ElectricPotential,
+    electric_potential::volt,
+};
 use crate::{
     ad7172,
     pid,
     steinhart_hart as sh,
-    units::Volts,
 };
 
 
 pub struct ChannelState {
     pub adc_data: Option<u32>,
     pub adc_time: Instant,
-    pub dac_value: Volts,
+    pub dac_value: ElectricPotential,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
@@ -21,7 +24,7 @@ impl Default for ChannelState {
         ChannelState {
             adc_data: None,
             adc_time: Instant::from_secs(0),
-            dac_value: Volts(0.0),
+            dac_value: ElectricPotential::new::<volt>(0.0),
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),

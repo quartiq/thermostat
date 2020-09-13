@@ -1,4 +1,8 @@
 use smoltcp::time::Instant;
+use uom::si::{
+    f64::ElectricPotential,
+    electric_potential::{millivolt, volt},
+};
 use log::info;
 use crate::{
     ad5680,
@@ -6,7 +10,6 @@ use crate::{
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
     pins,
-    units::Volts,
 };
 
 pub const CHANNELS: usize = 2;
@@ -69,7 +72,7 @@ impl Channels {
             };
             if let Some(dac_value) = dac_value {
                 // Forward PID output to i_set DAC
-                self.set_dac(channel.into(), Volts(dac_value));
+                self.set_dac(channel.into(), ElectricPotential::new::<volt>(dac_value));
             }
 
             channel
@@ -77,13 +80,13 @@ impl Channels {
     }
 
     /// i_set DAC
-    pub fn set_dac(&mut self, channel: usize, voltage: Volts) {
+    pub fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) {
         let dac_factor = match channel.into() {
             0 => self.channel0.dac_factor,
             1 => self.channel1.dac_factor,
             _ => unreachable!(),
         };
-        let value = (voltage.0 * dac_factor) as u32;
+        let value = (voltage.get::<volt>() * dac_factor) as u32;
         match channel {
             0 => {
                 self.channel0.dac.set(value).unwrap();
@@ -97,7 +100,7 @@ impl Channels {
         }
     }
 
-    pub fn read_dac_feedback(&mut self, channel: usize) -> Volts {
+    pub fn read_dac_feedback(&mut self, channel: usize) -> ElectricPotential {
         match channel {
             0 => {
                 let sample = self.pins_adc.convert(
@@ -106,7 +109,7 @@ impl Channels {
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
                 info!("dac0_fb: {}/{:03X}", mv, sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
                 let sample = self.pins_adc.convert(
@@ -115,25 +118,25 @@ impl Channels {
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
                 info!("dac1_fb: {}/{:03X}", mv, sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             _ => unreachable!(),
         }
     }
 
-    pub fn read_dac_feedback_until_stable(&mut self, channel: usize, tolerance: f64) -> Volts {
+    pub fn read_dac_feedback_until_stable(&mut self, channel: usize, tolerance: ElectricPotential) -> ElectricPotential {
         let mut prev = self.read_dac_feedback(channel);
         loop {
             let current = self.read_dac_feedback(channel);
             use num_traits::float::Float;
-            if (current - prev).0.abs() < tolerance {
+            if (current - prev).abs() < tolerance {
                 return current;
             }
             prev = current;
         }
     }
 
-    pub fn read_itec(&mut self, channel: usize) -> Volts {
+    pub fn read_itec(&mut self, channel: usize) -> ElectricPotential {
         match channel {
             0 => {
                 let sample = self.pins_adc.convert(
@@ -141,7 +144,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
                 let sample = self.pins_adc.convert(
@@ -149,14 +152,14 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             _ => unreachable!(),
         }
     }
 
     /// should be 1.5V
-    pub fn read_vref(&mut self, channel: usize) -> Volts {
+    pub fn read_vref(&mut self, channel: usize) -> ElectricPotential {
         match channel {
             0 => {
                 let sample = self.pins_adc.convert(
@@ -164,7 +167,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<volt>(mv as f64 / 1000.0)
             }
             1 => {
                 let sample = self.pins_adc.convert(
@@ -172,13 +175,13 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<volt>(mv as f64 / 1000.0)
             }
             _ => unreachable!(),
         }
     }
 
-    pub fn read_tec_u_meas(&mut self, channel: usize) -> Volts {
+    pub fn read_tec_u_meas(&mut self, channel: usize) -> ElectricPotential {
         match channel {
             0 => {
                 let sample = self.pins_adc.convert(
@@ -186,7 +189,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
                 let sample = self.pins_adc.convert(
@@ -194,7 +197,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                Volts(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             _ => unreachable!(),
         }
@@ -205,9 +208,9 @@ impl Channels {
     /// These loops perform a width-first search for the DAC setting
     /// that will produce a `target_voltage`.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
-        let target_voltage = Volts(2.5);
+        let target_voltage = ElectricPotential::new::<volt>(2.5);
         let mut start_value = 1;
-        let mut best_error = Volts(100.0);
+        let mut best_error = ElectricPotential::new::<volt>(100.0);
 
         for step in (0..18).rev() {
             let mut prev_value = start_value;
@@ -222,15 +225,15 @@ impl Channels {
                     _ => unreachable!(),
                 }
 
-                let dac_feedback = self.read_dac_feedback_until_stable(channel, 0.001);
+                let dac_feedback = self.read_dac_feedback_until_stable(channel, ElectricPotential::new::<volt>(0.001));
                 let error = target_voltage - dac_feedback;
-                if error < Volts(0.0) {
+                if error < ElectricPotential::new::<volt>(0.0) {
                     break;
                 } else if error < best_error {
                     best_error = error;
                     start_value = prev_value;
 
-                    let dac_factor = value as f64 / dac_feedback.0;
+                    let dac_factor = value as f64 / dac_feedback.get::<volt>();
                     match channel {
                         0 => self.channel0.dac_factor = dac_factor,
                         1 => self.channel1.dac_factor = dac_factor,
@@ -243,6 +246,6 @@ impl Channels {
         }
 
         // Reset
-        self.set_dac(channel, Volts(0.0));
+        self.set_dac(channel, ElectricPotential::new::<volt>(0.0));
     }
 }

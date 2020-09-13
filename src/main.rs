@@ -28,6 +28,18 @@ use smoltcp::{
     time::Instant,
     wire::EthernetAddress,
 };
+use uom::{
+    fmt::DisplayStyle::Abbreviation,
+    si::{
+        f64::{
+            ElectricPotential,
+            ElectricalResistance,
+        },
+        electric_current::ampere,
+        electric_potential::volt,
+        electrical_resistance::ohm,
+    },
+};
 
 mod init_log;
 use init_log::init_log;
@@ -45,8 +57,6 @@ use session::{Session, SessionOutput};
 mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
-mod units;
-use units::{Ohms, Volts};
 mod pid;
 mod steinhart_hart;
 mod channels;
@@ -165,7 +175,7 @@ fn main() -> ! {
                                             let dac_feedback = channels.read_dac_feedback(channel);
 
                                             let itec = channels.read_itec(channel);
-                                            let tec_i = -(itec - Volts(1.5)) / Ohms(0.4);
+                                            let tec_i = -(itec - ElectricPotential::new::<volt>(1.5)) / ElectricalResistance::new::<ohm>(0.4);
 
                                             let tec_u_meas = channels.read_tec_u_meas(channel);
 
@@ -175,9 +185,9 @@ fn main() -> ! {
                                                 channel,
                                                 state.adc_time, channel, adc_data,
                                                 channel, adc_calibration[channel].convert_data(adc_data),
-                                                vref, dac_feedback,
-                                                itec, tec_i,
-                                                tec_u_meas,
+                                                vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
+                                                itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
+                                                tec_u_meas.into_format_args(volt, Abbreviation),
                                             );
                                         } else {
                                             let _ = writeln!(socket, "channel {}: no adc input", channel);
@@ -219,7 +229,7 @@ fn main() -> ! {
                                             channel,
                                             if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
-                                        let _ = writeln!(socket, "- i_set={}", state.dac_value);
+                                        let _ = writeln!(socket, "- i_set={}", state.dac_value.into_format_args(volt, Abbreviation));
                                         fn show_pwm_channel<S, P>(mut socket: S, name: &str, pin: &P)
                                         where
                                             S: core::fmt::Write,
@@ -287,11 +297,11 @@ fn main() -> ! {
                                 Command::Pwm { channel, pin: PwmPin::ISet, duty } => {
                                     channels.channel_state(channel).pid_engaged = false;
                                     leds.g3.off();
-                                    let voltage = Volts(duty);
+                                    let voltage = ElectricPotential::new::<volt>(duty);
                                     channels.set_dac(channel, voltage);
                                     let _ = writeln!(
                                         socket, "channel {}: PWM duty cycle manually set to {}",
-                                        channel, voltage
+                                        channel, voltage.into_format_args(volt, Abbreviation),
                                     );
                                 }
                                 Command::Pwm { channel, pin, duty } => {
