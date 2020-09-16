@@ -51,8 +51,7 @@ impl Channels {
         let pwm = pins.pwm;
         let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
         for channel in 0..CHANNELS {
-            // FIXME: this reads 1.5 V instead of the expected 1.65 V.
-            // channels.channel_state(channel).vref = channels.read_vref(channel);
+            channels.channel_state(channel).vref = channels.read_vref(channel);
             channels.calibrate_dac_value(channel);
         }
         channels

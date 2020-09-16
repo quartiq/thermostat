@@ -170,11 +170,11 @@ fn main() -> ! {
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
                                         if let Some(adc_input) = channels.channel_state(channel).get_adc() {
-                                            let vref = channels.read_vref(channel);
+                                            let vref = channels.channel_state(channel).vref;
                                             let dac_feedback = channels.read_dac_feedback(channel);
 
                                             let itec = channels.read_itec(channel);
-                                            let tec_i = -(itec - ElectricPotential::new::<volt>(1.5)) / ElectricalResistance::new::<ohm>(0.4);
+                                            let tec_i = (itec - vref) / ElectricalResistance::new::<ohm>(0.4);
 
                                             let tec_u_meas = channels.read_tec_u_meas(channel);
 

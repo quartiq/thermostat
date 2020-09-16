@@ -16,11 +16,13 @@ use crate::{
 };
 
 const R_INNER: f64 = 2.0 * 5100.0;
+const VREF_SENS: f64 = 3.3 / 2.0;
 
 pub struct ChannelState {
     pub adc_data: Option<u32>,
     pub adc_calibration: ad7172::ChannelCalibration,
     pub adc_time: Instant,
+    /// VREF for the TEC (1.5V)
     pub vref: ElectricPotential,
     pub dac_value: ElectricPotential,
     pub pid_engaged: bool,
@@ -62,8 +64,9 @@ impl ChannelState {
     /// Get `SENS[01]` input resistance
     pub fn get_sens(&self) -> Option<ElectricalResistance> {
         let r_inner = ElectricalResistance::new::<ohm>(R_INNER);
+        let vref = ElectricPotential::new::<volt>(VREF_SENS);
         let adc_input = self.get_adc()?;
-        let r = r_inner * adc_input / (self.vref - adc_input);
+        let r = r_inner * adc_input / (vref - adc_input);
         Some(r)
     }
 
