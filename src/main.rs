@@ -229,7 +229,12 @@ fn main() -> ! {
                                             channel,
                                             if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
-                                        let _ = writeln!(socket, "- i_set={:.3}", state.dac_value.into_format_args(volt, Abbreviation));
+                                        let i_set = channels.get_i(channel);
+                                        let _ = writeln!(
+                                            socket, "- i_set={:.3} / {:.3}",
+                                            i_set.0.into_format_args(ampere, Abbreviation),
+                                            i_set.1.into_format_args(ampere, Abbreviation),
+                                        );
                                         let max_v = channels.get_max_v(channel);
                                         let _ = writeln!(
                                             socket, "- max_v={:.3} / {:.3}",
@@ -302,13 +307,13 @@ fn main() -> ! {
                                 Command::Pwm { channel, pin: PwmPin::ISet, value } => {
                                     channels.channel_state(channel).pid_engaged = false;
                                     leds.g3.off();
-                                    let voltage = ElectricPotential::new::<volt>(value);
-                                    let (voltage, max) = channels.set_dac(channel, voltage);
+                                    let current = ElectricCurrent::new::<ampere>(value);
+                                    let (current, max) = channels.set_i(channel, current);
                                     let _ = writeln!(
                                         socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
                                         channel,
-                                        voltage.into_format_args(volt, Abbreviation),
-                                        max.into_format_args(volt, Abbreviation),
+                                        current.into_format_args(ampere, Abbreviation),
+                                        max.into_format_args(ampere, Abbreviation),
                                     );
                                 }
                                 Command::Pwm { channel, pin, value } => {

@@ -1,9 +1,10 @@
 use stm32f4xx_hal::hal;
 use smoltcp::time::Instant;
 use uom::si::{
-    f64::{ElectricCurrent, ElectricPotential},
+    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance},
     electric_potential::{millivolt, volt},
     electric_current::ampere,
+    electrical_resistance::ohm,
     ratio::ratio,
 };
 use log::info;
@@ -17,6 +18,7 @@ use crate::{
 };
 
 pub const CHANNELS: usize = 2;
+pub const R_SENSE: f64 = 0.05;
 
 // TODO: -pub
 pub struct Channels {
@@ -91,7 +93,28 @@ impl Channels {
     }
 
     /// i_set DAC
-    pub fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
+    fn get_dac(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
+        let dac_factor = match channel.into() {
+            0 => self.channel0.dac_factor,
+            1 => self.channel1.dac_factor,
+            _ => unreachable!(),
+        };
+        let voltage = self.channel_state(channel).dac_value;
+        let max = ElectricPotential::new::<volt>(ad5680::MAX_VALUE as f64 / dac_factor);
+        (voltage, max)
+    }
+
+    pub fn get_i(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+        let (voltage, max) = self.get_dac(channel);
+        let i_tec = (voltage - vref) / (10.0 * r_sense);
+        let max = (max - vref) / (10.0 * r_sense);
+        (i_tec, max)
+    }
+
+    /// i_set DAC
+    fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
         let dac_factor = match channel.into() {
             0 => self.channel0.dac_factor,
             1 => self.channel1.dac_factor,
@@ -107,6 +130,16 @@ impl Channels {
         self.channel_state(channel).dac_value = voltage;
         let max = ElectricPotential::new::<volt>(ad5680::MAX_VALUE as f64 / dac_factor);
         (voltage, max)
+    }
+
+    pub fn set_i(&mut self, channel: usize, i_tec: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
+        let voltage = i_tec * 10.0 * r_sense + vref;
+        let (voltage, max) = self.set_dac(channel, voltage);
+        let i_tec = (voltage - vref) / (10.0 * r_sense);
+        let max = (max - vref) / (10.0 * r_sense);
+        (i_tec, max)
     }
 
     pub fn read_dac_feedback(&mut self, channel: usize) -> ElectricPotential {
