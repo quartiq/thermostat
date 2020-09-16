@@ -52,9 +52,9 @@ The scope of this setting is per TCP session.
 | `report mode`                    | Show current report mode                        |
 | `report mode <off/on>`           | Set report mode                                 |
 | `pwm`                            | Show current PWM settings                       |
-| `pwm <0/1> max_i_pos <ratio>`    | Set PWM duty cycle for **max_i_pos** to *ratio* |
-| `pwm <0/1> max_i_neg <ratio>`    | Set PWM duty cycle for **max_i_neg** to *ratio* |
-| `pwm <0/1> max_v <ratio>`        | Set PWM duty cycle for **max_v** to *ratio*     |
+| `pwm <0/1> max_i_pos <ratio>`    | Set PWM duty cycle for **max_i_pos** to *ampere* |
+| `pwm <0/1> max_i_neg <ratio>`    | Set PWM duty cycle for **max_i_neg** to *ampere* |
+| `pwm <0/1> max_v <ratio>`        | Set PWM duty cycle for **max_v** to *volt*     |
 | `pwm <0/1> <volts>`              | Disengage PID, set **i_set** DAC to *volts*     |
 | `pwm <0/1> pid`                  | Set PWM to be controlled by PID                 |
 | `pid`                            | Show PID configuration                          |

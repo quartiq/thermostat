@@ -1,7 +1,10 @@
+use stm32f4xx_hal::hal;
 use smoltcp::time::Instant;
 use uom::si::{
-    f64::ElectricPotential,
+    f64::{ElectricCurrent, ElectricPotential},
     electric_potential::{millivolt, volt},
+    electric_current::ampere,
+    ratio::ratio,
 };
 use log::info;
 use crate::{
@@ -9,6 +12,7 @@ use crate::{
     ad7172,
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
+    command_parser::PwmPin,
     pins,
 };
 
@@ -87,24 +91,22 @@ impl Channels {
     }
 
     /// i_set DAC
-    pub fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) {
+    pub fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
         let dac_factor = match channel.into() {
             0 => self.channel0.dac_factor,
             1 => self.channel1.dac_factor,
             _ => unreachable!(),
         };
         let value = (voltage.get::<volt>() * dac_factor) as u32;
-        match channel {
-            0 => {
-                self.channel0.dac.set(value).unwrap();
-                self.channel0.state.dac_value = voltage;
-            }
-            1 => {
-                self.channel1.dac.set(value).unwrap();
-                self.channel1.state.dac_value = voltage;
-            }
+        let value = match channel {
+            0 => self.channel0.dac.set(value).unwrap(),
+            1 => self.channel1.dac.set(value).unwrap(),
             _ => unreachable!(),
-        }
+        };
+        let voltage = ElectricPotential::new::<volt>(value as f64 / dac_factor);
+        self.channel_state(channel).dac_value = voltage;
+        let max = ElectricPotential::new::<volt>(ad5680::MAX_VALUE as f64 / dac_factor);
+        (voltage, max)
     }
 
     pub fn read_dac_feedback(&mut self, channel: usize) -> ElectricPotential {
@@ -254,5 +256,101 @@ impl Channels {
 
         // Reset
         self.set_dac(channel, ElectricPotential::new::<volt>(0.0));
+    }
+
+    fn get_pwm(&self, channel: usize, pin: PwmPin) -> f64 {
+        fn get<P: hal::PwmPin<Duty=u16>>(pin: &P) -> f64 {
+            let duty = pin.get_duty();
+            let max = pin.get_max_duty();
+            duty as f64 / (max as f64)
+        }
+        match (channel, pin) {
+            (_, PwmPin::ISet) =>
+                panic!("i_set is no pwm pin"),
+            (0, PwmPin::MaxIPos) =>
+                get(&self.pwm.max_i_pos0),
+            (0, PwmPin::MaxINeg) =>
+                get(&self.pwm.max_i_neg0),
+            (0, PwmPin::MaxV) =>
+                get(&self.pwm.max_v0),
+            (1, PwmPin::MaxIPos) =>
+                get(&self.pwm.max_i_pos1),
+            (1, PwmPin::MaxINeg) =>
+                get(&self.pwm.max_i_neg1),
+            (1, PwmPin::MaxV) =>
+                get(&self.pwm.max_v1),
+            _ =>
+                unreachable!(),
+        }
+    }
+
+    pub fn get_max_v(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
+        let vref = self.channel_state(channel).vref;
+        let duty = self.get_pwm(channel, PwmPin::MaxV);
+        (duty * 4.0 * vref, 4.0 * vref)
+    }
+
+    pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let duty = self.get_pwm(channel, PwmPin::MaxIPos);
+        (duty / scale, 1.0 / scale)
+    }
+
+    pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let duty = self.get_pwm(channel, PwmPin::MaxINeg);
+        (duty / scale, 1.0 / scale)
+    }
+
+    fn set_pwm(&mut self, channel: usize, pin: PwmPin, duty: f64) -> f64 {
+        fn set<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: f64) -> f64 {
+            let max = pin.get_max_duty();
+            let value = ((duty * (max as f64)) as u16).min(max);
+            pin.set_duty(value);
+            value as f64 / (max as f64)
+        }
+        match (channel, pin) {
+            (_, PwmPin::ISet) =>
+                panic!("i_set is no pwm pin"),
+            (0, PwmPin::MaxIPos) =>
+                set(&mut self.pwm.max_i_pos0, duty),
+            (0, PwmPin::MaxINeg) =>
+                set(&mut self.pwm.max_i_neg0, duty),
+            (0, PwmPin::MaxV) =>
+                set(&mut self.pwm.max_v0, duty),
+            (1, PwmPin::MaxIPos) =>
+                set(&mut self.pwm.max_i_pos1, duty),
+            (1, PwmPin::MaxINeg) =>
+                set(&mut self.pwm.max_i_neg1, duty),
+            (1, PwmPin::MaxV) =>
+                set(&mut self.pwm.max_v1, duty),
+            _ =>
+                unreachable!(),
+        }
+    }
+
+    pub fn set_max_v(&mut self, channel: usize, max_v: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
+        let vref = self.channel_state(channel).vref;
+        let duty = (max_v / 4.0 / vref).get::<ratio>();
+        let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
+        (duty * 4.0 * vref, 4.0 * vref)
+    }
+
+    pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let duty = (max_i_pos * scale).get::<ratio>();
+        let duty = self.set_pwm(channel, PwmPin::MaxIPos, duty);
+        (duty / scale, 1.0 / scale)
+    }
+
+    pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
+        let vref = self.channel_state(channel).vref;
+        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let duty = (max_i_neg * scale).get::<ratio>();
+        let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
+        (duty / scale, 1.0 / scale)
     }
 }

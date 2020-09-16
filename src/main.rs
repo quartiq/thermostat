@@ -32,6 +32,7 @@ use uom::{
     fmt::DisplayStyle::Abbreviation,
     si::{
         f64::{
+            ElectricCurrent,
             ElectricPotential,
             ElectricalResistance,
             ThermodynamicTemperature,
@@ -228,33 +229,27 @@ fn main() -> ! {
                                             channel,
                                             if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
-                                        let _ = writeln!(socket, "- i_set={}", state.dac_value.into_format_args(volt, Abbreviation));
-                                        fn show_pwm_channel<S, P>(mut socket: S, name: &str, pin: &P)
-                                        where
-                                            S: core::fmt::Write,
-                                            P: hal::PwmPin<Duty=u16>,
-                                        {
-                                            let _ = writeln!(
-                                                socket,
-                                                "- {}={}/{}",
-                                                name, pin.get_duty(), pin.get_max_duty()
-                                            );
-                                        }
-                                        match channel {
-                                            0 => {
-                                                show_pwm_channel(socket.deref_mut(), "max_v", &channels.pwm.max_v0);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &channels.pwm.max_i_pos0);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &channels.pwm.max_i_neg0);
-                                            }
-                                            1 => {
-                                                show_pwm_channel(socket.deref_mut(), "max_v", &channels.pwm.max_v1);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_pos", &channels.pwm.max_i_pos1);
-                                                show_pwm_channel(socket.deref_mut(), "max_i_neg", &channels.pwm.max_i_neg1);
-                                            }
-                                            _ => unreachable!(),
-                                        }
-                                        let _ = writeln!(socket, "");
+                                        let _ = writeln!(socket, "- i_set={:.3}", state.dac_value.into_format_args(volt, Abbreviation));
+                                        let max_v = channels.get_max_v(channel);
+                                        let _ = writeln!(
+                                            socket, "- max_v={:.3} / {:.3}",
+                                            max_v.0.into_format_args(volt, Abbreviation),
+                                            max_v.1.into_format_args(volt, Abbreviation),
+                                        );
+                                        let max_i_pos = channels.get_max_i_pos(channel);
+                                        let _ = writeln!(
+                                            socket, "- max_i_pos={:.3} / {:.3}",
+                                            max_i_pos.0.into_format_args(ampere, Abbreviation),
+                                            max_i_pos.1.into_format_args(ampere, Abbreviation),
+                                        );
+                                        let max_i_neg = channels.get_max_i_neg(channel);
+                                        let _ = writeln!(
+                                            socket, "- max_i_neg={:.3} / {:.3}",
+                                            max_i_neg.0.into_format_args(ampere, Abbreviation),
+                                            max_i_neg.1.into_format_args(ampere, Abbreviation),
+                                        );
                                     }
+                                    let _ = writeln!(socket, "");
                                 }
                                 Command::Show(ShowCommand::SteinhartHart) => {
                                     for channel in 0..CHANNELS {
@@ -304,46 +299,56 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
                                     );
                                 }
-                                Command::Pwm { channel, pin: PwmPin::ISet, duty } => {
+                                Command::Pwm { channel, pin: PwmPin::ISet, value } => {
                                     channels.channel_state(channel).pid_engaged = false;
                                     leds.g3.off();
-                                    let voltage = ElectricPotential::new::<volt>(duty);
-                                    channels.set_dac(channel, voltage);
+                                    let voltage = ElectricPotential::new::<volt>(value);
+                                    let (voltage, max) = channels.set_dac(channel, voltage);
                                     let _ = writeln!(
-                                        socket, "channel {}: PWM duty cycle manually set to {}",
-                                        channel, voltage.into_format_args(volt, Abbreviation),
+                                        socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
+                                        channel,
+                                        voltage.into_format_args(volt, Abbreviation),
+                                        max.into_format_args(volt, Abbreviation),
                                     );
                                 }
-                                Command::Pwm { channel, pin, duty } => {
-                                    fn set_pwm_channel<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: f64) -> (u16, u16) {
-                                        let max = pin.get_max_duty();
-                                        let value = (duty * (max as f64)) as u16;
-                                        pin.set_duty(value);
-                                        (value, max)
-                                    }
-                                    let (value, max) = match (channel, pin) {
-                                        (_, PwmPin::ISet) =>
+                                Command::Pwm { channel, pin, value } => {
+                                    match pin {
+                                        PwmPin::ISet =>
                                             // Handled above
                                             unreachable!(),
-                                        (0, PwmPin::MaxIPos) =>
-                                            set_pwm_channel(&mut channels.pwm.max_i_pos0, duty),
-                                        (0, PwmPin::MaxINeg) =>
-                                            set_pwm_channel(&mut channels.pwm.max_i_neg0, duty),
-                                        (0, PwmPin::MaxV) =>
-                                            set_pwm_channel(&mut channels.pwm.max_v0, duty),
-                                        (1, PwmPin::MaxIPos) =>
-                                            set_pwm_channel(&mut channels.pwm.max_i_pos1, duty),
-                                        (1, PwmPin::MaxINeg) =>
-                                            set_pwm_channel(&mut channels.pwm.max_i_neg1, duty),
-                                        (1, PwmPin::MaxV) =>
-                                            set_pwm_channel(&mut channels.pwm.max_v1, duty),
+                                        PwmPin::MaxV => {
+                                            let voltage = ElectricPotential::new::<volt>(value);
+                                            let (voltage, max) = channels.set_max_v(channel, voltage);
+                                            let _ = writeln!(
+                                                socket, "channel {:.3}: max_v set to {:.3} / {:.3}",
+                                                channel,
+                                                voltage.into_format_args(volt, Abbreviation),
+                                                max.into_format_args(volt, Abbreviation),
+                                            );
+                                        }
+                                        PwmPin::MaxIPos => {
+                                            let current = ElectricCurrent::new::<ampere>(value);
+                                            let (current, max) = channels.set_max_i_pos(channel, current);
+                                            let _ = writeln!(
+                                                socket, "channel {:.3}: max_i_pos set to {:.3} / {:.3}",
+                                                channel,
+                                                current.into_format_args(ampere, Abbreviation),
+                                                max.into_format_args(ampere, Abbreviation),
+                                            );
+                                        }
+                                        PwmPin::MaxINeg => {
+                                            let current = ElectricCurrent::new::<ampere>(value);
+                                            let (current, max) = channels.set_max_i_neg(channel, current);
+                                            let _ = writeln!(
+                                                socket, "channel {:.3}: max_i_neg set to {:.3} / {:.3}",
+                                                channel,
+                                                current.into_format_args(ampere, Abbreviation),
+                                                max.into_format_args(ampere, Abbreviation),
+                                            );
+                                        }
                                         _ =>
                                             unreachable!(),
-                                    };
-                                    let _ = writeln!(
-                                        socket, "channel {}: PWM {} reconfigured to {}/{}",
-                                        channel, pin.name(), value, max
-                                    );
+                                    }
                                 }
                                 Command::Pid { channel, parameter, value } => {
                                     let pid = &mut channels.channel_state(channel).pid;

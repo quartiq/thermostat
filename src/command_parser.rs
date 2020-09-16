@@ -142,7 +142,7 @@ pub enum Command {
     Pwm {
         channel: usize,
         pin: PwmPin,
-        duty: f64,
+        value: f64,
     },
     /// Enable PID control for `i_set`
     PwmPid {
@@ -242,7 +242,7 @@ fn report(input: &[u8]) -> IResult<&[u8], Command> {
 fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
     let result_with_pin = |pin: PwmPin|
         move |result: Result<f64, Error>|
-        result.map(|duty| (pin, duty));
+        result.map(|value| (pin, value));
 
     alt((
         map(
@@ -300,8 +300,8 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 |input| {
                     let (input, config) = pwm_setup(input)?;
                     match config {
-                        Ok((pin, duty)) =>
-                            Ok((input, Ok(Command::Pwm { channel, pin, duty }))),
+                        Ok((pin, value)) =>
+                            Ok((input, Ok(Command::Pwm { channel, pin, value }))),
                         Err(e) =>
                             Ok((input, Err(e))),
                     }
@@ -461,7 +461,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 1,
             pin: PwmPin::ISet,
-            duty: 16383,
+            value: 16383,
         }));
     }
 
@@ -480,7 +480,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxIPos,
-            duty: 7,
+            value: 7,
         }));
     }
 
@@ -490,7 +490,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxINeg,
-            duty: 128,
+            value: 128,
         }));
     }
 
@@ -500,7 +500,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxV,
-            duty: 32768,
+            value: 32768,
         }));
     }
 
