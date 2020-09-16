@@ -76,7 +76,8 @@ impl Channels {
             };
             if let Some(dac_value) = dac_value {
                 // Forward PID output to i_set DAC
-                self.set_dac(channel.into(), ElectricPotential::new::<volt>(dac_value));
+                // TODO:
+                // self.set_dac(channel.into(), ElectricPotential::new::<volt>(dac_value));
             }
 
             channel

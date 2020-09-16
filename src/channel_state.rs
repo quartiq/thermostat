@@ -1,7 +1,13 @@
 use smoltcp::time::Instant;
 use uom::si::{
-    f64::ElectricPotential,
+    f64::{
+        ElectricPotential,
+        ElectricalResistance,
+        ThermodynamicTemperature,
+    },
     electric_potential::volt,
+    electrical_resistance::ohm,
+    temperature_interval::kelvin,
 };
 use crate::{
     ad7172,
@@ -39,9 +45,10 @@ impl ChannelState {
     }
 
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_pid(&mut self) -> f64 {
+    pub fn update_pid(&mut self) {
         // Update PID controller
-        self.pid.update(self.get_temperature().unwrap())
+        // self.pid.update(self.get_temperature().unwrap().get::<kelvin>())
+        // TODO: add output field
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
@@ -49,8 +56,10 @@ impl ChannelState {
         Some(ElectricPotential::new::<volt>(volts))
     }
 
-    pub fn get_temperature(&self) -> Option<f64> {
+    pub fn get_temperature(&self) -> Option<ThermodynamicTemperature> {
         let r = self.get_adc()?.get::<volt>();
+        // TODO:
+        let r = ElectricalResistance::new::<ohm>(r);
         let temperature = self.sh.get_temperature(r);
         Some(temperature)
     }

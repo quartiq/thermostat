@@ -34,10 +34,12 @@ use uom::{
         f64::{
             ElectricPotential,
             ElectricalResistance,
+            ThermodynamicTemperature,
         },
         electric_current::ampere,
         electric_potential::volt,
         electrical_resistance::ohm,
+        thermodynamic_temperature::degree_celsius,
     },
 };
 
@@ -260,9 +262,19 @@ fn main() -> ! {
                                             socket, "channel {}: Steinhart-Hart equation parameters",
                                             channel,
                                         );
-                                        let _ = writeln!(socket, "- t0={}", state.sh.t0);
+                                        let _ = writeln!(socket, "- t0={}", state.sh.t0.into_format_args(degree_celsius, Abbreviation));
                                         let _ = writeln!(socket, "- b={}", state.sh.b);
-                                        let _ = writeln!(socket, "- r0={}", state.sh.r0);
+                                        let _ = writeln!(socket, "- r0={}", state.sh.r0.into_format_args(ohm, Abbreviation));
+                                        match (state.get_adc(), state.get_temperature()) {
+                                            (Some(adc), Some(temp)) => {
+                                                let _ = writeln!(
+                                                    socket, "- adc={} temp={:.3}K",
+                                                    adc.into_format_args(volt, Abbreviation),
+                                                    temp.into_format_args(degree_celsius, Abbreviation),
+                                                );
+                                            }
+                                            _ => {}
+                                        }
                                         let _ = writeln!(socket, "");
                                     }
                                 }
@@ -361,9 +373,9 @@ fn main() -> ! {
                                     let sh = &mut channels.channel_state(channel).sh;
                                     use command_parser::ShParameter::*;
                                     match parameter {
-                                        T0 => sh.t0 = value,
+                                        T0 => sh.t0 = ThermodynamicTemperature::new::<degree_celsius>(value),
                                         B => sh.b = value,
-                                        R0 => sh.r0 = value,
+                                        R0 => sh.r0 = ElectricalResistance::new::<ohm>(value),
                                     }
                                     let _ = writeln!(socket, "Steinhart-Hart equation parameter updated");
                                 }
