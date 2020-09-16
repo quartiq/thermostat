@@ -180,7 +180,7 @@ fn main() -> ! {
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "channel {}: t={} adc{}={} adc_r={} vref={} dac_feedback={} itec={} tec={} tec_u_meas={} r={:03}",
+                                                socket, "channel {}: t={:.0} adc{}={:.3} adc_r={:.3} vref={:.3} dac_feedback={:.3} itec={:.3} tec={:.3} tec_u_meas={:.3} r={:.3}",
                                                 channel, state.adc_time,
                                                 channel, adc_input.into_format_args(volt, Abbreviation),
                                                 state.get_sens().unwrap().into_format_args(ohm, Abbreviation),
@@ -269,9 +269,10 @@ fn main() -> ! {
                                         match (state.get_adc(), state.get_sens(), state.get_temperature()) {
                                             (Some(adc), Some(sens), Some(temp)) => {
                                                 let _ = writeln!(
-                                                    socket, "- adc={} r={} temp={:.3}K",
+                                                    socket, "- adc={:.6} r={:.0} temp{}={:.3}K",
                                                     adc.into_format_args(volt, Abbreviation),
                                                     sens.into_format_args(ohm, Abbreviation),
+                                                    channel,
                                                     temp.into_format_args(degree_celsius, Abbreviation),
                                                 );
                                             }
