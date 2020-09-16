@@ -103,7 +103,7 @@ mod test {
         const DELAY: usize = 10;
 
         let mut pid = Controller::new(PARAMETERS.clone());
-        pid.set_target(TARGET);
+        pid.target = TARGET;
 
         let mut values = [DEFAULT; DELAY];
         let mut t = 0;
@@ -118,6 +118,5 @@ mod test {
             t = next_t;
             total_t += 1;
         }
-        dbg!(values[t], total_t);
     }
 }

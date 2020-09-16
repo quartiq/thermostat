@@ -1,11 +1,11 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 #![feature(maybe_uninit_extra, maybe_uninit_ref)]
 // TODO: #![deny(warnings, unused)]
 
-#[cfg(not(feature = "semihosting"))]
+#[cfg(not(any(feature = "semihosting", test)))]
 use panic_abort as _;
-#[cfg(feature = "semihosting")]
+#[cfg(any(feature = "semihosting", not(test)))]
 use panic_semihosting as _;
 
 use log::{info, warn};
@@ -80,6 +80,7 @@ const TCP_PORT: u16 = 23;
 
 
 /// Initialization and main loop
+#[cfg(not(test))]
 #[entry]
 fn main() -> ! {
     init_log();

@@ -461,7 +461,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 1,
             pin: PwmPin::ISet,
-            value: 16383,
+            value: 16383.0,
         }));
     }
 
@@ -470,7 +470,6 @@ mod test {
         let command = Command::parse(b"pwm 0 pid");
         assert_eq!(command, Ok(Command::PwmPid {
             channel: 0,
-            pin: PwmPin::ISet,
         }));
     }
 
@@ -480,7 +479,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxIPos,
-            value: 7,
+            value: 7.0,
         }));
     }
 
@@ -490,7 +489,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxINeg,
-            value: 128,
+            value: 128.0,
         }));
     }
 
@@ -500,7 +499,7 @@ mod test {
         assert_eq!(command, Ok(Command::Pwm {
             channel: 0,
             pin: PwmPin::MaxV,
-            value: 32768,
+            value: 32768.0,
         }));
     }
 
