@@ -187,7 +187,7 @@ fn main() -> ! {
                                                 vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
                                                 itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
                                                 tec_u_meas.into_format_args(volt, Abbreviation),
-                                                (tec_u_meas / tec_i).into_format_args(ohm, Abbreviation),
+                                                ((tec_u_meas - vref) / tec_i).into_format_args(ohm, Abbreviation),
                                             );
                                         } else {
                                             let _ = writeln!(socket, "channel {}: no adc input", channel);
@@ -269,7 +269,7 @@ fn main() -> ! {
                                         match (state.get_adc(), state.get_sens(), state.get_temperature()) {
                                             (Some(adc), Some(sens), Some(temp)) => {
                                                 let _ = writeln!(
-                                                    socket, "- adc={:.6} r={:.0} temp{}={:.3}K",
+                                                    socket, "- adc={:.6} r={:.0} temp{}={:.3}",
                                                     adc.into_format_args(volt, Abbreviation),
                                                     sens.into_format_args(ohm, Abbreviation),
                                                     channel,
