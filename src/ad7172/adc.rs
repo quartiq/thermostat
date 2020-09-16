@@ -4,6 +4,10 @@ use stm32f4xx_hal::hal::{
     blocking::spi::Transfer,
     digital::v2::OutputPin,
 };
+use uom::si::{
+    f64::ElectricPotential,
+    electric_potential::volt,
+};
 use super::{
     regs::{self, Register, RegisterData},
     checksum::{ChecksumMode, Checksum},
@@ -272,7 +276,7 @@ pub struct ChannelCalibration {
 }
 
 impl ChannelCalibration {
-    pub fn convert_data(&self, data: u32) -> f64 {
+    pub fn convert_data(&self, data: u32) -> ElectricPotential {
         let data = if self.bipolar {
             (data as i32 - 0x80_0000) as f64
         } else {
@@ -282,7 +286,7 @@ impl ChannelCalibration {
         let data = data + (self.offset as i32 - 0x80_0000) as f64;
         let data = data / (2 << 23) as f64;
 
-        const V_REF: f64 = 3.0;
-        data * V_REF / 0.75
+        const V_REF: f64 = 3.3;
+        ElectricPotential::new::<volt>(data * V_REF / 0.75)
     }
 }

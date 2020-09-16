@@ -168,7 +168,7 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
-                                        if let Some(adc_data) = channels.channel_state(channel).adc_data {
+                                        if let Some(adc_input) = channels.channel_state(channel).get_adc() {
                                             let vref = channels.read_vref(channel);
                                             let dac_feedback = channels.read_dac_feedback(channel);
 
@@ -179,9 +179,10 @@ fn main() -> ! {
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "channel {}: t={} adc{}={} vref={} dac_feedback={} itec={} tec={} tec_u_meas={} r={:03}",
-                                                channel,
-                                                state.adc_time, channel, adc_data,
+                                                socket, "channel {}: t={} adc{}={} adc_r={} vref={} dac_feedback={} itec={} tec={} tec_u_meas={} r={:03}",
+                                                channel, state.adc_time,
+                                                channel, adc_input.into_format_args(volt, Abbreviation),
+                                                state.get_sens().unwrap().into_format_args(ohm, Abbreviation),
                                                 vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
                                                 itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
                                                 tec_u_meas.into_format_args(volt, Abbreviation),
@@ -265,11 +266,12 @@ fn main() -> ! {
                                         let _ = writeln!(socket, "- t0={}", state.sh.t0.into_format_args(degree_celsius, Abbreviation));
                                         let _ = writeln!(socket, "- b={}", state.sh.b);
                                         let _ = writeln!(socket, "- r0={}", state.sh.r0.into_format_args(ohm, Abbreviation));
-                                        match (state.get_adc(), state.get_temperature()) {
-                                            (Some(adc), Some(temp)) => {
+                                        match (state.get_adc(), state.get_sens(), state.get_temperature()) {
+                                            (Some(adc), Some(sens), Some(temp)) => {
                                                 let _ = writeln!(
-                                                    socket, "- adc={} temp={:.3}K",
+                                                    socket, "- adc={} r={} temp={:.3}K",
                                                     adc.into_format_args(volt, Abbreviation),
+                                                    sens.into_format_args(ohm, Abbreviation),
                                                     temp.into_format_args(degree_celsius, Abbreviation),
                                                 );
                                             }

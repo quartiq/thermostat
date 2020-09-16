@@ -15,11 +15,13 @@ use crate::{
     steinhart_hart as sh,
 };
 
+const R_INNER: f64 = 2.0 * 5100.0;
 
 pub struct ChannelState {
     pub adc_data: Option<u32>,
     pub adc_calibration: ad7172::ChannelCalibration,
     pub adc_time: Instant,
+    pub vref: ElectricPotential,
     pub dac_value: ElectricPotential,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
@@ -32,6 +34,8 @@ impl ChannelState {
             adc_data: None,
             adc_calibration,
             adc_time: Instant::from_secs(0),
+            // can be initialized later with Channels.read_vref()
+            vref: ElectricPotential::new::<volt>(3.3 / 2.0),
             dac_value: ElectricPotential::new::<volt>(0.0),
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
@@ -52,14 +56,19 @@ impl ChannelState {
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
-        let volts = self.adc_calibration.convert_data(self.adc_data?);
-        Some(ElectricPotential::new::<volt>(volts))
+        Some(self.adc_calibration.convert_data(self.adc_data?))
+    }
+
+    /// Get `SENS[01]` input resistance
+    pub fn get_sens(&self) -> Option<ElectricalResistance> {
+        let r_inner = ElectricalResistance::new::<ohm>(R_INNER);
+        let adc_input = self.get_adc()?;
+        let r = r_inner * adc_input / (self.vref - adc_input);
+        Some(r)
     }
 
     pub fn get_temperature(&self) -> Option<ThermodynamicTemperature> {
-        let r = self.get_adc()?.get::<volt>();
-        // TODO:
-        let r = ElectricalResistance::new::<ohm>(r);
+        let r = self.get_sens()?;
         let temperature = self.sh.get_temperature(r);
         Some(temperature)
     }

@@ -45,6 +45,8 @@ impl Channels {
         let pwm = pins.pwm;
         let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
         for channel in 0..CHANNELS {
+            // FIXME: this reads 1.5 V instead of the expected 1.65 V.
+            // channels.channel_state(channel).vref = channels.read_vref(channel);
             channels.calibrate_dac_value(channel);
         }
         channels
@@ -172,7 +174,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<volt>(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
                 let sample = self.pins_adc.convert(
@@ -180,7 +182,7 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                ElectricPotential::new::<volt>(mv as f64 / 1000.0)
+                ElectricPotential::new::<millivolt>(mv as f64)
             }
             _ => unreachable!(),
         }
