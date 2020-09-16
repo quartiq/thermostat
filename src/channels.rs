@@ -318,22 +318,21 @@ impl Channels {
 
     pub fn get_max_v(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
         let vref = self.channel_state(channel).vref;
+        let max = 4.0 * vref;
         let duty = self.get_pwm(channel, PwmPin::MaxV);
-        (duty * 4.0 * vref, 4.0 * vref)
+        (duty * max, max)
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
-        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxIPos);
-        (duty / scale, 1.0 / scale)
+        (duty * max, max)
     }
 
     pub fn get_max_i_neg(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
-        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
+        let max = ElectricCurrent::new::<ampere>(3.0);
         let duty = self.get_pwm(channel, PwmPin::MaxINeg);
-        (duty / scale, 1.0 / scale)
+        (duty * max, max)
     }
 
     fn set_pwm(&mut self, channel: usize, pin: PwmPin, duty: f64) -> f64 {
@@ -365,24 +364,23 @@ impl Channels {
 
     pub fn set_max_v(&mut self, channel: usize, max_v: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
         let vref = self.channel_state(channel).vref;
-        let duty = (max_v / 4.0 / vref).get::<ratio>();
+        let max = 4.0 * vref;
+        let duty = (max_v / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
-        (duty * 4.0 * vref, 4.0 * vref)
+        (duty * max, max)
     }
 
     pub fn set_max_i_pos(&mut self, channel: usize, max_i_pos: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
-        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
-        let duty = (max_i_pos * scale).get::<ratio>();
+        let max = ElectricCurrent::new::<ampere>(3.0);
+        let duty = (max_i_pos / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxIPos, duty);
-        (duty / scale, 1.0 / scale)
+        (duty * max, max)
     }
 
     pub fn set_max_i_neg(&mut self, channel: usize, max_i_neg: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
-        let scale = vref / ElectricPotential::new::<volt>(3.0) / ElectricCurrent::new::<ampere>(1.0);
-        let duty = (max_i_neg * scale).get::<ratio>();
+        let max = ElectricCurrent::new::<ampere>(3.0);
+        let duty = (max_i_neg / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
-        (duty / scale, 1.0 / scale)
+        (duty * max, max)
     }
 }
