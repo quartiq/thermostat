@@ -512,7 +512,7 @@ mod test {
     }
 
     #[test]
-    fn parse_steinhart_hart_parallel_r() {
+    fn parse_steinhart_hart_set() {
         let command = Command::parse(b"s-h 1 t0 23.05");
         assert_eq!(command, Ok(Command::SteinhartHart {
             channel: 1,
