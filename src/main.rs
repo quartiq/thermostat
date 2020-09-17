@@ -5,7 +5,7 @@
 
 #[cfg(not(any(feature = "semihosting", test)))]
 use panic_abort as _;
-#[cfg(any(feature = "semihosting", not(test)))]
+#[cfg(all(feature = "semihosting", not(test)))]
 use panic_semihosting as _;
 
 use log::{info, warn};
