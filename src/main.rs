@@ -200,7 +200,7 @@ fn main() -> ! {
                                         let state = channels.channel_state(channel);
                                         let _ = writeln!(socket, "PID settings for channel {}", channel);
                                         let pid = &state.pid;
-                                        let _ = writeln!(socket, "- target={:.4}", pid.target);
+                                        let _ = writeln!(socket, "- target={:.4} °C", pid.target);
                                         macro_rules! show_pid_parameter {
                                             ($p: tt) => {
                                                 let _ = writeln!(
@@ -217,7 +217,7 @@ fn main() -> ! {
                                         show_pid_parameter!(output_min);
                                         show_pid_parameter!(output_max);
                                         if let Some(last_output) = pid.last_output {
-                                            let _ = writeln!(socket, "- last_output={:.4}", last_output);
+                                            let _ = writeln!(socket, "- last_output={:.3} A", last_output);
                                         }
                                         let _ = writeln!(socket, "");
                                     }

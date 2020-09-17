@@ -44,10 +44,13 @@ impl Controller {
     }
 
     pub fn update(&mut self, input: f64) -> f64 {
+        // error
         let error = self.target - input;
 
+        // partial
         let p = self.parameters.kp * error;
 
+        //integral
         self.integral += error;
         if self.integral < self.parameters.integral_min {
             self.integral = self.parameters.integral_min;
@@ -57,12 +60,14 @@ impl Controller {
         }
         let i = self.parameters.ki * self.integral;
 
+        // derivative
         let d = match self.last_input {
             None => 0.0,
             Some(last_input) => self.parameters.kd * (last_input - input)
         };
         self.last_input = Some(input);
 
+        // output
         let mut output = p + i + d;
         if output < self.parameters.output_min {
             output = self.parameters.output_min;

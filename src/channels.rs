@@ -70,21 +70,16 @@ impl Channels {
         self.adc.data_ready().unwrap().map(|channel| {
             let data = self.adc.read_data().unwrap();
 
-            let dac_value = {
-                let state = self.channel_state(channel);
-                state.update(instant, data);
-                let pid_output = state.update_pid();
+            let state = self.channel_state(channel);
 
-                if state.pid_engaged {
-                    Some(pid_output)
-                } else {
-                    None
+            state.update(instant, data);
+            match state.update_pid() {
+                Some(pid_output) if state.pid_engaged => {
+                    log::info!("PID: {:.3} A", pid_output);
+                    // Forward PID output to i_set DAC
+                    self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));
                 }
-            };
-            if let Some(dac_value) = dac_value {
-                // Forward PID output to i_set DAC
-                // TODO:
-                // self.set_dac(channel.into(), ElectricPotential::new::<volt>(dac_value));
+                _ => {}
             }
 
             channel

@@ -7,7 +7,7 @@ use uom::si::{
     },
     electric_potential::volt,
     electrical_resistance::ohm,
-    temperature_interval::kelvin,
+    thermodynamic_temperature::degree_celsius,
 };
 use crate::{
     ad7172,
@@ -51,10 +51,11 @@ impl ChannelState {
     }
 
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_pid(&mut self) {
-        // Update PID controller
-        // self.pid.update(self.get_temperature().unwrap().get::<kelvin>())
-        // TODO: add output field
+    pub fn update_pid(&mut self) -> Option<f64> {
+        let temperature = self.get_temperature()?
+            .get::<degree_celsius>();
+        let pid_output = self.pid.update(temperature);
+        Some(pid_output)
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
