@@ -45,8 +45,8 @@ impl Channels {
             .expect("adc_calibration1");
         adc.start_continuous_conversion().unwrap();
 
-        let mut channel0 = Channel::new(pins.channel0, adc_calibration0);
-        let mut channel1 = Channel::new(pins.channel1, adc_calibration1);
+        let channel0 = Channel::new(pins.channel0, adc_calibration0);
+        let channel1 = Channel::new(pins.channel1, adc_calibration1);
         let pins_adc = pins.pins_adc;
         let pwm = pins.pwm;
         let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
@@ -164,7 +164,6 @@ impl Channels {
         let mut prev = self.read_dac_feedback(channel);
         loop {
             let current = self.read_dac_feedback(channel);
-            use num_traits::float::Float;
             if (current - prev).abs() < tolerance {
                 return current;
             }

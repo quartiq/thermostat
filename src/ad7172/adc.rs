@@ -100,24 +100,6 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
         Ok(())
     }
 
-    pub fn disable_channel(
-        &mut self, index: u8
-    ) -> Result<(), SPI::Error> {
-        self.update_reg(&regs::Channel { index }, |data| {
-            data.set_enabled(false);
-        })?;
-        Ok(())
-    }
-
-    pub fn disable_all_channels(&mut self) -> Result<(), SPI::Error> {
-        for index in 0..4 {
-            self.update_reg(&regs::Channel { index }, |data| {
-                data.set_enabled(false);
-            })?;
-        }
-        Ok(())
-    }
-
     pub fn get_calibration(&mut self, index: u8) -> Result<ChannelCalibration, SPI::Error> {
         let offset = self.read_reg(&regs::Offset { index })?.offset();
         let gain = self.read_reg(&regs::Gain { index })?.gain();

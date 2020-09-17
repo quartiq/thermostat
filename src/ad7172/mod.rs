@@ -19,8 +19,6 @@ pub const SPI_MODE: spi::Mode = spi::Mode {
 /// 2 MHz
 pub const SPI_CLOCK: MegaHertz = MegaHertz(2);
 
-pub const MAX_VALUE: u32 = 0xFF_FFFF;
-
 
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]

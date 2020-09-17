@@ -122,17 +122,6 @@ pub enum PwmPin {
     MaxV,
 }
 
-impl PwmPin {
-    pub fn name(&self) -> &'static str {
-        match self {
-            PwmPin::ISet => "i_set",
-            PwmPin::MaxIPos => "max_i_pos",
-            PwmPin::MaxINeg => "max_i_neg",
-            PwmPin::MaxV => "max_v",
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Quit,
@@ -176,19 +165,6 @@ fn end(input: &[u8]) -> IResult<&[u8], ()> {
 
 fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
     fold_many1(char(' '), (), |(), _| ())(input)
-}
-
-fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
-    take_while1(is_digit)(input)
-        .map(|(input, digits)| {
-            let result =
-                from_utf8(digits)
-                .map_err(|e| e.into())
-                .and_then(|digits| u32::from_str_radix(digits, 10)
-                     .map_err(|e| e.into())
-                );
-            (input, result)
-        })
 }
 
 fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {

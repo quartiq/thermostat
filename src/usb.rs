@@ -6,10 +6,10 @@ use stm32f4xx_hal::{
 };
 use usb_device::{
     class_prelude::{UsbBusAllocator},
-    prelude::{UsbError, UsbDevice, UsbDeviceBuilder, UsbVidPid},
+    prelude::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
 };
 use usbd_serial::SerialPort;
-use log::{Record, Level, Log, Metadata};
+use log::{Record, Log, Metadata};
 
 static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
@@ -30,7 +30,7 @@ impl State {
         let serial = SerialPort::new(bus);
         let dev = UsbDeviceBuilder::new(bus, UsbVidPid(0x16c0, 0x27dd))
             .manufacturer("M-Labs")
-            .product("thermostat")
+            .product("tecpak")
             .device_release(0x20)
             .self_powered(true)
             .device_class(usbd_serial::USB_CLASS_CDC)

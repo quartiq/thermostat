@@ -10,15 +10,11 @@ use panic_semihosting as _;
 
 use log::{info, warn};
 
-use core::ops::DerefMut;
 use core::fmt::Write;
 use cortex_m::asm::wfi;
 use cortex_m_rt::entry;
 use stm32f4xx_hal::{
-    hal::{
-        self,
-        watchdog::{WatchdogEnable, Watchdog},
-    },
+    hal::watchdog::{WatchdogEnable, Watchdog},
     rcc::RccExt,
     watchdog::IndependentWatchdog,
     time::{U32Ext, MegaHertz},
@@ -353,8 +349,6 @@ fn main() -> ! {
                                                 max.into_format_args(ampere, Abbreviation),
                                             );
                                         }
-                                        _ =>
-                                            unreachable!(),
                                     }
                                 }
                                 Command::Pid { channel, parameter, value } => {
