@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
 #![feature(maybe_uninit_extra, maybe_uninit_ref)]
+#![cfg_attr(test, allow(unused))]
 // TODO: #![deny(warnings, unused)]
 
 #[cfg(not(any(feature = "semihosting", test)))]
