@@ -12,13 +12,13 @@ pub struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Parameters {
-            kp: 0.5,
-            ki: 0.05,
-            kd: 0.45,
+            kp: 1.5,
+            ki: 0.1,
+            kd: 150.0,
             output_min: 0.0,
-            output_max: 5.0,
-            integral_min: 0.0,
-            integral_max: 1.0,
+            output_max: 2.0,
+            integral_min: -10.0,
+            integral_max: 10.0,
         }
     }
 }
