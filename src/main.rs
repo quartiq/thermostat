@@ -361,8 +361,11 @@ fn main() -> ! {
                                     let pid = &mut channels.channel_state(channel).pid;
                                     use command_parser::PidParameter::*;
                                     match parameter {
-                                        Target =>
-                                            pid.target = value,
+                                        Target => {
+                                            pid.target = value;
+                                            // reset pid.integral
+                                            pid.reset();
+                                        }
                                         KP =>
                                             pid.parameters.kp = value,
                                         KI =>
@@ -378,9 +381,6 @@ fn main() -> ! {
                                         IntegralMax =>
                                             pid.parameters.integral_max = value,
                                     }
-                                    // TODO: really reset PID state
-                                    // after each parameter change?
-                                    pid.reset();
                                     let _ = writeln!(socket, "PID parameter updated");
                                 }
                                 Command::SteinhartHart { channel, parameter, value } => {
