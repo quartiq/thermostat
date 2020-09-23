@@ -55,7 +55,7 @@ use server::Server;
 mod session;
 use session::{Session, SessionOutput};
 mod command_parser;
-use command_parser::{Command, ShowCommand, PwmPin};
+use command_parser::{CenterPoint, Command, ShowCommand, PwmPin};
 mod timer;
 mod pid;
 mod steinhart_hart;
@@ -221,18 +221,32 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Pwm) => {
                                     for channel in 0..CHANNELS {
+                                        let i_set = channels.get_i(channel);
                                         let state = channels.channel_state(channel);
                                         let _ = writeln!(
                                             socket, "channel {}: PID={}",
                                             channel,
                                             if state.pid_engaged { "engaged" } else { "disengaged" }
                                         );
-                                        let i_set = channels.get_i(channel);
-                                        let _ = writeln!(
-                                            socket, "- i_set={:.3} / {:.3}",
+                                        let _ = write!(
+                                            socket, "- i_set={:.3} / {:.3} ",
                                             i_set.0.into_format_args(ampere, Abbreviation),
                                             i_set.1.into_format_args(ampere, Abbreviation),
                                         );
+                                        match state.center {
+                                            CenterPoint::Vref => {
+                                                let _ = writeln!(
+                                                    socket, "center=vref vref={:.3}",
+                                                    state.vref.into_format_args(volt, Abbreviation),
+                                                );
+                                            }
+                                            CenterPoint::Override(volts) => {
+                                                let _ = writeln!(
+                                                    socket, "center={:.3} V",
+                                                    volts,
+                                                );
+                                            }
+                                        }
                                         let max_v = channels.get_max_v(channel);
                                         let _ = writeln!(
                                             socket, "- max_v={:.3} / {:.3}",
@@ -321,7 +335,7 @@ fn main() -> ! {
                                             let voltage = ElectricPotential::new::<volt>(value);
                                             let (voltage, max) = channels.set_max_v(channel, voltage);
                                             let _ = writeln!(
-                                                socket, "channel {:.3}: max_v set to {:.3} / {:.3}",
+                                                socket, "channel {}: max_v set to {:.3} / {:.3}",
                                                 channel,
                                                 voltage.into_format_args(volt, Abbreviation),
                                                 max.into_format_args(volt, Abbreviation),
@@ -331,7 +345,7 @@ fn main() -> ! {
                                             let current = ElectricCurrent::new::<ampere>(value);
                                             let (current, max) = channels.set_max_i_pos(channel, current);
                                             let _ = writeln!(
-                                                socket, "channel {:.3}: max_i_pos set to {:.3} / {:.3}",
+                                                socket, "channel {}: max_i_pos set to {:.3} / {:.3}",
                                                 channel,
                                                 current.into_format_args(ampere, Abbreviation),
                                                 max.into_format_args(ampere, Abbreviation),
@@ -341,12 +355,29 @@ fn main() -> ! {
                                             let current = ElectricCurrent::new::<ampere>(value);
                                             let (current, max) = channels.set_max_i_neg(channel, current);
                                             let _ = writeln!(
-                                                socket, "channel {:.3}: max_i_neg set to {:.3} / {:.3}",
+                                                socket, "channel {}: max_i_neg set to {:.3} / {:.3}",
                                                 channel,
                                                 current.into_format_args(ampere, Abbreviation),
                                                 max.into_format_args(ampere, Abbreviation),
                                             );
                                         }
+                                    }
+                                }
+                                Command::CenterPoint { channel, center } => {
+                                    let (i_tec, _) = channels.get_i(channel);
+                                    let state = channels.channel_state(channel);
+                                    state.center = center;
+                                    if !state.pid_engaged {
+                                        channels.set_i(channel, i_tec);
+                                        let _ = writeln!(
+                                            socket, "channel {}: center point updated, output readjusted for {:.3}",
+                                            channel, i_tec.into_format_args(ampere, Abbreviation),
+                                        );
+                                    } else {
+                                        let _ = writeln!(
+                                            socket, "channel {}: center point updated",
+                                            channel,
+                                        );
                                     }
                                 }
                                 Command::Pid { channel, parameter, value } => {

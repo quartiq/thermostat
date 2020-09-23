@@ -13,6 +13,7 @@ use crate::{
     ad7172,
     pid,
     steinhart_hart as sh,
+    command_parser::CenterPoint,
 };
 
 const R_INNER: f64 = 2.0 * 5100.0;
@@ -24,6 +25,8 @@ pub struct ChannelState {
     pub adc_time: Instant,
     /// VREF for the TEC (1.5V)
     pub vref: ElectricPotential,
+    /// i_set 0A center point
+    pub center: CenterPoint,
     pub dac_value: ElectricPotential,
     pub pid_engaged: bool,
     pub pid: pid::Controller,
@@ -36,8 +39,9 @@ impl ChannelState {
             adc_data: None,
             adc_calibration,
             adc_time: Instant::from_secs(0),
-            // can be initialized later with Channels.read_vref()
-            vref: ElectricPotential::new::<volt>(3.3 / 2.0),
+            // updated later with Channels.read_vref()
+            vref: ElectricPotential::new::<volt>(1.5),
+            center: CenterPoint::Vref,
             dac_value: ElectricPotential::new::<volt>(0.0),
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),

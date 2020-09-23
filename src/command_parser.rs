@@ -122,6 +122,12 @@ pub enum PwmPin {
     MaxV,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CenterPoint {
+    Vref,
+    Override(f64),
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Quit,
@@ -136,6 +142,10 @@ pub enum Command {
     /// Enable PID control for `i_set`
     PwmPid {
         channel: usize,
+    },
+    CenterPoint {
+        channel: usize,
+        center: CenterPoint,
     },
     /// PID parameter setting
     Pid {
@@ -290,6 +300,25 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
+fn center_point(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("center")(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, channel) = channel(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, center) = alt((
+        value(Ok(CenterPoint::Vref), tag("vref")),
+        |input| {
+            let (input, value) = float(input)?;
+            Ok((input, value.map(CenterPoint::Override)))
+        }
+    ))(input)?;
+    end(input)?;
+    Ok((input, center.map(|center| Command::CenterPoint {
+        channel,
+        center,
+    })))
+}
+
 /// `pid <0-1> <parameter> <value>`
 fn pid_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, channel) = channel(input)?;
@@ -378,6 +407,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
          map(report, Ok),
          pwm,
+         center_point,
          pid,
          steinhart_hart,
          postfilter,
@@ -527,6 +557,24 @@ mod test {
         assert_eq!(command, Ok(Command::PostFilter {
             channel: 0,
             rate: 21.0,
+        }));
+    }
+
+    #[test]
+    fn parse_center_point() {
+        let command = Command::parse(b"center 0 1.5");
+        assert_eq!(command, Ok(Command::CenterPoint {
+            channel: 0,
+            center: CenterPoint::Override(1.5),
+        }));
+    }
+
+    #[test]
+    fn parse_center_point_vref() {
+        let command = Command::parse(b"center 1 vref");
+        assert_eq!(command, Ok(Command::CenterPoint {
+            channel: 1,
+            center: CenterPoint::Vref,
         }));
     }
 }

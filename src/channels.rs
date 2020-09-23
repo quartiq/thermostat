@@ -13,7 +13,7 @@ use crate::{
     ad7172,
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
-    command_parser::PwmPin,
+    command_parser::{CenterPoint, PwmPin},
     pins,
 };
 
@@ -99,11 +99,17 @@ impl Channels {
     }
 
     pub fn get_i(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
+        let state = self.channel_state(channel);
+        let center_point = match state.center {
+            CenterPoint::Vref =>
+                state.vref,
+            CenterPoint::Override(center_point) =>
+                ElectricPotential::new::<volt>(center_point),
+        };
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let (voltage, max) = self.get_dac(channel);
-        let i_tec = (voltage - vref) / (10.0 * r_sense);
-        let max = (max - vref) / (10.0 * r_sense);
+        let i_tec = (voltage - center_point) / (10.0 * r_sense);
+        let max = (max - center_point) / (10.0 * r_sense);
         (i_tec, max)
     }
 
@@ -127,12 +133,18 @@ impl Channels {
     }
 
     pub fn set_i(&mut self, channel: usize, i_tec: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
-        let vref = self.channel_state(channel).vref;
+        let state = self.channel_state(channel);
+        let center_point = match state.center {
+            CenterPoint::Vref =>
+                state.vref,
+            CenterPoint::Override(center_point) =>
+                ElectricPotential::new::<volt>(center_point),
+        };
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
-        let voltage = i_tec * 10.0 * r_sense + vref;
+        let voltage = i_tec * 10.0 * r_sense + center_point;
         let (voltage, max) = self.set_dac(channel, voltage);
-        let i_tec = (voltage - vref) / (10.0 * r_sense);
-        let max = (max - vref) / (10.0 * r_sense);
+        let i_tec = (voltage - center_point) / (10.0 * r_sense);
+        let max = (max - center_point) / (10.0 * r_sense);
         (i_tec, max)
     }
 
