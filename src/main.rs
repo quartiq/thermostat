@@ -303,23 +303,20 @@ fn main() -> ! {
                                     let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
                                     );
                                 }
-                                Command::Pwm { channel, pin: PwmPin::ISet, value } => {
-                                    channels.channel_state(channel).pid_engaged = false;
-                                    leds.g3.off();
-                                    let current = ElectricCurrent::new::<ampere>(value);
-                                    let (current, max) = channels.set_i(channel, current);
-                                    let _ = writeln!(
-                                        socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
-                                        channel,
-                                        current.into_format_args(ampere, Abbreviation),
-                                        max.into_format_args(ampere, Abbreviation),
-                                    );
-                                }
                                 Command::Pwm { channel, pin, value } => {
                                     match pin {
-                                        PwmPin::ISet =>
-                                            // Handled above
-                                            unreachable!(),
+                                        PwmPin::ISet => {
+                                            channels.channel_state(channel).pid_engaged = false;
+                                            leds.g3.off();
+                                            let current = ElectricCurrent::new::<ampere>(value);
+                                            let (current, max) = channels.set_i(channel, current);
+                                            let _ = writeln!(
+                                                socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
+                                                channel,
+                                                current.into_format_args(ampere, Abbreviation),
+                                                max.into_format_args(ampere, Abbreviation),
+                                            );
+                                        }
                                         PwmPin::MaxV => {
                                             let voltage = ElectricPotential::new::<volt>(value);
                                             let (voltage, max) = channels.set_max_v(channel, voltage);
