@@ -1,4 +1,6 @@
-#[derive(Clone, Copy)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Parameters {
     pub kp: f64,
     pub ki: f64,

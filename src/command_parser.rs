@@ -12,6 +12,7 @@ use nom::{
     error::ErrorKind,
 };
 use num_traits::{Num, ParseFloatError};
+use serde::{Serialize, Deserialize};
 
 
 #[derive(Clone, Debug, PartialEq)]
@@ -122,7 +123,7 @@ pub enum PwmPin {
     MaxV,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CenterPoint {
     Vref,
     Override(f64),

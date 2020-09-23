@@ -63,6 +63,8 @@ mod channels;
 use channels::{CHANNELS, Channels};
 mod channel;
 mod channel_state;
+mod config;
+use config::Config;
 
 
 const HSE: MegaHertz = MegaHertz(8);
@@ -428,7 +430,18 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::Load => {}
-                                Command::Save => {}
+                                Command::Save => {
+                                    let config = Config::new(&mut channels);
+                                    let mut buf = [0; 0x200];
+                                    match config.encode(&mut buf) {
+                                        Ok(len) => {
+                                            let _ = writeln!(socket, "Encoded: {:?}", &buf[..len]);
+                                        }
+                                        Err(e) => {
+                                            let _ = writeln!(socket, "Error encoding configuration: {}", e);
+                                        }
+                                    }
+                                }
                             }
                             Ok(SessionOutput::Error(e)) => {
                                 let _ = writeln!(socket, "Command error: {:?}", e);
