@@ -131,6 +131,8 @@ pub enum CenterPoint {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Quit,
+    Load,
+    Save,
     Show(ShowCommand),
     Reporting(bool),
     /// PWM parameter setting
@@ -405,6 +407,8 @@ fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
+         value(Ok(Command::Load), tag("load")),
+         value(Ok(Command::Save), tag("save")),
          map(report, Ok),
          pwm,
          center_point,
@@ -435,6 +439,18 @@ mod test {
     fn parse_quit() {
         let command = Command::parse(b"quit");
         assert_eq!(command, Ok(Command::Quit));
+    }
+
+    #[test]
+    fn parse_load() {
+        let command = Command::parse(b"load");
+        assert_eq!(command, Ok(Command::Load));
+    }
+
+    #[test]
+    fn parse_save() {
+        let command = Command::parse(b"save");
+        assert_eq!(command, Ok(Command::Save));
     }
 
     #[test]

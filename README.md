@@ -71,3 +71,5 @@ The scope of this setting is per TCP session.
 | `s-h`                            | Show Steinhart-Hart equation parameters             |
 | `s-h <0/1> <t/b/r0> <value>`     | Set Steinhart-Hart parameter for a channel          |
 | `postfilter <0/1> rate <rate>`   | Set postfilter output data rate                     |
+| `load`                           | Restore configuration from EEPROM                   |
+| `save`                           | Save configuration to EEPROM                        |

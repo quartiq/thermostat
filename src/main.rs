@@ -427,6 +427,8 @@ fn main() -> ! {
                                         }
                                     }
                                 }
+                                Command::Load => {}
+                                Command::Save => {}
                             }
                             Ok(SessionOutput::Error(e)) => {
                                 let _ = writeln!(socket, "Command error: {:?}", e);
