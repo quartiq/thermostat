@@ -128,6 +128,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "eeprom24x"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f680e8d81a559a97de04c5fab25f17f22a55770120c868ef8fbdea6398d44107"
+dependencies = [
+ "embedded-hal",
+]
+
+[[package]]
 name = "embedded-dma"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -163,12 +172,6 @@ checksum = "0ed1e761351b56f54eb9dcd0cfaca9fd0daecf93918e1cfc01c8a3d26ee7adcd"
 dependencies = [
  "typenum",
 ]
-
-[[package]]
-name = "hash2hwaddr"
-version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "857afb5ee9e767c3a73b2ad7212b6deea0c3761a27db1e20ea0ed57ee352cfef"
 
 [[package]]
 name = "libm"
@@ -305,6 +308,8 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 [[package]]
 name = "smoltcp"
 version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fe46639fd2ec79eadf8fe719f237a7a0bd4dac5d957f1ca5bbdbc1c3c39e53a"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -392,7 +397,7 @@ dependencies = [
  "cortex-m",
  "cortex-m-log",
  "cortex-m-rt",
- "hash2hwaddr",
+ "eeprom24x",
  "log",
  "nb 0.1.3",
  "nom",

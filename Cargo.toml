@@ -24,7 +24,6 @@ cortex-m-log = { version = "0.6", features = ["log-integration"] }
 stm32f4xx-hal = { version = "0.8", features = ["rt", "stm32f427", "usb_fs"] }
 stm32-eth = { version = "0.2", features = ["stm32f427", "smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
 smoltcp = { version = "0.6.0", default-features = false, features = ["proto-ipv4", "socket-tcp", "log"] }
-hash2hwaddr = { version = "0.0", optional = true }
 bit_field = "0.10"
 byteorder = { version = "1", default-features = false }
 nom = { version = "5", default-features = false }
@@ -33,6 +32,7 @@ usb-device = "0.2"
 usbd-serial = "0.1"
 nb = "0.1"
 uom = { version = "0.29", default-features = false, features = ["autoconvert", "si", "f64"] }
+eeprom24x = "0.3"
 
 [patch.crates-io]
 stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal.git" }
@@ -40,8 +40,6 @@ stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal.git" }
 
 [features]
 semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]
-generate-hwaddr = ["hash2hwaddr"]
-default = ["generate-hwaddr"]
 
 [profile.release]
 codegen-units = 1

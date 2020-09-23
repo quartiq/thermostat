@@ -1,8 +1,7 @@
 use stm32f4xx_hal::{
     adc::Adc,
-    hal::{self, blocking::spi::Transfer, digital::v2::OutputPin},
     gpio::{
-        AF5, Alternate, Analog, Floating, Input,
+        AF5, Alternate, AlternateOD, Analog, Floating, Input,
         gpioa::*,
         gpiob::*,
         gpioc::*,
@@ -12,6 +11,8 @@ use stm32f4xx_hal::{
         GpioExt,
         Output, PushPull,
     },
+    hal::{self, blocking::spi::Transfer, digital::v2::OutputPin},
+    i2c::I2c,
     otg_fs::USB,
     rcc::Clocks,
     pwm::{self, PwmChannels},
@@ -19,18 +20,28 @@ use stm32f4xx_hal::{
     stm32::{
         ADC1,
         GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG,
+        I2C1,
         OTG_FS_GLOBAL, OTG_FS_DEVICE, OTG_FS_PWRCLK,
         SPI2, SPI4, SPI5,
         TIM1, TIM3,
     },
     time::U32Ext,
 };
+use eeprom24x::{self, Eeprom24x};
 use stm32_eth::EthPins;
 use crate::{
     channel::{Channel0, Channel1},
     leds::Leds,
 };
 
+pub type Eeprom = Eeprom24x<
+    I2c<I2C1, (
+        PB8<AlternateOD<stm32f4xx_hal::gpio::AF4>>,
+        PB9<AlternateOD<stm32f4xx_hal::gpio::AF4>>
+    )>,
+    eeprom24x::page_size::B8,
+    eeprom24x::addr_size::OneByte
+>;
 
 pub type EthernetPins = EthPins<
     PA1<Input<Floating>>,
@@ -106,10 +117,11 @@ impl Pins {
         clocks: Clocks,
         tim1: TIM1, tim3: TIM3,
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiod: GPIOD, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
+        i2c1: I2C1,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
         otg_fs_global: OTG_FS_GLOBAL, otg_fs_device: OTG_FS_DEVICE, otg_fs_pwrclk: OTG_FS_PWRCLK,
-    ) -> (Self, Leds, EthernetPins, USB) {
+    ) -> (Self, Leds, Eeprom, EthernetPins, USB) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -180,6 +192,11 @@ impl Pins {
 
         let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
 
+        let eeprom_scl = gpiob.pb8.into_alternate_af4().set_open_drain();
+        let eeprom_sda = gpiob.pb9.into_alternate_af4().set_open_drain();
+        let eeprom_i2c = I2c::i2c1(i2c1, (eeprom_scl, eeprom_sda), 400.khz(), clocks);
+        let eeprom = Eeprom24x::new_24x02(eeprom_i2c, eeprom24x::SlaveAddr::default());
+
         let eth_pins = EthPins {
             ref_clk: gpioa.pa1,
             md_io: gpioa.pa2,
@@ -201,7 +218,7 @@ impl Pins {
             hclk: clocks.hclk(),
         };
 
-        (pins, leds, eth_pins, usb)
+        (pins, leds, eeprom, eth_pins, usb)
     }
 
     /// Configure the GPIO pins for SPI operation, and initialize SPI

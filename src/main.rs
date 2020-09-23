@@ -71,8 +71,6 @@ const WATCHDOG_INTERVAL: u32 = 1_000;
 #[cfg(feature = "semihosting")]
 const WATCHDOG_INTERVAL: u32 = 30_000;
 
-#[cfg(not(feature = "generate-hwaddr"))]
-const NET_HWADDR: [u8; 6] = [0x02, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 const TCP_PORT: u16 = 23;
 
 
@@ -103,9 +101,10 @@ fn main() -> ! {
 
     timer::setup(cp.SYST, clocks);
 
-    let (pins, mut leds, eth_pins, usb) = Pins::setup(
+    let (pins, mut leds, mut eeprom, eth_pins, usb) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
+        dp.I2C1,
         dp.SPI2, dp.SPI4, dp.SPI5,
         dp.ADC1,
         dp.OTG_FS_GLOBAL,
@@ -121,14 +120,11 @@ fn main() -> ! {
 
     let mut channels = Channels::new(pins);
 
-    #[cfg(not(feature = "generate-hwaddr"))]
-    let hwaddr = EthernetAddress(NET_HWADDR);
-    #[cfg(feature = "generate-hwaddr")]
-    let hwaddr = {
-        let uid = stm32f4xx_hal::signature::Uid::get();
-        EthernetAddress(hash2hwaddr::generate_hwaddr(uid))
-    };
-    info!("Net hwaddr: {}", hwaddr);
+    // EEPROM ships with a read-only EUI-48 identifier
+    let mut eui48 = [0; 6];
+    eeprom.read_data(0xFA, &mut eui48).unwrap();
+    let hwaddr = EthernetAddress(eui48);
+    info!("EEPROM MAC address: {}", hwaddr);
 
     net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, |iface| {
         Server::<Session>::run(iface, |server| {
