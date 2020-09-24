@@ -126,7 +126,7 @@ pub enum PwmPin {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CenterPoint {
     Vref,
-    Override(f64),
+    Override(f32),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -312,7 +312,7 @@ fn center_point(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
         value(Ok(CenterPoint::Vref), tag("vref")),
         |input| {
             let (input, value) = float(input)?;
-            Ok((input, value.map(CenterPoint::Override)))
+            Ok((input, value.map(|value| CenterPoint::Override(value as f32))))
         }
     ))(input)?;
     end(input)?;

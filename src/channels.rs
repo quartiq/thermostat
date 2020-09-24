@@ -103,7 +103,7 @@ impl Channels {
             CenterPoint::Vref =>
                 state.vref,
             CenterPoint::Override(center_point) =>
-                ElectricPotential::new::<volt>(center_point),
+                ElectricPotential::new::<volt>(center_point.into()),
         };
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let (voltage, max) = self.get_dac(channel);
@@ -137,7 +137,7 @@ impl Channels {
             CenterPoint::Vref =>
                 state.vref,
             CenterPoint::Override(center_point) =>
-                ElectricPotential::new::<volt>(center_point),
+                ElectricPotential::new::<volt>(center_point.into()),
         };
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let voltage = i_tec * 10.0 * r_sense + center_point;

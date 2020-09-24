@@ -2,13 +2,13 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Parameters {
-    pub kp: f64,
-    pub ki: f64,
-    pub kd: f64,
-    pub output_min: f64,
-    pub output_max: f64,
-    pub integral_min: f64,
-    pub integral_max: f64
+    pub kp: f32,
+    pub ki: f32,
+    pub kd: f32,
+    pub output_min: f32,
+    pub output_max: f32,
+    pub integral_min: f32,
+    pub integral_max: f32
 }
 
 impl Default for Parameters {
@@ -50,32 +50,32 @@ impl Controller {
         let error = self.target - input;
 
         // partial
-        let p = self.parameters.kp * error;
+        let p = f64::from(self.parameters.kp) * error;
 
         //integral
         self.integral += error;
-        if self.integral < self.parameters.integral_min {
-            self.integral = self.parameters.integral_min;
+        if self.integral < self.parameters.integral_min.into() {
+            self.integral = self.parameters.integral_min.into();
         }
-        if self.integral > self.parameters.integral_max {
-            self.integral = self.parameters.integral_max;
+        if self.integral > self.parameters.integral_max.into() {
+            self.integral = self.parameters.integral_max.into();
         }
-        let i = self.parameters.ki * self.integral;
+        let i = f64::from(self.parameters.ki) * f64::from(self.integral);
 
         // derivative
         let d = match self.last_input {
             None => 0.0,
-            Some(last_input) => self.parameters.kd * (last_input - input)
+            Some(last_input) => f64::from(self.parameters.kd) * (last_input - input)
         };
         self.last_input = Some(input);
 
         // output
         let mut output = p + i + d;
-        if output < self.parameters.output_min {
-            output = self.parameters.output_min;
+        if output < self.parameters.output_min.into() {
+            output = self.parameters.output_min.into();
         }
-        if output > self.parameters.output_max {
-            output = self.parameters.output_max;
+        if output > self.parameters.output_max.into() {
+            output = self.parameters.output_max.into();
         }
         self.last_output = Some(output);
         output

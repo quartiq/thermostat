@@ -388,19 +388,19 @@ fn main() -> ! {
                                             pid.reset();
                                         }
                                         KP =>
-                                            pid.parameters.kp = value,
+                                            pid.parameters.kp = value as f32,
                                         KI =>
-                                            pid.parameters.ki = value,
+                                            pid.parameters.ki = value as f32,
                                         KD =>
-                                            pid.parameters.kd = value,
+                                            pid.parameters.kd = value as f32,
                                         OutputMin =>
-                                            pid.parameters.output_min = value,
+                                            pid.parameters.output_min = value as f32,
                                         OutputMax =>
-                                            pid.parameters.output_max = value,
+                                            pid.parameters.output_max = value as f32,
                                         IntegralMin =>
-                                            pid.parameters.integral_min = value,
+                                            pid.parameters.integral_min = value as f32,
                                         IntegralMax =>
-                                            pid.parameters.integral_max = value,
+                                            pid.parameters.integral_max = value as f32,
                                     }
                                     let _ = writeln!(socket, "PID parameter updated");
                                 }

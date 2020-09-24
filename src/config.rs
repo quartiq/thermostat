@@ -37,7 +37,7 @@ impl Config {
 pub struct ChannelConfig {
     center: CenterPoint,
     pid: pid::Parameters,
-    pid_target: f64,
+    pid_target: f32,
     sh: steinhart_hart::Parameters,
     // TODO: pwm limits
 }
@@ -47,7 +47,7 @@ impl ChannelConfig {
         ChannelConfig {
             center: state.center.clone(),
             pid: state.pid.parameters.clone(),
-            pid_target: state.pid.target,
+            pid_target: state.pid.target as f32,
             sh: state.sh.clone(),
         }
     }
