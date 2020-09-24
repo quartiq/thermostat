@@ -3,6 +3,8 @@ use postcard::{from_bytes, to_slice};
 use uom::si::{
     electric_potential::volt,
     electric_current::ampere,
+    electrical_resistance::ohm,
+    thermodynamic_temperature::degree_celsius,
 };
 use crate::{
     channels::{CHANNELS, Channels},
@@ -41,7 +43,7 @@ pub struct ChannelConfig {
     center: CenterPoint,
     pid: pid::Parameters,
     pid_target: f32,
-    sh: steinhart_hart::Parameters,
+    sh: SteinhartHartConfig,
     pwm: PwmLimits,
 }
 
@@ -53,11 +55,28 @@ impl ChannelConfig {
             center: state.center.clone(),
             pid: state.pid.parameters.clone(),
             pid_target: state.pid.target as f32,
-            sh: state.sh.clone(),
+            sh: (&state.sh).into(),
             pwm,
         }
     }
 
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct SteinhartHartConfig {
+    t0: f32,
+    r0: f32,
+    b: f32,
+}
+
+impl From<&steinhart_hart::Parameters> for SteinhartHartConfig {
+    fn from(sh: &steinhart_hart::Parameters) -> Self {
+        SteinhartHartConfig {
+            t0: sh.t0.get::<degree_celsius>() as f32,
+            r0: sh.r0.get::<ohm>() as f32,
+            b: sh.b as f32,
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -90,7 +109,7 @@ mod test {
             center: CenterPoint::Override(1.5),
             pid: pid::Parameters::default(),
             pid_target: 93.7,
-            sh: steinhart_hart::Parameters::default(),
+            sh: (&steinhart_hart::Parameters::default()).into(),
             pwm: PwmLimits {
                 max_v: 1.65,
                 max_i_pos: 2.1,
