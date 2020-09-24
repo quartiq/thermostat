@@ -28,12 +28,10 @@ pub struct Channel<C: ChannelPins> {
 }
 
 impl<C: ChannelPins> Channel<C> {
-    pub fn new(mut pins: ChannelPinSet<C>, adc_calibration: ad7172::ChannelCalibration) -> Self {
+    pub fn new(pins: ChannelPinSet<C>, adc_calibration: ad7172::ChannelCalibration) -> Self {
         let state = ChannelState::new(adc_calibration);
         let mut dac = ad5680::Dac::new(pins.dac_spi, pins.dac_sync);
         let _ = dac.set(0);
-        // power up TEC
-        let _ = pins.shdn.set_high();
         // sensible dummy preset. calibrate_i_set() must be used.
         let dac_factor = ad5680::MAX_VALUE as f64 / 5.0;
 
@@ -46,5 +44,15 @@ impl<C: ChannelPins> Channel<C> {
             dac_feedback_pin: pins.dac_feedback_pin,
             tec_u_meas_pin: pins.tec_u_meas_pin,
         }
+    }
+
+    // power up TEC
+    pub fn power_up(&mut self) {
+        let _ = self.shdn.set_high();
+    }
+
+    // power down TEC
+    pub fn power_down(&mut self) {
+        let _ = self.shdn.set_low();
     }
 }

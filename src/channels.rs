@@ -70,13 +70,16 @@ impl Channels {
             let data = self.adc.read_data().unwrap();
 
             let state = self.channel_state(channel);
-
             state.update(instant, data);
             match state.update_pid() {
                 Some(pid_output) if state.pid_engaged => {
                     log::info!("PID: {:.3} A", pid_output);
                     // Forward PID output to i_set DAC
                     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));
+                    self.power_up(channel);
+                }
+                None if state.pid_engaged => {
+                    self.power_down(channel);
                 }
                 _ => {}
             }
@@ -291,6 +294,24 @@ impl Channels {
 
         // Reset
         self.set_dac(channel, ElectricPotential::new::<volt>(0.0));
+    }
+
+    // power up TEC
+    pub fn power_up<I: Into<usize>>(&mut self, channel: I) {
+        match channel.into() {
+            0 => self.channel0.power_up(),
+            1 => self.channel1.power_up(),
+            _ => unreachable!(),
+        }
+    }
+
+    // power down TEC
+    pub fn power_down<I: Into<usize>>(&mut self, channel: I) {
+        match channel.into() {
+            0 => self.channel0.power_down(),
+            1 => self.channel1.power_down(),
+            _ => unreachable!(),
+        }
     }
 
     fn get_pwm(&self, channel: usize, pin: PwmPin) -> f64 {

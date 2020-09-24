@@ -50,7 +50,12 @@ impl ChannelState {
     }
 
     pub fn update(&mut self, now: Instant, adc_data: u32) {
-        self.adc_data = Some(adc_data);
+        self.adc_data = if adc_data == ad7172::MAX_VALUE {
+            // this means there is no thermistor plugged into the ADC.
+            None
+        } else {
+            Some(adc_data)
+        };
         self.adc_time = now;
     }
 
@@ -63,13 +68,7 @@ impl ChannelState {
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
-        let data = self.adc_data?;
-        if data == ad7172::MAX_VALUE {
-            // this means there is no thermistor plugged into the ADC.
-            None
-        } else {
-            Some(self.adc_calibration.convert_data(data))
-        }
+        Some(self.adc_calibration.convert_data(self.adc_data?))
     }
 
     /// Get `SENS[01]` input resistance

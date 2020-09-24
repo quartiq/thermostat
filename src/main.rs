@@ -328,6 +328,7 @@ fn main() -> ! {
                                             leds.g3.off();
                                             let current = ElectricCurrent::new::<ampere>(value);
                                             let (current, max) = channels.set_i(channel, current);
+                                            channels.power_up(channel);
                                             let _ = writeln!(
                                                 socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
                                                 channel,
