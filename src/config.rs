@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use postcard::to_slice;
+use postcard::{from_bytes, to_slice};
 use crate::{
     channel_state::ChannelState,
     channels::{CHANNELS, Channels},
