@@ -197,7 +197,7 @@ mod test {
         };
 
         let mut buffer = [0; EEPROM_SIZE];
-        let buffer = config.encode(&mut buffer).unwrap();
+        let buffer = to_slice(&config, &mut buffer).unwrap();
         assert!(buffer.len() <= EEPROM_SIZE);
     }
 
@@ -222,8 +222,8 @@ mod test {
         };
 
         let mut buffer = [0; EEPROM_SIZE];
-        config.encode(&mut buffer).unwrap();
-        let decoded = Config::decode(&buffer).unwrap();
+        to_slice(&config, &mut buffer).unwrap();
+        let decoded: Config = from_bytes(&buffer).unwrap();
         assert_eq!(decoded, config);
     }
 }
