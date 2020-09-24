@@ -124,6 +124,9 @@ fn main() -> ! {
     usb::State::setup(usb);
 
     let mut channels = Channels::new(pins);
+    let _ = Config::load(&mut eeprom)
+        .map(|config| config.apply(&mut channels))
+        .map_err(|e| warn!("error loading config: {:?}", e));
 
     // EEPROM ships with a read-only EUI-48 identifier
     let mut eui48 = [0; 6];
