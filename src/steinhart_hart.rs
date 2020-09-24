@@ -8,10 +8,9 @@ use uom::si::{
     ratio::ratio,
     thermodynamic_temperature::{degree_celsius, kelvin},
 };
-use serde::{Serialize, Deserialize};
 
 /// Steinhart-Hart equation parameters
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Parameters {
     /// Base temperature
     pub t0: ThermodynamicTemperature,
