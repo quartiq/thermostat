@@ -73,3 +73,4 @@ The scope of this setting is per TCP session.
 | `postfilter <0/1> rate <rate>`   | Set postfilter output data rate                     |
 | `load`                           | Restore configuration from EEPROM                   |
 | `save`                           | Save configuration to EEPROM                        |
+| `reset`                          | Reset the device                                    |

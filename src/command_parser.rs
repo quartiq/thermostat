@@ -134,6 +134,7 @@ pub enum Command {
     Quit,
     Load,
     Save,
+    Reset,
     Show(ShowCommand),
     Reporting(bool),
     /// PWM parameter setting
@@ -410,6 +411,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
          value(Ok(Command::Load), tag("load")),
          value(Ok(Command::Save), tag("save")),
+         value(Ok(Command::Reset), tag("reset")),
          map(report, Ok),
          pwm,
          center_point,

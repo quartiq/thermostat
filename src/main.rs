@@ -19,7 +19,7 @@ use stm32f4xx_hal::{
     rcc::RccExt,
     watchdog::IndependentWatchdog,
     time::{U32Ext, MegaHertz},
-    stm32::{CorePeripherals, Peripherals},
+    stm32::{CorePeripherals, Peripherals, SCB},
 };
 use smoltcp::{
     time::Instant,
@@ -457,6 +457,9 @@ fn main() -> ! {
                                             let _ = writeln!(socket, "Error saving config: {:?}", e);
                                         }
                                     }
+                                }
+                                Command::Reset => {
+                                    SCB::sys_reset();
                                 }
                             }
                             Ok(SessionOutput::Error(e)) => {
