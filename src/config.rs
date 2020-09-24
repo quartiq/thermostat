@@ -51,12 +51,39 @@ impl Config {
         }
     }
 
-    pub fn encode<'a>(&self, buffer: &'a mut [u8]) -> Result<&'a mut [u8], postcard::Error> {
-        to_slice(self, buffer)
+    /// apply loaded config to system
+    pub fn apply(&self, channels: &mut Channels) {
+        for i in 0..CHANNELS {
+            self.channels[i].apply(channels, i);
+        }
     }
 
-    pub fn decode(buffer: &[u8]) -> Result<Self, postcard::Error> {
-        from_bytes(buffer)
+    pub fn load(eeprom: &mut pins::Eeprom) -> Result<Self, Error> {
+        let mut buffer = [0; EEPROM_SIZE];
+        eeprom.read_data(0, &mut buffer)?;
+        log::info!("load: {:?}", buffer);
+        let config = from_bytes(&mut buffer)?;
+        Ok(config)
+    }
+
+    pub fn save(&self, eeprom: &mut pins::Eeprom) -> Result<(), Error> {
+        let mut buffer = [0; EEPROM_SIZE];
+        let config_buffer = to_slice(self, &mut buffer)?;
+        log::info!("save: {:?}", config_buffer);
+
+        let mut addr = 0;
+        for chunk in config_buffer.chunks(EEPROM_PAGE_SIZE) {
+            'write_retry: loop {
+                match eeprom.write_page(addr, chunk) {
+                    Ok(()) => break 'write_retry,
+                    Err(eeprom24x::Error::I2C(i2c::Error::NACK)) => {},
+                    Err(e) => Err(e)?,
+                }
+            }
+            addr += chunk.len() as u32;
+        }
+
+        Ok(())
     }
 }
 
