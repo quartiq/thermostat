@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// Just for encoding/decoding, actual state resides in ChannelState
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     channels: [ChannelConfig; CHANNELS],
 }
@@ -38,7 +38,7 @@ impl Config {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelConfig {
     center: CenterPoint,
     pid: pid::Parameters,
@@ -62,7 +62,7 @@ impl ChannelConfig {
 
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 struct SteinhartHartConfig {
     t0: f32,
     r0: f32,
@@ -79,7 +79,7 @@ impl From<&steinhart_hart::Parameters> for SteinhartHartConfig {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 struct PwmLimits {
     max_v: f32,
     max_i_pos: f32,
@@ -127,5 +127,32 @@ mod test {
         let mut buffer = [0; EEPROM_SIZE];
         let buffer = config.encode(&mut buffer).unwrap();
         assert!(buffer.len() <= EEPROM_SIZE);
+    }
+
+    #[test]
+    fn test_encode_decode() {
+        let channel_config = ChannelConfig {
+            center: CenterPoint::Override(1.5),
+            pid: pid::Parameters::default(),
+            pid_target: 93.7,
+            sh: (&steinhart_hart::Parameters::default()).into(),
+            pwm: PwmLimits {
+                max_v: 1.65,
+                max_i_pos: 2.1,
+                max_i_neg: 2.25,
+            },
+        };
+        let config = Config {
+            channels: [
+                channel_config.clone(),
+                channel_config.clone(),
+            ],
+        };
+
+        const EEPROM_SIZE: usize = 0x80;
+        let mut buffer = [0; EEPROM_SIZE];
+        config.encode(&mut buffer).unwrap();
+        let decoded = Config::decode(&buffer).unwrap();
+        assert_eq!(decoded, config);
     }
 }
