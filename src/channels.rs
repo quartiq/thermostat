@@ -7,7 +7,6 @@ use uom::si::{
     electrical_resistance::ohm,
     ratio::ratio,
 };
-use log::info;
 use crate::{
     ad5680,
     ad7172,
@@ -156,7 +155,6 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                info!("dac0_fb: {}/{:03X}", mv, sample);
                 ElectricPotential::new::<millivolt>(mv as f64)
             }
             1 => {
@@ -165,7 +163,6 @@ impl Channels {
                     stm32f4xx_hal::adc::config::SampleTime::Cycles_480
                 );
                 let mv = self.pins_adc.sample_to_millivolts(sample);
-                info!("dac1_fb: {}/{:03X}", mv, sample);
                 ElectricPotential::new::<millivolt>(mv as f64)
             }
             _ => unreachable!(),
