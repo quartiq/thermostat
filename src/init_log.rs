@@ -1,11 +1,10 @@
 use crate::usb;
 
 #[cfg(not(feature = "semihosting"))]
-static USB_LOGGER: usb::Logger = usb::Logger;
-
-#[cfg(not(feature = "semihosting"))]
 pub fn init_log() {
+    static USB_LOGGER: usb::Logger = usb::Logger;
     let _ = log::set_logger(&USB_LOGGER);
+    log::set_max_level(log::LevelFilter::Info);
 }
 
 #[cfg(feature = "semihosting")]
