@@ -63,7 +63,13 @@ impl ChannelState {
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
-        Some(self.adc_calibration.convert_data(self.adc_data?))
+        let data = self.adc_data?;
+        if data == ad7172::MAX_VALUE {
+            // this means there is no thermistor plugged into the ADC.
+            None
+        } else {
+            Some(self.adc_calibration.convert_data(data))
+        }
     }
 
     /// Get `SENS[01]` input resistance

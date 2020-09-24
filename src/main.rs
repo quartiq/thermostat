@@ -182,10 +182,10 @@ fn main() -> ! {
 
                                             let state = channels.channel_state(channel);
                                             let _ = writeln!(
-                                                socket, "channel {}: t={:.0} adc{}={:.3} adc_r={:.3} vref={:.3} dac_feedback={:.3} itec={:.3} tec={:.3} tec_u_meas={:.3} r={:.3}",
+                                                socket, "channel {}: t={:.0} adc{}={:.3} adc_r={:?} vref={:.3} dac_feedback={:.3} itec={:.3} tec={:.3} tec_u_meas={:.3} r={:.3}",
                                                 channel, state.adc_time,
                                                 channel, adc_input.into_format_args(volt, Abbreviation),
-                                                state.get_sens().unwrap().into_format_args(ohm, Abbreviation),
+                                                state.get_sens().map(|sens| sens.into_format_args(ohm, Abbreviation)),
                                                 vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
                                                 itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
                                                 tec_u_meas.into_format_args(volt, Abbreviation),
