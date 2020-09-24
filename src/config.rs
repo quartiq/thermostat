@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
-use serde_cbor::Serializer;
-use serde_cbor::ser::SliceWrite;
+use postcard::to_slice;
 use crate::{
     channel_state::ChannelState,
     channels::{CHANNELS, Channels},
@@ -25,13 +24,12 @@ impl Config {
         }
     }
 
-    pub fn encode(&self, buffer: &mut [u8]) -> Result<usize, serde_cbor::Error> {
-        let writer = SliceWrite::new(buffer);
-        let mut ser = Serializer::new(writer);
-        self.serialize(&mut ser)?;
-        let writer = ser.into_inner();
-        let size = writer.bytes_written();
-        Ok(size)
+    pub fn encode<'a>(&self, buffer: &'a mut [u8]) -> Result<&'a mut [u8], postcard::Error> {
+        to_slice(self, buffer)
+    }
+
+    pub fn decode(buffer: &[u8]) -> Result<Self, postcard::Error> {
+        from_bytes(buffer)
     }
 }
 

@@ -432,10 +432,10 @@ fn main() -> ! {
                                 Command::Load => {}
                                 Command::Save => {
                                     let config = Config::new(&mut channels);
-                                    let mut buf = [0; 0x200];
+                                    let mut buf = [0; 128];
                                     match config.encode(&mut buf) {
-                                        Ok(len) => {
-                                            let _ = writeln!(socket, "Encoded: {:?}", &buf[..len]);
+                                        Ok(buf) => {
+                                            let _ = writeln!(socket, "Encoded {}: {:?}", buf.len(), buf);
                                         }
                                         Err(e) => {
                                             let _ = writeln!(socket, "Error encoding configuration: {}", e);
