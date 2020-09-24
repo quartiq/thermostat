@@ -33,7 +33,7 @@ impl Config {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ChannelConfig {
     center: CenterPoint,
     pid: pid::Parameters,
@@ -52,4 +52,30 @@ impl ChannelConfig {
         }
     }
 
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_fit_eeprom() {
+        let channel_config = ChannelConfig {
+            center: CenterPoint::Override(1.5),
+            pid: pid::Parameters::default(),
+            pid_target: 93.7,
+            sh: steinhart_hart::Parameters::default(),
+        };
+        let config = Config {
+            channels: [
+                channel_config.clone(),
+                channel_config.clone(),
+            ],
+        };
+
+        const EEPROM_SIZE: usize = 0x80;
+        let mut buffer = [0; EEPROM_SIZE];
+        let buffer = config.encode(&mut buffer).unwrap();
+        assert!(buffer.len() <= EEPROM_SIZE);
+    }
 }
