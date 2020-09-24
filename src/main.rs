@@ -73,6 +73,9 @@ const WATCHDOG_INTERVAL: u32 = 1_000;
 #[cfg(feature = "semihosting")]
 const WATCHDOG_INTERVAL: u32 = 30_000;
 
+pub const EEPROM_PAGE_SIZE: usize = 8;
+pub const EEPROM_SIZE: usize = 128;
+
 const TCP_PORT: u16 = 23;
 
 
@@ -429,16 +432,25 @@ fn main() -> ! {
                                         }
                                     }
                                 }
-                                Command::Load => {}
-                                Command::Save => {
-                                    let config = Config::new(&mut channels);
-                                    let mut buf = [0; 128];
-                                    match config.encode(&mut buf) {
-                                        Ok(buf) => {
-                                            let _ = writeln!(socket, "Encoded {}: {:?}", buf.len(), buf);
+                                Command::Load => {
+                                    match Config::load(&mut eeprom) {
+                                        Ok(config) => {
+                                            config.apply(&mut channels);
+                                            let _ = writeln!(socket, "Config loaded from EEPROM.");
                                         }
                                         Err(e) => {
-                                            let _ = writeln!(socket, "Error encoding configuration: {}", e);
+                                            let _ = writeln!(socket, "Error: {:?}", e);
+                                        }
+                                    }
+                                }
+                                Command::Save => {
+                                    let config = Config::new(&mut channels);
+                                    match config.save(&mut eeprom) {
+                                        Ok(()) => {
+                                            let _ = writeln!(socket, "Config saved to EEPROM.");
+                                        }
+                                        Err(e) => {
+                                            let _ = writeln!(socket, "Error saving config: {:?}", e);
                                         }
                                     }
                                 }
