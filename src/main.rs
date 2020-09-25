@@ -308,7 +308,7 @@ fn main() -> ! {
                                             }
                                             None => {
                                                 let _ = writeln!(
-                                                    socket, "channel {}: no postfilter",
+                                                    socket, "channel {}: postfilter disabled",
                                                     channel
                                                 );
                                             }
@@ -421,7 +421,14 @@ fn main() -> ! {
                                     }
                                     let _ = writeln!(socket, "Steinhart-Hart equation parameter updated");
                                 }
-                                Command::PostFilter { channel, rate } => {
+                                Command::PostFilter { channel, rate: None } => {
+                                    channels.adc.set_postfilter(channel as u8, None).unwrap();
+                                    let _ = writeln!(
+                                        socket, "channel {}: postfilter disabled",
+                                        channel
+                                    );
+                                }
+                                Command::PostFilter { channel, rate: Some(rate) } => {
                                     let filter = ad7172::PostFilter::closest(rate);
                                     match filter {
                                         Some(filter) => {

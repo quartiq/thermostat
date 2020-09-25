@@ -164,7 +164,7 @@ pub enum Command {
     },
     PostFilter {
         channel: usize,
-        rate: f32,
+        rate: Option<f32>,
     },
 }
 
@@ -392,15 +392,23 @@ fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
             |input| {
                 let (input, channel) = channel(input)?;
                 let (input, _) = whitespace(input)?;
-                let (input, _) = tag("rate")(input)?;
-                let (input, _) = whitespace(input)?;
-                let (input, rate) = float(input)?;
-                let result = rate
-                    .map(|rate| Command::PostFilter {
+                alt((
+                    value(Ok(Command::PostFilter {
                         channel,
-                        rate: rate as f32,
-                    });
-                Ok((input, result))
+                        rate: None,
+                    }), tag("off")),
+                    move |input| {
+                        let (input, _) = tag("rate")(input)?;
+                        let (input, _) = whitespace(input)?;
+                        let (input, rate) = float(input)?;
+                        let result = rate
+                            .map(|rate| Command::PostFilter {
+                                channel,
+                                rate: Some(rate as f32),
+                            });
+                        Ok((input, result))
+                    }
+                ))(input)
             }
         ),
         value(Ok(Command::Show(ShowCommand::PostFilter)), end)
@@ -571,11 +579,26 @@ mod test {
     }
 
     #[test]
+    fn parse_postfilter() {
+        let command = Command::parse(b"postfilter");
+        assert_eq!(command, Ok(Command::Show(ShowCommand::PostFilter)));
+    }
+
+    #[test]
+    fn parse_postfilter_off() {
+        let command = Command::parse(b"postfilter 1 off");
+        assert_eq!(command, Ok(Command::PostFilter {
+            channel: 1,
+            rate: None,
+        }));
+    }
+
+    #[test]
     fn parse_postfilter_rate() {
         let command = Command::parse(b"postfilter 0 rate 21");
         assert_eq!(command, Ok(Command::PostFilter {
             channel: 0,
-            rate: 21.0,
+            rate: Some(21.0),
         }));
     }
 
