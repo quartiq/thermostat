@@ -9,6 +9,7 @@ use uom::si::{
     thermodynamic_temperature::degree_celsius,
 };
 use crate::{
+    ad7172::PostFilter,
     channels::{CHANNELS, Channels},
     command_parser::CenterPoint,
     EEPROM_SIZE, EEPROM_PAGE_SIZE,
@@ -94,11 +95,18 @@ pub struct ChannelConfig {
     pid_target: f32,
     sh: SteinhartHartConfig,
     pwm: PwmLimits,
+    /// uses variant `PostFilter::Invalid` instead of `None` to save space
+    adc_postfilter: PostFilter,
 }
 
 impl ChannelConfig {
     pub fn new(channels: &mut Channels, channel: usize) -> Self {
         let pwm = PwmLimits::new(channels, channel);
+
+        let adc_postfilter = channels.adc.get_postfilter(channel as u8)
+            .unwrap()
+            .unwrap_or(PostFilter::Invalid);
+
         let state = channels.channel_state(channel);
         ChannelConfig {
             center: state.center.clone(),
@@ -106,6 +114,7 @@ impl ChannelConfig {
             pid_target: state.pid.target as f32,
             sh: (&state.sh).into(),
             pwm,
+            adc_postfilter,
         }
     }
 
@@ -115,7 +124,14 @@ impl ChannelConfig {
         state.pid.parameters = self.pid.clone();
         state.pid.target = self.pid_target.into();
         state.sh = (&self.sh).into();
+
         self.pwm.apply(channels, channel);
+
+        let adc_postfilter = match self.adc_postfilter {
+            PostFilter::Invalid => None,
+            adc_postfilter => Some(adc_postfilter),
+        };
+        let _ = channels.adc.set_postfilter(channel as u8, adc_postfilter);
     }
 }
 
@@ -188,6 +204,7 @@ mod test {
                 max_i_pos: 2.1,
                 max_i_neg: 2.25,
             },
+            adc_postfilter: PostFilter::F21SPS,
         };
         let config = Config {
             channels: [
@@ -213,6 +230,7 @@ mod test {
                 max_i_pos: 2.1,
                 max_i_neg: 2.25,
             },
+            adc_postfilter: PostFilter::F21SPS,
         };
         let config = Config {
             channels: [

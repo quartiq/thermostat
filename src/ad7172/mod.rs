@@ -1,5 +1,6 @@
 use core::fmt;
 use num_traits::float::Float;
+use serde::{Serialize, Deserialize};
 use stm32f4xx_hal::{
     time::MegaHertz,
     spi,
@@ -144,7 +145,7 @@ impl fmt::Display for RefSource {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum PostFilter {
     /// 27 SPS, 47 dB rejection, 36.7 ms settling
