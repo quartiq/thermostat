@@ -252,7 +252,7 @@ impl Channels {
 
     /// Calibrate the I_SET DAC using the DAC_FB ADC pin.
     ///
-    /// These loops perform a width-first search for the DAC setting
+    /// These loops perform a breadth-first search for the DAC setting
     /// that will produce a `target_voltage`.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let target_voltage = ElectricPotential::new::<volt>(2.5);
