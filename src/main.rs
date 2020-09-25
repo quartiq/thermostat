@@ -459,6 +459,10 @@ fn main() -> ! {
                                     }
                                 }
                                 Command::Reset => {
+                                    for i in 0..CHANNELS {
+                                        channels.power_down(i);
+                                    }
+
                                     SCB::sys_reset();
                                 }
                             }
