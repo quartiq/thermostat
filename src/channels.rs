@@ -52,6 +52,7 @@ impl Channels {
         for channel in 0..CHANNELS {
             channels.channel_state(channel).vref = channels.read_vref(channel);
             channels.calibrate_dac_value(channel);
+            channels.set_i(channel, ElectricCurrent::new::<ampere>(0.0));
         }
         channels
     }
