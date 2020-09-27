@@ -1,11 +1,13 @@
-use stm32f4xx_hal::hal;
+use serde::{Serialize, Deserialize};
 use smoltcp::time::Instant;
+use stm32f4xx_hal::hal;
 use uom::si::{
     f64::{ElectricCurrent, ElectricPotential, ElectricalResistance},
     electric_potential::{millivolt, volt},
     electric_current::ampere,
     electrical_resistance::ohm,
     ratio::ratio,
+    thermodynamic_temperature::degree_celsius,
 };
 use crate::{
     ad5680,
@@ -407,5 +409,52 @@ impl Channels {
         let duty = (max_i_neg / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxINeg, duty);
         (duty * max, max)
+    }
+
+    pub fn report(&mut self, channel: usize) -> Report {
+        let vref = self.channel_state(channel).vref;
+        let (i_set, _) = self.get_i(channel);
+        let i_tec = self.read_itec(channel);
+        let tec_i = (i_tec - vref) / ElectricalResistance::new::<ohm>(0.4);
+        let state = self.channel_state(channel);
+        Report {
+            channel,
+            time: state.adc_time.total_millis(),
+            adc: state.get_adc(),
+            sens: state.get_sens(),
+            temperature: state.get_temperature()
+                .map(|temperature| temperature.get::<degree_celsius>()),
+            pid_engaged: state.pid_engaged,
+            i_set,
+            vref,
+            dac_feedback: self.read_dac_feedback(channel),
+            i_tec,
+            tec_i,
+            tec_u_meas: self.read_tec_u_meas(channel),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Report {
+    channel: usize,
+    time: i64,
+    adc: Option<ElectricPotential>,
+    sens: Option<ElectricalResistance>,
+    temperature: Option<f64>,
+    pid_engaged: bool,
+    i_set: ElectricCurrent,
+    vref: ElectricPotential,
+    dac_feedback: ElectricPotential,
+    i_tec: ElectricPotential,
+    tec_i: ElectricCurrent,
+    tec_u_meas: ElectricPotential,
+}
+
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U320>;
+
+impl Report {
+    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        serde_json_core::to_vec(self)
     }
 }

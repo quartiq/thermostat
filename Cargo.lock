@@ -354,6 +354,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-json-core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbf406405ada9ef326ca78677324ac66994ff348fc48a16030be08caeed29825"
+dependencies = [
+ "heapless",
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -457,6 +467,7 @@ dependencies = [
  "cortex-m-log",
  "cortex-m-rt",
  "eeprom24x",
+ "heapless",
  "log",
  "nb 0.1.3",
  "nom",
@@ -465,6 +476,7 @@ dependencies = [
  "panic-semihosting",
  "postcard",
  "serde",
+ "serde-json-core",
  "smoltcp",
  "stm32-eth",
  "stm32f4xx-hal",
@@ -492,6 +504,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb593f5252356bfb829112f8fca2d0982d48588d2d6bb5a92553b0dfc4c9aba"
 dependencies = [
  "num-traits",
+ "serde",
  "typenum",
 ]
 

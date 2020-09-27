@@ -9,7 +9,7 @@ use panic_abort as _;
 #[cfg(all(feature = "semihosting", not(test)))]
 use panic_semihosting as _;
 
-use log::{info, warn};
+use log::{error, info, warn};
 
 use core::fmt::Write;
 use cortex_m::asm::wfi;
@@ -23,6 +23,7 @@ use stm32f4xx_hal::{
 };
 use smoltcp::{
     time::Instant,
+    socket::TcpSocket,
     wire::EthernetAddress,
 };
 use uom::{
@@ -78,6 +79,37 @@ pub const EEPROM_SIZE: usize = 128;
 
 const TCP_PORT: u16 = 23;
 
+
+fn report_to(channel: usize, channels: &mut Channels, socket: &mut TcpSocket) -> bool {
+    let send_free = socket.send_capacity() - socket.send_queue();
+    match channels.report(channel).to_json() {
+        Ok(buf) if buf.len() > send_free + 1 => {
+            // Not enough buffer space, skip report for now
+            warn!(
+                "TCP socket has only {}/{} needed {}",
+                send_free + 1, socket.send_capacity(), buf.len(),
+            );
+        }
+        Ok(buf) => {
+            match socket.send_slice(&buf) {
+                Ok(sent) if sent == buf.len() => {
+                    let _ = socket.send_slice(b"\n");
+                    // success
+                    return true
+                    // TODO: session.mark_report_sent(channel);
+                }
+                Ok(sent) =>
+                    warn!("sent only {}/{} bytes of report", sent, buf.len()),
+                Err(e) =>
+                    error!("error sending report: {:?}", e),
+            }
+        }
+        Err(e) =>
+            error!("unable to serialize report: {:?}", e),
+    }
+    // not success
+    false
+}
 
 /// Initialization and main loop
 #[cfg(not(test))]
@@ -171,29 +203,7 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
-                                        if let Some(adc_input) = channels.channel_state(channel).get_adc() {
-                                            let vref = channels.channel_state(channel).vref;
-                                            let dac_feedback = channels.read_dac_feedback(channel);
-
-                                            let itec = channels.read_itec(channel);
-                                            let tec_i = (itec - vref) / ElectricalResistance::new::<ohm>(0.4);
-
-                                            let tec_u_meas = channels.read_tec_u_meas(channel);
-
-                                            let state = channels.channel_state(channel);
-                                            let _ = writeln!(
-                                                socket, "channel {}: t={:.0} adc{}={:.3} adc_r={:?} vref={:.3} dac_feedback={:.3} itec={:.3} tec={:.3} tec_u_meas={:.3} r={:.3}",
-                                                channel, state.adc_time,
-                                                channel, adc_input.into_format_args(volt, Abbreviation),
-                                                state.get_sens().map(|sens| sens.into_format_args(ohm, Abbreviation)),
-                                                vref.into_format_args(volt, Abbreviation), dac_feedback.into_format_args(volt, Abbreviation),
-                                                itec.into_format_args(volt, Abbreviation), tec_i.into_format_args(ampere, Abbreviation),
-                                                tec_u_meas.into_format_args(volt, Abbreviation),
-                                                ((tec_u_meas - vref) / tec_i).into_format_args(ohm, Abbreviation),
-                                            );
-                                        } else {
-                                            let _ = writeln!(socket, "channel {}: no adc input", channel);
-                                        }
+                                        report_to(channel, &mut channels, &mut socket);
                                     }
                                 }
                                 Command::Show(ShowCommand::Pid) => {
@@ -479,17 +489,11 @@ fn main() -> ! {
                             Err(_) =>
                                 socket.close(),
                         }
-                    } else if socket.can_send() && socket.send_capacity() - socket.send_queue() > 256 {
-                        while let Some(channel) = session.is_report_pending() {
-                            let state = &mut channels.channel_state(usize::from(channel));
-                            let adc_data = state.adc_data.unwrap_or(0);
-                            let _ = writeln!(
-                                socket, "t={} raw{}=0x{:06X} value={}",
-                                state.adc_time, channel, adc_data,
-                                state.get_adc().unwrap().into_format_args(volt, Abbreviation),
-                            ).map(|_| {
+                    } else if socket.can_send() {
+                        if let Some(channel) = session.is_report_pending() {
+                            if report_to(channel, &mut channels, &mut socket) {
                                 session.mark_report_sent(channel);
-                            });
+                            }
                         }
                     }
                 });
