@@ -90,6 +90,8 @@ impl<SPI: Transfer<u8, Error = E>, NSS: OutputPin, E: fmt::Debug> Adc<SPI, NSS> 
             data.set_enh_filt_en(true);
             data.set_enh_filt(PostFilter::F16SPS);
             data.set_order(DigitalFilterOrder::Sinc5Sinc1);
+            // output data rate: 10 Hz
+            data.set_odr(0b10011);
         })?;
         self.update_reg(&regs::Channel { index }, |data| {
             data.set_setup(index);
