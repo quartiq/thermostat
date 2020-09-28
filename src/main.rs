@@ -5,7 +5,7 @@
 // TODO: #![deny(warnings, unused)]
 
 #[cfg(not(any(feature = "semihosting", test)))]
-use panic_abort as _;
+use panic_halt as _;
 #[cfg(all(feature = "semihosting", not(test)))]
 use panic_semihosting as _;
 
