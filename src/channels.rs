@@ -417,6 +417,9 @@ impl Channels {
         let i_tec = self.read_itec(channel);
         let tec_i = (i_tec - vref) / ElectricalResistance::new::<ohm>(0.4);
         let state = self.channel_state(channel);
+        let pid_output = state.pid.last_output.map(|last_output|
+            ElectricCurrent::new::<ampere>(last_output)
+        );
         Report {
             channel,
             time: state.adc_time.total_millis(),
@@ -431,6 +434,7 @@ impl Channels {
             i_tec,
             tec_i,
             tec_u_meas: self.read_tec_u_meas(channel),
+            pid_output,
         }
     }
 }
@@ -449,9 +453,10 @@ pub struct Report {
     i_tec: ElectricPotential,
     tec_i: ElectricCurrent,
     tec_u_meas: ElectricPotential,
+    pid_output: Option<ElectricCurrent>,
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U320>;
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
 
 impl Report {
     pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
