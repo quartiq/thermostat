@@ -131,6 +131,17 @@ class Client:
                 pass
 
     def set_param(self, topic, channel, field="", value=""):
+        """Set configuration parameters
+
+        Examples::
+            tec.set_param("pwm", 0, "max_v", 2.0)
+            tec.set_param("pid", 1, "output_max", 2.5)
+            tec.set_param("s-h", 0, "t0", 20.0)
+            tec.set_param("center", 0, "vref")
+            tec.set_param("postfilter", 1, 21)
+
+        See the firmware's README.md for a full list.
+        """
         if type(value) is float:
             value = "{:f}".format(value)
         if type(value) is not str:
