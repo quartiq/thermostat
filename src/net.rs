@@ -8,7 +8,7 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
+use smoltcp::wire::{EthernetAddress, IpCidr, Ipv4Address};
 use smoltcp::iface::{NeighborCache, EthernetInterfaceBuilder, EthernetInterface};
 use stm32_eth::{Eth, RingEntry, PhyAddress, RxDescriptor, TxDescriptor};
 use crate::pins::EthernetPins;
@@ -29,7 +29,9 @@ pub fn run<F>(
     clocks: Clocks,
     ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
     eth_pins: EthernetPins,
-    ethernet_addr: EthernetAddress, f: F
+    ethernet_addr: EthernetAddress,
+    local_addr: Ipv4Address,
+    f: F
 ) where
     F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
 {
@@ -50,8 +52,9 @@ pub fn run<F>(
     eth_dev.enable_interrupt();
 
     // IP stack
-    let local_addr = IpAddress::v4(192, 168, 1, 26);
-    let mut ip_addrs = [IpCidr::new(local_addr, 24)];
+    // Netmask 0 means we expect any IP address on the local segment.
+    // No routing.
+    let mut ip_addrs = [IpCidr::new(local_addr.into(), 0)];
     let mut neighbor_storage = [None; 16];
     let neighbor_cache = NeighborCache::new(&mut neighbor_storage[..]);
     let iface = EthernetInterfaceBuilder::new(&mut eth_dev)

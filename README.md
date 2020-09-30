@@ -76,3 +76,4 @@ The scope of this setting is per TCP session.
 | `load`                           | Restore configuration from EEPROM                   |
 | `save`                           | Save configuration to EEPROM                        |
 | `reset`                          | Reset the device                                    |
+| `ipv4 <X.X.X.X>`                 | Configure IPv4 address                              |

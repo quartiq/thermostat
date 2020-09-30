@@ -24,7 +24,7 @@ use stm32f4xx_hal::{
 use smoltcp::{
     time::Instant,
     socket::TcpSocket,
-    wire::EthernetAddress,
+    wire::{EthernetAddress, Ipv4Address},
 };
 use uom::{
     si::{
@@ -76,6 +76,7 @@ const WATCHDOG_INTERVAL: u32 = 30_000;
 pub const EEPROM_PAGE_SIZE: usize = 8;
 pub const EEPROM_SIZE: usize = 128;
 
+pub const DEFAULT_IPV4_ADDRESS: Ipv4Address = Ipv4Address([192, 168, 1, 26]);
 const TCP_PORT: u16 = 23;
 
 
@@ -159,10 +160,15 @@ fn main() -> ! {
 
     usb::State::setup(usb);
 
+    let mut ipv4_address = DEFAULT_IPV4_ADDRESS;
     let mut channels = Channels::new(pins);
     let _ = Config::load(&mut eeprom)
-        .map(|config| config.apply(&mut channels))
+        .map(|config| {
+            config.apply(&mut channels);
+            ipv4_address = Ipv4Address::from_bytes(&config.ipv4_address);
+        })
         .map_err(|e| warn!("error loading config: {:?}", e));
+    info!("IPv4 address: {}", ipv4_address);
 
     // EEPROM ships with a read-only EUI-48 identifier
     let mut eui48 = [0; 6];
@@ -170,7 +176,8 @@ fn main() -> ! {
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
-    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, |iface| {
+    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_address, |iface| {
+        let mut new_ipv4_address = None;
         Server::<Session>::run(iface, |server| {
             leds.r1.off();
 
@@ -339,19 +346,24 @@ fn main() -> ! {
                                 }
                                 Command::Load => {
                                     match Config::load(&mut eeprom) {
-                                        Ok(config) =>
-                                            config.apply(&mut channels),
+                                        Ok(config) => {
+                                            config.apply(&mut channels);
+                                            new_ipv4_address = Some(Ipv4Address::from_bytes(&config.ipv4_address));
+                                        }
                                         Err(e) =>
                                             error!("unable to load eeprom config: {:?}", e),
                                     }
                                 }
                                 Command::Save => {
-                                    let config = Config::new(&mut channels);
+                                    let config = Config::new(&mut channels, ipv4_address);
                                     match config.save(&mut eeprom) {
                                         Ok(()) => {},
                                         Err(e) =>
                                             error!("unable to save eeprom config: {:?}", e),
                                     }
+                                }
+                                Command::Ipv4(address) => {
+                                    new_ipv4_address = Some(Ipv4Address::from_bytes(&address));
                                 }
                                 Command::Reset => {
                                     for i in 0..CHANNELS {
@@ -374,6 +386,11 @@ fn main() -> ! {
                         }
                     }
                 });
+
+                // Apply new IPv4 address
+                new_ipv4_address.map(|ipv4_address|
+                    server.set_ipv4_address(ipv4_address)
+                );
 
                 // Update watchdog
                 wd.feed();

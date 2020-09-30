@@ -3,6 +3,7 @@ use smoltcp::{
     iface::EthernetInterface,
     socket::{SocketSet, SocketHandle, TcpSocket, TcpSocketBuffer, SocketRef},
     time::Instant,
+    wire::{IpCidr, Ipv4Address, Ipv4Cidr},
 };
 
 
@@ -82,5 +83,22 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
             let socket = self.sockets.get::<TcpSocket>(state.handle);
             callback(socket, &mut state.state);
         }
+    }
+
+    pub fn set_ipv4_address(&mut self, ipv4_address: Ipv4Address) {
+        self.net.update_ip_addrs(|addrs| {
+            for addr in addrs.iter_mut() {
+                match addr {
+                    IpCidr::Ipv4(_) => {
+                        *addr = IpCidr::Ipv4(Ipv4Cidr::new(ipv4_address, 0));
+                        // done
+                        break
+                    }
+                    _ => {
+                        // skip
+                    }
+                }
+            }
+        });
     }
 }

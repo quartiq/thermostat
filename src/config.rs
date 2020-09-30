@@ -1,5 +1,6 @@
 use postcard::{from_bytes, to_slice};
 use serde::{Serialize, Deserialize};
+use smoltcp::wire::Ipv4Address;
 use stm32f4xx_hal::i2c;
 use uom::si::{
     electric_potential::volt,
@@ -40,15 +41,17 @@ impl From<postcard::Error> for Error {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     channels: [ChannelConfig; CHANNELS],
+    pub ipv4_address: [u8; 4],
 }
 
 impl Config {
-    pub fn new(channels: &mut Channels) -> Self {
+    pub fn new(channels: &mut Channels, ipv4_address: Ipv4Address) -> Self {
         Config {
             channels: [
                 ChannelConfig::new(channels, 0),
                 ChannelConfig::new(channels, 1),
             ],
+            ipv4_address: ipv4_address.0,
         }
     }
 
@@ -191,6 +194,7 @@ impl PwmLimits {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::DEFAULT_IPV4_ADDRESS;
 
     #[test]
     fn test_fit_eeprom() {
@@ -211,6 +215,7 @@ mod test {
                 channel_config.clone(),
                 channel_config.clone(),
             ],
+            ipv4_address: DEFAULT_IPV4_ADDRESS.0,
         };
 
         let mut buffer = [0; EEPROM_SIZE];
@@ -237,6 +242,7 @@ mod test {
                 channel_config.clone(),
                 channel_config.clone(),
             ],
+            ipv4_address: DEFAULT_IPV4_ADDRESS.0,
         };
 
         let mut buffer = [0; EEPROM_SIZE];

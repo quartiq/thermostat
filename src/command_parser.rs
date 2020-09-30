@@ -135,6 +135,7 @@ pub enum Command {
     Load,
     Save,
     Reset,
+    Ipv4([u8; 4]),
     Show(ShowCommand),
     Reporting(bool),
     /// PWM parameter setting
@@ -179,6 +180,19 @@ fn end(input: &[u8]) -> IResult<&[u8], ()> {
 
 fn whitespace(input: &[u8]) -> IResult<&[u8], ()> {
     fold_many1(char(' '), (), |(), _| ())(input)
+}
+
+fn unsigned(input: &[u8]) -> IResult<&[u8], Result<u32, Error>> {
+    take_while1(is_digit)(input)
+        .map(|(input, digits)| {
+            let result =
+                from_utf8(digits)
+                .map_err(|e| e.into())
+                .and_then(|digits| u32::from_str_radix(digits, 10)
+                     .map_err(|e| e.into())
+                );
+            (input, result)
+        })
 }
 
 fn float(input: &[u8]) -> IResult<&[u8], Result<f64, Error>> {
@@ -415,11 +429,30 @@ fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
+fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("ipv4")(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, a) = unsigned(input)?;
+    let (input, _) = tag(".")(input)?;
+    let (input, b) = unsigned(input)?;
+    let (input, _) = tag(".")(input)?;
+    let (input, c) = unsigned(input)?;
+    let (input, _) = tag(".")(input)?;
+    let (input, d) = unsigned(input)?;
+    end(input)?;
+
+    let result = a.and_then(|a| b.and_then(|b| c.and_then(|c| d.map(|d|
+        Command::Ipv4([a as u8, b as u8, c as u8, d as u8])
+    ))));
+    Ok((input, result))
+}
+
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
          value(Ok(Command::Load), tag("load")),
          value(Ok(Command::Save), tag("save")),
          value(Ok(Command::Reset), tag("reset")),
+         ipv4,
          map(report, Ok),
          pwm,
          center_point,
@@ -462,6 +495,12 @@ mod test {
     fn parse_save() {
         let command = Command::parse(b"save");
         assert_eq!(command, Ok(Command::Save));
+    }
+
+    #[test]
+    fn parse_ipv4() {
+        let command = Command::parse(b"ipv4 192.168.1.26");
+        assert_eq!(command, Ok(Command::Ipv4([192, 168, 1, 26])));
     }
 
     #[test]
