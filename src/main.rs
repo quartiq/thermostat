@@ -235,44 +235,23 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::SteinhartHart) => {
                                     for channel in 0..CHANNELS {
-                                        let state = channels.channel_state(channel);
-                                        let _ = writeln!(
-                                            socket, "channel {}: Steinhart-Hart equation parameters",
-                                            channel,
-                                        );
-                                        let _ = writeln!(socket, "- t0={}", state.sh.t0.into_format_args(degree_celsius, Abbreviation));
-                                        let _ = writeln!(socket, "- b={}", state.sh.b);
-                                        let _ = writeln!(socket, "- r0={}", state.sh.r0.into_format_args(ohm, Abbreviation));
-                                        match (state.get_adc(), state.get_sens(), state.get_temperature()) {
-                                            (Some(adc), Some(sens), Some(temp)) => {
-                                                let _ = writeln!(
-                                                    socket, "- adc={:.6} r={:.0} temp{}={:.3}",
-                                                    adc.into_format_args(volt, Abbreviation),
-                                                    sens.into_format_args(ohm, Abbreviation),
-                                                    channel,
-                                                    temp.into_format_args(degree_celsius, Abbreviation),
-                                                );
+                                        match channels.steinhart_hart_summary(channel).to_json() {
+                                            Ok(buf) => {
+                                                send_line(&mut socket, &buf);
                                             }
-                                            _ => {}
+                                            Err(e) =>
+                                                error!("unable to serialize steinhart-hart summary: {:?}", e),
                                         }
-                                        let _ = writeln!(socket, "");
                                     }
                                 }
                                 Command::Show(ShowCommand::PostFilter) => {
                                     for channel in 0..CHANNELS {
-                                        match channels.adc.get_postfilter(channel as u8).unwrap() {
-                                            Some(filter) => {
-                                                let _ = writeln!(
-                                                    socket, "channel {}: postfilter={:.2} SPS",
-                                                    channel, filter.output_rate().unwrap()
-                                                );
+                                        match channels.postfilter_summary(channel).to_json() {
+                                            Ok(buf) => {
+                                                send_line(&mut socket, &buf);
                                             }
-                                            None => {
-                                                let _ = writeln!(
-                                                    socket, "channel {}: postfilter disabled",
-                                                    channel
-                                                );
-                                            }
+                                            Err(e) =>
+                                                error!("unable to serialize postfilter summary: {:?}", e),
                                         }
                                     }
                                 }

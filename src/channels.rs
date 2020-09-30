@@ -16,6 +16,7 @@ use crate::{
     channel_state::ChannelState,
     command_parser::{CenterPoint, PwmPin},
     pins,
+    steinhart_hart,
 };
 
 pub const CHANNELS: usize = 2;
@@ -451,6 +452,17 @@ impl Channels {
             max_i_neg: self.get_max_i_neg(channel).into(),
         }
     }
+
+    pub fn postfilter_summary(&mut self, channel: usize) -> PostFilterSummary {
+        let rate = self.adc.get_postfilter(channel as u8).unwrap()
+            .and_then(|filter| filter.output_rate());
+        PostFilterSummary { channel, rate }
+    }
+
+    pub fn steinhart_hart_summary(&mut self, channel: usize) -> SteinhartHartSummary {
+        let params = self.channel_state(channel).sh.clone();
+        SteinhartHartSummary { channel, params }
+    }
 }
 
 type JsonBuffer = heapless::Vec<u8, heapless::consts::U512>;
@@ -524,6 +536,29 @@ impl PwmSummary {
     }
 }
 
+#[derive(Serialize)]
+pub struct PostFilterSummary {
+    channel: usize,
+    rate: Option<f32>,
+}
+
+impl PostFilterSummary {
+    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        serde_json_core::to_vec(self)
+    }
+}
+
+#[derive(Serialize)]
+pub struct SteinhartHartSummary {
+    channel: usize,
+    params: steinhart_hart::Parameters,
+}
+
+impl SteinhartHartSummary {
+    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        serde_json_core::to_vec(self)
+    }
+}
 
 #[cfg(test)]
 mod test {
