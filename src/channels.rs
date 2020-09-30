@@ -463,3 +463,31 @@ impl Report {
         serde_json_core::to_vec(self)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn report_to_json() {
+        // `/ 1.1` results in values with a really long serialization
+        let report = Report {
+            channel: 0,
+            time: 3200,
+            adc: Some(ElectricPotential::new::<volt>(0.65 / 1.1)),
+            sens: Some(ElectricalResistance::new::<ohm>(10000.0 / 1.1)),
+            temperature: Some(30.0 / 1.1),
+            pid_engaged: false,
+            i_set: ElectricCurrent::new::<ampere>(0.5 / 1.1),
+            vref: ElectricPotential::new::<volt>(1.5 / 1.1),
+            dac_feedback: ElectricPotential::new::<volt>(2.0 / 1.1),
+            i_tec: ElectricPotential::new::<volt>(2.0 / 1.1),
+            tec_i: ElectricCurrent::new::<ampere>(0.2 / 1.1),
+            tec_u_meas: ElectricPotential::new::<volt>(2.0 / 1.1),
+            pid_output: Some(ElectricCurrent::new::<ampere>(0.5 / 1.1)),
+        };
+        let buf = report.to_json().unwrap();
+        assert_eq!(buf[0], b'{');
+        assert_eq!(buf[buf.len() - 1], b'}');
+    }
+}
