@@ -54,7 +54,7 @@ mod net;
 mod server;
 use server::Server;
 mod session;
-use session::{Session, SessionOutput};
+use session::{Session, SessionInput};
 mod command_parser;
 use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
@@ -196,8 +196,8 @@ fn main() -> ! {
                         session.reset();
                     } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 1024 {
                         match socket.recv(|buf| session.feed(buf)) {
-                            Ok(SessionOutput::Nothing) => {}
-                            Ok(SessionOutput::Command(command)) => match command {
+                            Ok(SessionInput::Nothing) => {}
+                            Ok(SessionInput::Command(command)) => match command {
                                 Command::Quit =>
                                     socket.close(),
                                 Command::Reporting(reporting) => {
@@ -413,7 +413,7 @@ fn main() -> ! {
                                     SCB::sys_reset();
                                 }
                             }
-                            Ok(SessionOutput::Error(e)) => {
+                            Ok(SessionInput::Error(e)) => {
                                 let _ = writeln!(socket, "Command error: {:?}", e);
                             }
                             Err(_) =>

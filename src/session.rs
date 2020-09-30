@@ -38,16 +38,16 @@ impl LineReader {
     }
 }
 
-pub enum SessionOutput {
+pub enum SessionInput {
     Nothing,
     Command(Command),
     Error(ParserError),
 }
 
-impl From<Result<Command, ParserError>> for SessionOutput {
+impl From<Result<Command, ParserError>> for SessionInput {
     fn from(input: Result<Command, ParserError>) -> Self {
-        input.map(SessionOutput::Command)
-            .unwrap_or_else(SessionOutput::Error)
+        input.map(SessionInput::Command)
+            .unwrap_or_else(SessionInput::Error)
     }
 }
 
@@ -106,7 +106,7 @@ impl Session {
         self.report_pending[channel] = false;
     }
 
-    pub fn feed(&mut self, buf: &[u8]) -> (usize, SessionOutput) {
+    pub fn feed(&mut self, buf: &[u8]) -> (usize, SessionInput) {
         let mut buf_bytes = 0;
         for (i, b) in buf.iter().enumerate() {
             buf_bytes = i + 1;
@@ -125,6 +125,6 @@ impl Session {
                 None => {}
             }
         }
-        (buf_bytes, SessionOutput::Nothing)
+        (buf_bytes, SessionInput::Nothing)
     }
 }
