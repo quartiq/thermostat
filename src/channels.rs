@@ -91,6 +91,19 @@ impl Channels {
         })
     }
 
+    /// calculate the TEC i_set centerpoint
+    pub fn get_center(&mut self, channel: usize) -> ElectricPotential {
+        match self.channel_state(channel).center {
+            CenterPoint::Vref => {
+                let vref = self.read_vref(channel);
+                self.channel_state(channel).vref = vref;
+                vref
+            },
+            CenterPoint::Override(center_point) =>
+                ElectricPotential::new::<volt>(center_point.into()),
+        }
+    }
+
     /// i_set DAC
     fn get_dac(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
         let dac_factor = match channel.into() {
@@ -104,13 +117,7 @@ impl Channels {
     }
 
     pub fn get_i(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
-        let state = self.channel_state(channel);
-        let center_point = match state.center {
-            CenterPoint::Vref =>
-                state.vref,
-            CenterPoint::Override(center_point) =>
-                ElectricPotential::new::<volt>(center_point.into()),
-        };
+        let center_point = self.get_center(channel);
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let (voltage, max) = self.get_dac(channel);
         let i_tec = (voltage - center_point) / (10.0 * r_sense);
@@ -138,13 +145,7 @@ impl Channels {
     }
 
     pub fn set_i(&mut self, channel: usize, i_tec: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
-        let state = self.channel_state(channel);
-        let center_point = match state.center {
-            CenterPoint::Vref =>
-                state.vref,
-            CenterPoint::Override(center_point) =>
-                ElectricPotential::new::<volt>(center_point.into()),
-        };
+        let center_point = self.get_center(channel);
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let voltage = i_tec * 10.0 * r_sense + center_point;
         let (voltage, max) = self.set_dac(channel, voltage);
