@@ -28,6 +28,7 @@ series = {
     'sens': Series(0.0001),
     'temperature': Series(),
     'i_set': Series(),
+    'pid_output': Series(),
     'vref': Series(),
     'dac_feedback': Series(),
     'i_tec': Series(),
@@ -39,7 +40,6 @@ series_lock = Lock()
 quit = False
 
 def recv_data(tec):
-    print("reporting")
     for data in tec.report_mode():
         if data['channel'] == 0:
             series_lock.acquire()
@@ -56,7 +56,6 @@ def recv_data(tec):
             break
 
 tec = Client()
-print("connected")
 thread = Thread(target=recv_data, args=(tec,))
 thread.start()
 
@@ -64,15 +63,17 @@ fig, ax = plt.subplots()
 
 for k, s in series.iteritems():
     s.plot, = ax.plot([], [], label=k)
-ax.legend()
+legend = ax.legend()
 
 def animate(i):
     min_x, max_x, min_y, max_y = None, None, None, None
     
     series_lock.acquire()
     try:
-        for s in series.itervalues():
+        for k, s in series.iteritems():
             s.plot.set_data(s.x_data, s.y_data)
+            if len(s.y_data) > 0:
+                s.plot.set_label("{}: {:.3f}".format(k, s.y_data[-1]))
 
             if len(s.x_data) > 0:
                 min_x_ = min(s.x_data)
@@ -107,21 +108,13 @@ def animate(i):
     ax.set_xlim(min_x, max_x)
     ax.set_ylim(min_y - margin_y, max_y + margin_y)
 
+    global legend
+    legend.remove()
+    legend = ax.legend()
 
 ani = animation.FuncAnimation(
     fig, animate, interval=1, blit=False, save_count=50)
 
-# To save the animation, use e.g.
-#
-# ani.save("movie.mp4")
-#
-# or
-#
-# writer = animation.FFMpegWriter(
-#     fps=15, metadata=dict(artist='Me'), bitrate=1800)
-# ani.save("movie.mp4", writer=writer)
-
-print("show")
 plt.show()
 quit = True
 thread.join()
