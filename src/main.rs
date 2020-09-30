@@ -27,7 +27,6 @@ use smoltcp::{
     wire::EthernetAddress,
 };
 use uom::{
-    fmt::DisplayStyle::Abbreviation,
     si::{
         f64::{
             ElectricCurrent,
@@ -202,11 +201,11 @@ fn main() -> ! {
                             Ok(SessionInput::Command(command)) => match command {
                                 Command::Quit =>
                                     socket.close(),
-                                Command::Reporting(reporting) => {
-                                    let _ = writeln!(socket, "report={}", if reporting { "on" } else { "off" });
+                                Command::Reporting(_reporting) => {
+                                    // handled by session
                                 }
                                 Command::Show(ShowCommand::Reporting) => {
-                                    let _ = writeln!(socket, "report={}", if session.reporting() { "on" } else { "off" });
+                                    let _ = writeln!(socket, "{{ \"report\": {:?} }}", session.reporting());
                                 }
                                 Command::Show(ShowCommand::Input) => {
                                     for channel in 0..CHANNELS {
@@ -260,8 +259,6 @@ fn main() -> ! {
                                 Command::PwmPid { channel } => {
                                     channels.channel_state(channel).pid_engaged = true;
                                     leds.g3.on();
-                                    let _ = writeln!(socket, "channel {}: PID enabled to control PWM", channel
-                                    );
                                 }
                                 Command::Pwm { channel, pin, value } => {
                                     match pin {
@@ -269,44 +266,20 @@ fn main() -> ! {
                                             channels.channel_state(channel).pid_engaged = false;
                                             leds.g3.off();
                                             let current = ElectricCurrent::new::<ampere>(value);
-                                            let (current, max) = channels.set_i(channel, current);
+                                            channels.set_i(channel, current);
                                             channels.power_up(channel);
-                                            let _ = writeln!(
-                                                socket, "channel {}: i_set DAC output set to {:.3} / {:.3}",
-                                                channel,
-                                                current.into_format_args(ampere, Abbreviation),
-                                                max.into_format_args(ampere, Abbreviation),
-                                            );
                                         }
                                         PwmPin::MaxV => {
                                             let voltage = ElectricPotential::new::<volt>(value);
-                                            let (voltage, max) = channels.set_max_v(channel, voltage);
-                                            let _ = writeln!(
-                                                socket, "channel {}: max_v set to {:.3} / {:.3}",
-                                                channel,
-                                                voltage.into_format_args(volt, Abbreviation),
-                                                max.into_format_args(volt, Abbreviation),
-                                            );
+                                            channels.set_max_v(channel, voltage);
                                         }
                                         PwmPin::MaxIPos => {
                                             let current = ElectricCurrent::new::<ampere>(value);
-                                            let (current, max) = channels.set_max_i_pos(channel, current);
-                                            let _ = writeln!(
-                                                socket, "channel {}: max_i_pos set to {:.3} / {:.3}",
-                                                channel,
-                                                current.into_format_args(ampere, Abbreviation),
-                                                max.into_format_args(ampere, Abbreviation),
-                                            );
+                                            channels.set_max_i_pos(channel, current);
                                         }
                                         PwmPin::MaxINeg => {
                                             let current = ElectricCurrent::new::<ampere>(value);
-                                            let (current, max) = channels.set_max_i_neg(channel, current);
-                                            let _ = writeln!(
-                                                socket, "channel {}: max_i_neg set to {:.3} / {:.3}",
-                                                channel,
-                                                current.into_format_args(ampere, Abbreviation),
-                                                max.into_format_args(ampere, Abbreviation),
-                                            );
+                                            channels.set_max_i_neg(channel, current);
                                         }
                                     }
                                 }
@@ -316,15 +289,6 @@ fn main() -> ! {
                                     state.center = center;
                                     if !state.pid_engaged {
                                         channels.set_i(channel, i_tec);
-                                        let _ = writeln!(
-                                            socket, "channel {}: center point updated, output readjusted for {:.3}",
-                                            channel, i_tec.into_format_args(ampere, Abbreviation),
-                                        );
-                                    } else {
-                                        let _ = writeln!(
-                                            socket, "channel {}: center point updated",
-                                            channel,
-                                        );
                                     }
                                 }
                                 Command::Pid { channel, parameter, value } => {
@@ -351,7 +315,6 @@ fn main() -> ! {
                                         IntegralMax =>
                                             pid.parameters.integral_max = value as f32,
                                     }
-                                    let _ = writeln!(socket, "PID parameter updated");
                                 }
                                 Command::SteinhartHart { channel, parameter, value } => {
                                     let sh = &mut channels.channel_state(channel).sh;
@@ -361,50 +324,33 @@ fn main() -> ! {
                                         B => sh.b = value,
                                         R0 => sh.r0 = ElectricalResistance::new::<ohm>(value),
                                     }
-                                    let _ = writeln!(socket, "Steinhart-Hart equation parameter updated");
                                 }
                                 Command::PostFilter { channel, rate: None } => {
                                     channels.adc.set_postfilter(channel as u8, None).unwrap();
-                                    let _ = writeln!(
-                                        socket, "channel {}: postfilter disabled",
-                                        channel
-                                    );
                                 }
                                 Command::PostFilter { channel, rate: Some(rate) } => {
                                     let filter = ad7172::PostFilter::closest(rate);
                                     match filter {
-                                        Some(filter) => {
-                                            channels.adc.set_postfilter(channel as u8, Some(filter)).unwrap();
-                                            let _ = writeln!(
-                                                socket, "channel {}: postfilter set to {:.2} SPS",
-                                                channel, filter.output_rate().unwrap()
-                                            );
-                                        }
-                                        None => {
-                                            let _ = writeln!(socket, "Unable to choose postfilter");
-                                        }
+                                        Some(filter) =>
+                                            channels.adc.set_postfilter(channel as u8, Some(filter)).unwrap(),
+                                        None =>
+                                            error!("unable to choose postfilter for rate {:.3}", rate),
                                     }
                                 }
                                 Command::Load => {
                                     match Config::load(&mut eeprom) {
-                                        Ok(config) => {
-                                            config.apply(&mut channels);
-                                            let _ = writeln!(socket, "Config loaded from EEPROM.");
-                                        }
-                                        Err(e) => {
-                                            let _ = writeln!(socket, "Error: {:?}", e);
-                                        }
+                                        Ok(config) =>
+                                            config.apply(&mut channels),
+                                        Err(e) =>
+                                            error!("unable to load eeprom config: {:?}", e),
                                     }
                                 }
                                 Command::Save => {
                                     let config = Config::new(&mut channels);
                                     match config.save(&mut eeprom) {
-                                        Ok(()) => {
-                                            let _ = writeln!(socket, "Config saved to EEPROM.");
-                                        }
-                                        Err(e) => {
-                                            let _ = writeln!(socket, "Error saving config: {:?}", e);
-                                        }
+                                        Ok(()) => {},
+                                        Err(e) =>
+                                            error!("unable to save eeprom config: {:?}", e),
                                     }
                                 }
                                 Command::Reset => {
@@ -415,9 +361,8 @@ fn main() -> ! {
                                     SCB::sys_reset();
                                 }
                             }
-                            Ok(SessionInput::Error(e)) => {
-                                let _ = writeln!(socket, "Command error: {:?}", e);
-                            }
+                            Ok(SessionInput::Error(e)) =>
+                                error!("session input: {:?}", e),
                             Err(_) =>
                                 socket.close(),
                         }
