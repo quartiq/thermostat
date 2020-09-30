@@ -417,6 +417,7 @@ impl Channels {
         let (i_set, _) = self.get_i(channel);
         let i_tec = self.read_itec(channel);
         let tec_i = (i_tec - vref) / ElectricalResistance::new::<ohm>(0.4);
+        let (dac_value, _) = self.get_dac(channel);
         let state = self.channel_state(channel);
         let pid_output = state.pid.last_output.map(|last_output|
             ElectricCurrent::new::<ampere>(last_output)
@@ -431,6 +432,7 @@ impl Channels {
             pid_engaged: state.pid_engaged,
             i_set,
             vref,
+            dac_value,
             dac_feedback: self.read_dac_feedback(channel),
             i_tec,
             tec_i,
@@ -451,7 +453,7 @@ impl Channels {
     }
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U512>;
 
 #[derive(Serialize)]
 pub struct Report {
@@ -463,6 +465,7 @@ pub struct Report {
     pid_engaged: bool,
     i_set: ElectricCurrent,
     vref: ElectricPotential,
+    dac_value: ElectricPotential,
     dac_feedback: ElectricPotential,
     i_tec: ElectricPotential,
     tec_i: ElectricCurrent,
@@ -538,6 +541,7 @@ mod test {
             pid_engaged: false,
             i_set: ElectricCurrent::new::<ampere>(0.5 / 1.1),
             vref: ElectricPotential::new::<volt>(1.5 / 1.1),
+            dac_value: ElectricPotential::new::<volt>(2.0 / 1.1),
             dac_feedback: ElectricPotential::new::<volt>(2.0 / 1.1),
             i_tec: ElectricPotential::new::<volt>(2.0 / 1.1),
             tec_i: ElectricCurrent::new::<ampere>(0.2 / 1.1),
@@ -556,7 +560,7 @@ mod test {
 
         let pwm_summary = PwmSummary {
             channel: 0,
-            center: CenterPoint::Vref,
+            center: CenterPointJson(CenterPoint::Vref),
             i_set: PwmSummaryField {
                 value: ElectricCurrent::new::<ampere>(value),
                 max: ElectricCurrent::new::<ampere>(max),
