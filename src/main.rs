@@ -194,7 +194,9 @@ fn main() -> ! {
                     if ! socket.is_active() {
                         let _ = socket.listen(TCP_PORT);
                         session.reset();
-                    } else if socket.can_send() && socket.can_recv() && socket.send_capacity() - socket.send_queue() > 1024 {
+                    } else if socket.may_send() && !socket.may_recv() {
+                        socket.close()
+                    } else if socket.can_send() && socket.can_recv() {
                         match socket.recv(|buf| session.feed(buf)) {
                             Ok(SessionInput::Nothing) => {}
                             Ok(SessionInput::Command(command)) => match command {
