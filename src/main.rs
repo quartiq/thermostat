@@ -56,7 +56,7 @@ use server::Server;
 mod session;
 use session::{Session, SessionOutput};
 mod command_parser;
-use command_parser::{CenterPoint, Command, ShowCommand, PwmPin};
+use command_parser::{Command, ShowCommand, PwmPin};
 mod timer;
 mod pid;
 mod steinhart_hart;
@@ -80,34 +80,40 @@ pub const EEPROM_SIZE: usize = 128;
 const TCP_PORT: u16 = 23;
 
 
-fn report_to(channel: usize, channels: &mut Channels, socket: &mut TcpSocket) -> bool {
+fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
     let send_free = socket.send_capacity() - socket.send_queue();
-    match channels.report(channel).to_json() {
-        Ok(buf) if buf.len() > send_free + 1 => {
-            // Not enough buffer space, skip report for now
-            warn!(
-                "TCP socket has only {}/{} needed {}",
-                send_free + 1, socket.send_capacity(), buf.len(),
-            );
-        }
-        Ok(buf) => {
-            match socket.send_slice(&buf) {
-                Ok(sent) if sent == buf.len() => {
-                    let _ = socket.send_slice(b"\n");
-                    // success
-                    return true
-                }
-                Ok(sent) =>
-                    warn!("sent only {}/{} bytes of report", sent, buf.len()),
-                Err(e) =>
-                    error!("error sending report: {:?}", e),
+    if data.len() > send_free + 1 {
+        // Not enough buffer space, skip report for now
+        warn!(
+            "TCP socket has only {}/{} needed {}",
+            send_free + 1, socket.send_capacity(), data.len(),
+        );
+    } else {
+        match socket.send_slice(&data) {
+            Ok(sent) if sent == data.len() => {
+                let _ = socket.send_slice(b"\n");
+                // success
+                return true
             }
+            Ok(sent) =>
+                warn!("sent only {}/{} bytes", sent, data.len()),
+            Err(e) =>
+                error!("error sending line: {:?}", e),
         }
-        Err(e) =>
-            error!("unable to serialize report: {:?}", e),
     }
     // not success
     false
+}
+
+fn report_to(channel: usize, channels: &mut Channels, socket: &mut TcpSocket) -> bool {
+    match channels.report(channel).to_json() {
+        Ok(buf) =>
+            send_line(socket, &buf[..]),
+        Err(e) => {
+            error!("unable to serialize report: {:?}", e);
+            false
+        }
+    }
 }
 
 /// Initialization and main loop
@@ -207,26 +213,9 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Pid) => {
                                     for channel in 0..CHANNELS {
-                                        let send_free = socket.send_capacity() - socket.send_queue();
                                         match channels.channel_state(channel).pid.summary(channel).to_json() {
-                                            Ok(buf) if buf.len() > send_free + 1 => {
-                                                // Not enough buffer space, skip report for now
-                                                warn!(
-                                                    "TCP socket has only {}/{} needed {}",
-                                                    send_free + 1, socket.send_capacity(), buf.len(),
-                                                );
-                                            }
                                             Ok(buf) => {
-                                                match socket.send_slice(&buf) {
-                                                    Ok(sent) if sent == buf.len() => {
-                                                        let _ = socket.send_slice(b"\n");
-                                                        // success
-                                                    }
-                                                    Ok(sent) =>
-                                                        warn!("sent only {}/{} bytes of summary", sent, buf.len()),
-                                                    Err(e) =>
-                                                        error!("error sending summary: {:?}", e),
-                                                }
+                                                send_line(&mut socket, &buf);
                                             }
                                             Err(e) =>
                                                 error!("unable to serialize pid summary: {:?}", e),
@@ -235,52 +224,14 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Pwm) => {
                                     for channel in 0..CHANNELS {
-                                        let i_set = channels.get_i(channel);
-                                        let state = channels.channel_state(channel);
-                                        let _ = writeln!(
-                                            socket, "channel {}: PID={}",
-                                            channel,
-                                            if state.pid_engaged { "engaged" } else { "disengaged" }
-                                        );
-                                        let _ = write!(
-                                            socket, "- i_set={:.3} / {:.3} ",
-                                            i_set.0.into_format_args(ampere, Abbreviation),
-                                            i_set.1.into_format_args(ampere, Abbreviation),
-                                        );
-                                        match state.center {
-                                            CenterPoint::Vref => {
-                                                let _ = writeln!(
-                                                    socket, "center=vref vref={:.3}",
-                                                    state.vref.into_format_args(volt, Abbreviation),
-                                                );
+                                        match channels.pwm_summary(channel).to_json() {
+                                            Ok(buf) => {
+                                                send_line(&mut socket, &buf);
                                             }
-                                            CenterPoint::Override(volts) => {
-                                                let _ = writeln!(
-                                                    socket, "center={:.3} V",
-                                                    volts,
-                                                );
-                                            }
+                                            Err(e) =>
+                                                error!("unable to serialize pwm summary: {:?}", e),
                                         }
-                                        let max_v = channels.get_max_v(channel);
-                                        let _ = writeln!(
-                                            socket, "- max_v={:.3} / {:.3}",
-                                            max_v.0.into_format_args(volt, Abbreviation),
-                                            max_v.1.into_format_args(volt, Abbreviation),
-                                        );
-                                        let max_i_pos = channels.get_max_i_pos(channel);
-                                        let _ = writeln!(
-                                            socket, "- max_i_pos={:.3} / {:.3}",
-                                            max_i_pos.0.into_format_args(ampere, Abbreviation),
-                                            max_i_pos.1.into_format_args(ampere, Abbreviation),
-                                        );
-                                        let max_i_neg = channels.get_max_i_neg(channel);
-                                        let _ = writeln!(
-                                            socket, "- max_i_neg={:.3} / {:.3}",
-                                            max_i_neg.0.into_format_args(ampere, Abbreviation),
-                                            max_i_neg.1.into_format_args(ampere, Abbreviation),
-                                        );
                                     }
-                                    let _ = writeln!(socket, "");
                                 }
                                 Command::Show(ShowCommand::SteinhartHart) => {
                                     for channel in 0..CHANNELS {

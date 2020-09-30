@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
 use uom::si::{
@@ -438,9 +438,22 @@ impl Channels {
             pid_output,
         }
     }
+
+    pub fn pwm_summary(&mut self, channel: usize) -> PwmSummary {
+        PwmSummary {
+            channel,
+            center: CenterPointJson(self.channel_state(channel).center.clone()),
+            i_set: self.get_i(channel).into(),
+            max_v: self.get_max_v(channel).into(),
+            max_i_pos: self.get_max_i_pos(channel).into(),
+            max_i_neg: self.get_max_i_neg(channel).into(),
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize)]
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
+
+#[derive(Serialize)]
 pub struct Report {
     channel: usize,
     time: i64,
@@ -457,13 +470,57 @@ pub struct Report {
     pid_output: Option<ElectricCurrent>,
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
-
 impl Report {
     pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
         serde_json_core::to_vec(self)
     }
 }
+
+pub struct CenterPointJson(CenterPoint);
+
+// used in JSON encoding, not for config
+impl Serialize for CenterPointJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self.0 {
+            CenterPoint::Vref =>
+                serializer.serialize_str("vref"),
+            CenterPoint::Override(vref) =>
+                serializer.serialize_f32(vref),
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct PwmSummaryField<T: Serialize> {
+    value: T,
+    max: T,
+}
+
+impl<T: Serialize> From<(T, T)> for PwmSummaryField<T> {
+    fn from((value, max): (T, T)) -> Self {
+        PwmSummaryField { value, max }
+    }
+}
+
+#[derive(Serialize)]
+pub struct PwmSummary {
+    channel: usize,
+    center: CenterPointJson,
+    i_set: PwmSummaryField<ElectricCurrent>,
+    max_v: PwmSummaryField<ElectricPotential>,
+    max_i_pos: PwmSummaryField<ElectricCurrent>,
+    max_i_neg: PwmSummaryField<ElectricCurrent>,
+}
+
+impl PwmSummary {
+    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        serde_json_core::to_vec(self)
+    }
+}
+
 
 #[cfg(test)]
 mod test {
@@ -488,6 +545,36 @@ mod test {
             pid_output: Some(ElectricCurrent::new::<ampere>(0.5 / 1.1)),
         };
         let buf = report.to_json().unwrap();
+        assert_eq!(buf[0], b'{');
+        assert_eq!(buf[buf.len() - 1], b'}');
+    }
+
+    #[test]
+    fn pwm_summary_to_json() {
+        let value = 1.0 / 1.1;
+        let max = 5.0 / 1.1;
+
+        let pwm_summary = PwmSummary {
+            channel: 0,
+            center: CenterPoint::Vref,
+            i_set: PwmSummaryField {
+                value: ElectricCurrent::new::<ampere>(value),
+                max: ElectricCurrent::new::<ampere>(max),
+            },
+            max_v: PwmSummaryField {
+                value: ElectricPotential::new::<volt>(value),
+                max: ElectricPotential::new::<volt>(max),
+            },
+            max_i_pos: PwmSummaryField {
+                value: ElectricCurrent::new::<ampere>(value),
+                max: ElectricCurrent::new::<ampere>(max),
+            },
+            max_i_neg: PwmSummaryField {
+                value: ElectricCurrent::new::<ampere>(value),
+                max: ElectricCurrent::new::<ampere>(max),
+            },
+        };
+        let buf = pwm_summary.to_json().unwrap();
         assert_eq!(buf[0], b'{');
         assert_eq!(buf[buf.len() - 1], b'}');
     }

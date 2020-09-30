@@ -96,7 +96,7 @@ impl Controller {
     }
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U240>;
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Summary {
