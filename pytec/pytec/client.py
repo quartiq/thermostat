@@ -34,24 +34,92 @@ class Client:
         return result
 
     def get_pwm(self):
+        """Retrieve PWM limits for the TEC
+
+        Example::
+            [{'channel': 0,
+              'center': 'vref',
+              'i_set': {'max': 2.9802790335151985, 'value': -0.02002179650216762},
+              'max_i_neg': {'max': 3.0, 'value': 3.0},
+              'max_v': {'max': 5.988, 'value': 5.988},
+              'max_i_pos': {'max': 3.0, 'value': 3.0}},
+             {'channel': 1,
+              'center': 'vref',
+              'i_set': {'max': 2.9802790335151985, 'value': -0.02002179650216762},
+              'max_i_neg': {'max': 3.0, 'value': 3.0},
+              'max_v': {'max': 5.988, 'value': 5.988},
+              'max_i_pos': {'max': 3.0, 'value': 3.0}}
+            ]
+        """
         return self._get_conf("pwm")
 
     def get_pid(self):
+        """Retrieve PID control state
+
+        Example::
+            [{'channel': 0,
+              'parameters': {
+                  'kp': 10.0,
+                  'ki': 0.02,
+                  'kd': 0.0,
+                  'output_min': 0.0,
+                  'output_max': 3.0,
+                  'integral_min': -100.0,
+                  'integral_max': 100.0},
+              'target': 37.0,
+              'integral': 38.41138597026372},
+             {'channel': 1,
+              'parameters': {
+                  'kp': 10.0,
+                  'ki': 0.02,
+                  'kd': 0.0,
+                  'output_min': 0.0,
+                  'output_max': 3.0,
+                  'integral_min': -100.0,
+                  'integral_max': 100.0},
+              'target': 36.5,
+              'integral': nan}]
+        """
         return self._get_conf("pid")
 
     def get_steinhart_hart(self):
+        """Retrieve Steinhart-Hart parameters for resistance to temperature conversion
+
+        Example::
+            [{'params': {'b': 3800.0, 'r0': 10000.0, 't0': 298.15}, 'channel': 0},
+             {'params': {'b': 3800.0, 'r0': 10000.0, 't0': 298.15}, 'channel': 1}]
+        """
         return self._get_conf("s-h")
 
     def get_postfilter(self):
+        """Retrieve DAC postfilter configuration
+
+        Example::
+            [{'rate': None, 'channel': 0},
+             {'rate': 21.25, 'channel': 1}]
+        """
         return self._get_conf("postfilter")
 
     def report_mode(self):
         """Start reporting measurement values
 
-        
+        Example of yielded data::
+            {'channel': 0,
+             'time': 2302524,
+             'adc': 0.6199188965423515,
+             'sens': 6138.519310282602,
+             'temperature': 36.87032392655527,
+             'pid_engaged': True,
+             'i_set': 2.0635816680889123,
+             'vref': 1.494,
+             'dac_value': 2.527790834044456,
+             'dac_feedback': 2.523,
+             'i_tec': 2.331,
+             'tec_i': 2.0925,
+             'tec_u_meas': 2.5340000000000003,
+             'pid_output': 2.067581958092247}
         """
         self._command("report mode", "on")
-        self._read_line()
 
         while True:
             line = self._read_line()
@@ -69,9 +137,16 @@ class Client:
             value = str(value)
         self._command(topic, str(channel), field, value)
 
-        # read response line
-        self._read_line()
-
     def power_up(self, channel, target):
+        """Start closed-loop mode"""
         self.set_param("pid", channel, "target", value=target)
         self.set_param("pwm", channel, "pid")
+
+    def save_config(self):
+        """Save current configuration to EEPROM"""
+        self._command("save")
+
+    def load_config(self):
+        """Load current configuration from EEPROM"""
+        self._command("load")
+

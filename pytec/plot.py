@@ -34,6 +34,7 @@ series = {
     'i_set': Series(),
     'pid_output': Series(),
     'vref': Series(),
+    'dac_value': Series(),
     'dac_feedback': Series(),
     'i_tec': Series(),
     'tec_i': Series(),
