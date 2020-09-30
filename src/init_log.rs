@@ -4,7 +4,7 @@ use crate::usb;
 pub fn init_log() {
     static USB_LOGGER: usb::Logger = usb::Logger;
     let _ = log::set_logger(&USB_LOGGER);
-    log::set_max_level(log::LevelFilter::Trace);
+    log::set_max_level(log::LevelFilter::Debug);
 }
 
 #[cfg(feature = "semihosting")]
