@@ -6,15 +6,19 @@ from pytec.client import Client
 
 TIME_WINDOW = 300.0
 
+tec = Client()
+target_temperature = tec.get_pid()[0]['target']
+print("Channel 0 target temperature: {:.3f}".format(target_temperature))
+
 class Series:
-    def __init__(self, scale=1.0):
-        self.scale = scale
+    def __init__(self, conv=lambda x: x):
+        self.conv = conv
         self.x_data = []
         self.y_data = []
 
     def append(self, x, y):
         self.x_data.append(x)
-        self.y_data.append(self.scale * y)
+        self.y_data.append(self.conv(y))
 
     def clip(self, min_x):
         drop = 0
@@ -25,8 +29,8 @@ class Series:
         
 series = {
     'adc': Series(),
-    'sens': Series(0.0001),
-    'temperature': Series(),
+    'sens': Series(lambda x: x * 0.0001),
+    'temperature': Series(lambda t: t - target_temperature),
     'i_set': Series(),
     'pid_output': Series(),
     'vref': Series(),
@@ -55,7 +59,6 @@ def recv_data(tec):
         if quit:
             break
 
-tec = Client()
 thread = Thread(target=recv_data, args=(tec,))
 thread.start()
 
