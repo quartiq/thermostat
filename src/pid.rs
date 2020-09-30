@@ -81,10 +81,34 @@ impl Controller {
         output
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.integral = 0.0;
         self.last_input = None;
+    }
+
+    pub fn summary(&self, channel: usize) -> Summary {
+        Summary {
+            channel,
+            parameters: self.parameters.clone(),
+            target: self.target,
+            integral: self.integral,
+        }
+    }
+}
+
+type JsonBuffer = heapless::Vec<u8, heapless::consts::U240>;
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Summary {
+    channel: usize,
+    parameters: Parameters,
+    target: f64,
+    integral: f64,
+}
+
+impl Summary {
+    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        serde_json_core::to_vec(self)
     }
 }
 
@@ -125,5 +149,14 @@ mod test {
             t = next_t;
             total_t += 1;
         }
+    }
+
+    #[test]
+    fn summary_to_json() {
+        let mut pid = Controller::new(PARAMETERS.clone());
+        pid.target = 30.0 / 1.1;
+        let buf = pid.summary(0).to_json().unwrap();
+        assert_eq!(buf[0], b'{');
+        assert_eq!(buf[buf.len() - 1], b'}');
     }
 }

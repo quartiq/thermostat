@@ -96,7 +96,6 @@ fn report_to(channel: usize, channels: &mut Channels, socket: &mut TcpSocket) ->
                     let _ = socket.send_slice(b"\n");
                     // success
                     return true
-                    // TODO: session.mark_report_sent(channel);
                 }
                 Ok(sent) =>
                     warn!("sent only {}/{} bytes of report", sent, buf.len()),
@@ -208,29 +207,30 @@ fn main() -> ! {
                                 }
                                 Command::Show(ShowCommand::Pid) => {
                                     for channel in 0..CHANNELS {
-                                        let state = channels.channel_state(channel);
-                                        let _ = writeln!(socket, "PID settings for channel {}", channel);
-                                        let pid = &state.pid;
-                                        let _ = writeln!(socket, "- target={:.4} °C", pid.target);
-                                        macro_rules! show_pid_parameter {
-                                            ($p: tt) => {
-                                                let _ = writeln!(
-                                                    socket, "- {}={:.4}",
-                                                    stringify!($p), pid.parameters.$p
+                                        let send_free = socket.send_capacity() - socket.send_queue();
+                                        match channels.channel_state(channel).pid.summary(channel).to_json() {
+                                            Ok(buf) if buf.len() > send_free + 1 => {
+                                                // Not enough buffer space, skip report for now
+                                                warn!(
+                                                    "TCP socket has only {}/{} needed {}",
+                                                    send_free + 1, socket.send_capacity(), buf.len(),
                                                 );
-                                            };
+                                            }
+                                            Ok(buf) => {
+                                                match socket.send_slice(&buf) {
+                                                    Ok(sent) if sent == buf.len() => {
+                                                        let _ = socket.send_slice(b"\n");
+                                                        // success
+                                                    }
+                                                    Ok(sent) =>
+                                                        warn!("sent only {}/{} bytes of summary", sent, buf.len()),
+                                                    Err(e) =>
+                                                        error!("error sending summary: {:?}", e),
+                                                }
+                                            }
+                                            Err(e) =>
+                                                error!("unable to serialize pid summary: {:?}", e),
                                         }
-                                        show_pid_parameter!(kp);
-                                        show_pid_parameter!(ki);
-                                        show_pid_parameter!(kd);
-                                        show_pid_parameter!(integral_min);
-                                        show_pid_parameter!(integral_max);
-                                        show_pid_parameter!(output_min);
-                                        show_pid_parameter!(output_max);
-                                        if let Some(last_output) = pid.last_output {
-                                            let _ = writeln!(socket, "- last_output={:.3} A", last_output);
-                                        }
-                                        let _ = writeln!(socket, "");
                                     }
                                 }
                                 Command::Show(ShowCommand::Pwm) => {
