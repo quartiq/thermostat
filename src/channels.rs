@@ -77,7 +77,6 @@ impl Channels {
             state.update(instant, data);
             match state.update_pid() {
                 Some(pid_output) if state.pid_engaged => {
-                    log::info!("PID: {:.3} A", pid_output);
                     // Forward PID output to i_set DAC
                     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));
                     self.power_up(channel);
