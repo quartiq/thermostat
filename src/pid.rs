@@ -52,20 +52,20 @@ impl Controller {
         // partial
         let p = f64::from(self.parameters.kp) * error;
 
-        //integral
-        self.integral += error;
+        // integral
+        self.integral += f64::from(self.parameters.ki) * error;
         if self.integral < self.parameters.integral_min.into() {
             self.integral = self.parameters.integral_min.into();
         }
         if self.integral > self.parameters.integral_max.into() {
             self.integral = self.parameters.integral_max.into();
         }
-        let i = f64::from(self.parameters.ki) * f64::from(self.integral);
+        let i = self.integral;
 
         // derivative
         let d = match self.last_input {
             None => 0.0,
-            Some(last_input) => f64::from(self.parameters.kd) * (last_input - input)
+            Some(last_input) => f64::from(self.parameters.kd) * (last_input - input),
         };
         self.last_input = Some(input);
 
