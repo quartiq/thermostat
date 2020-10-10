@@ -121,7 +121,7 @@ fn report_to(channel: usize, channels: &mut Channels, socket: &mut TcpSocket) ->
 #[entry]
 fn main() -> ! {
     init_log();
-    info!("tecpak");
+    info!("thermostat");
 
     let mut cp = CorePeripherals::take().unwrap();
     cp.SCB.enable_icache();

@@ -30,7 +30,7 @@ impl State {
         let serial = SerialPort::new(bus);
         let dev = UsbDeviceBuilder::new(bus, UsbVidPid(0x16c0, 0x27dd))
             .manufacturer("M-Labs")
-            .product("tecpak")
+            .product("thermostat")
             .device_release(0x20)
             .self_powered(true)
             .device_class(usbd_serial::USB_CLASS_CDC)
