@@ -388,9 +388,10 @@ fn main() -> ! {
                 });
 
                 // Apply new IPv4 address
-                new_ipv4_address.map(|ipv4_address|
-                    server.set_ipv4_address(ipv4_address)
-                );
+                new_ipv4_address.map(|new_ipv4_address| {
+                    server.set_ipv4_address(ipv4_address);
+                    ipv4_address = new_ipv4_address;
+                });
 
                 // Update watchdog
                 wd.feed();
