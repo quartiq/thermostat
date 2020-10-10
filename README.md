@@ -77,3 +77,14 @@ The scope of this setting is per TCP session.
 | `save`                           | Save configuration to EEPROM                        |
 | `reset`                          | Reset the device                                    |
 | `ipv4 <X.X.X.X>`                 | Configure IPv4 address                              |
+
+
+## USB
+
+The firmware includes experimental support for acting as a USB-Serial
+peripheral. Debug logging will be sent there by default (unless build
+with logging via semihosting.)
+
+**Caveat:** This logging does not flush its output. Doing so would
+hang indefinitely if the output is not read by the USB host. Therefore
+output will be truncated once buffers are full.
