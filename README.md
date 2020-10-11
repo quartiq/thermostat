@@ -164,9 +164,9 @@ pwm 0 pid
 
 | Name | Color | Meaning                        |
 | ---  | :---: | ---                            |
-| R1   | Red   | Firmware initializing          |
-| G3   | Green | Closed-loop mode (PID engaged) |
-| G4   | Green | Firmware busy                  |
+| L1   | Red   | Firmware initializing          |
+| L3   | Green | Closed-loop mode (PID engaged) |
+| L4   | Green | Firmware busy                  |
 
 ## Reports
 
