@@ -47,7 +47,7 @@ impl Controller {
 
     pub fn update(&mut self, input: f64) -> f64 {
         // error
-        let error = self.target - input;
+        let error = input - self.target;
 
         // partial
         let p = f64::from(self.parameters.kp) * error;
@@ -65,7 +65,7 @@ impl Controller {
         // derivative
         let d = match self.last_input {
             None => 0.0,
-            Some(last_input) => f64::from(self.parameters.kd) * (last_input - input),
+            Some(last_input) => f64::from(self.parameters.kd) * (input - last_input),
         };
         self.last_input = Some(input);
 
@@ -129,7 +129,7 @@ mod test {
     #[test]
     fn test_controller() {
         const DEFAULT: f64 = 0.0;
-        const TARGET: f64 = 1234.56;
+        const TARGET: f64 = -1234.56;
         const ERROR: f64 = 0.01;
         const DELAY: usize = 10;
 
@@ -144,8 +144,8 @@ mod test {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
             let output = pid.update(values[next_t]);
-            // Overwrite oldest with previous temperature + output
-            values[next_t] = values[t] + output;
+            // Overwrite oldest with previous temperature - output
+            values[next_t] = values[t] - output;
             t = next_t;
             total_t += 1;
         }
