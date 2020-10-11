@@ -88,3 +88,94 @@ with logging via semihosting.)
 **Caveat:** This logging does not flush its output. Doing so would
 hang indefinitely if the output is not read by the USB host. Therefore
 output will be truncated once buffers are full.
+
+
+## Temperature measurement
+
+Connect the thermistor with the SENS pins of the
+device. Temperature-depending resistance is measured by the AD7172
+ADC. To prepare conversion to a temperature, set the Beta parameters
+for the Steinhart-Hart equation.
+
+Set the base temperature in degrees celsius for the channel 0 thermistor:
+```
+s-h 0 t0 20
+```
+
+Set the resistance in Ohms measured at the base temperature t0:
+```
+s-h 0 r0 10000
+```
+
+Set the Beta parameter:
+```
+s-h 0 b 3800
+```
+
+
+## Thermo-Electric Cooling (TEC)
+
+### Limits
+
+Each of the MAX1968 TEC driver has analog/PWM inputs for setting
+output limits.
+
+Use the `pwm` command to see current settings and maximum values.
+
+| Limit     | Unit    | Description              |
+| ---       | :---:   | ---                      |
+| max_v     | Volts   | Maximum voltage          |
+| max_i_pos | Amperes | Maximum positive current |
+| max_i_neg | Amperes | Maximum negative current |
+|           | Amperes | current control          |
+
+Example: set the maximum voltage of channel 0 to 1.5 V.
+```
+pwm 0 max_v 1.5
+```
+
+### Open-loop mode
+
+To manually control TEC output current, omit the limit parameter of
+the `pwm` command. Doing so will disengage the PID control for that
+channel.
+
+Example: set output current of channel 0 to 0 A.
+```
+pwm 0 0
+```
+
+## PID-stabilized temperature control
+
+Set the target temperature of channel 0 to 20 degrees celsius:
+```
+pid 0 target 20
+```
+
+Enter closed-loop mode by switching control of the TEC output current
+of channel 0 to the PID algorithm:
+```
+pwm 0 pid
+```
+
+## Reports
+
+Use the bare `report` command to obtain a single report. Enable
+continuous reporting with `report mode on`. Reports are JSON objects
+with the following keys.
+| Key            | Unit            | Description                                          |
+| ---            | :---:           | ---                                                  |
+| `channel`      | Integer         | Channel `0`, or `1`                                  |
+| `time`         | Milliseconds    | Temperature measurement time                         |
+| `adc`          | Volts           | AD7172 input                                         |
+| `sens`         | Ohms            | Thermistor resistance derived from `adc`             |
+| `temperature`  | Degrees Celsius | Steinhart-Hart conversion result derived from `sens` |
+| `pid_engaged`  | Boolean         | `true` if in closed-loop mode                        |
+| `i_set`        | Amperes         | TEC output current                                   |
+| `vref`         | Volts           | MAX1968 VREF (1.5 V)                                 |
+| `dac_value`    | Volts           | AD5680 output derived from `i_set`                   |
+| `dac_feedback` | Volts           | ADC measurement of the AD5680 output                 |
+| `i_tec`        | Volts           | MAX1968 TEC current monitor                          |
+| `tec_i`        | Amperes         | TEC output current feedback derived from `i_tec`     |
+| `tec_u_meas`   | Volts           | Measurement of the voltage across the TEC            |
+| `pid_output`   | Amperes         | PID control output                                   |
