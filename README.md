@@ -115,6 +115,8 @@ s-h 0 b 3800
 
 ## Thermo-Electric Cooling (TEC)
 
+Connect the Peltier device to the TEC0/1-/+ outputs.
+
 ### Limits
 
 Each of the MAX1968 TEC driver has analog/PWM inputs for setting
@@ -127,7 +129,7 @@ Use the `pwm` command to see current settings and maximum values.
 | `max_v`     | Volts   | Maximum voltage          |
 | `max_i_pos` | Amperes | Maximum positive current |
 | `max_i_neg` | Amperes | Maximum negative current |
-|             | Amperes | current control          |
+|             | Amperes | Output current control   |
 
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
@@ -157,6 +159,14 @@ of channel 0 to the PID algorithm:
 ```
 pwm 0 pid
 ```
+
+## LED indicators
+
+| Name | Color | Meaning                        |
+| ---  | :---: | ---                            |
+| R1   | Red   | Firmware initializing          |
+| G3   | Green | Closed-loop mode (PID engaged) |
+| G4   | Green | Firmware busy                  |
 
 ## Reports
 
