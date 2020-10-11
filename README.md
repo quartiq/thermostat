@@ -122,12 +122,12 @@ output limits.
 
 Use the `pwm` command to see current settings and maximum values.
 
-| Limit     | Unit    | Description              |
-| ---       | :---:   | ---                      |
-| max_v     | Volts   | Maximum voltage          |
-| max_i_pos | Amperes | Maximum positive current |
-| max_i_neg | Amperes | Maximum negative current |
-|           | Amperes | current control          |
+| Limit       | Unit    | Description              |
+| ---         | :---:   | ---                      |
+| `max_v`     | Volts   | Maximum voltage          |
+| `max_i_pos` | Amperes | Maximum positive current |
+| `max_i_neg` | Amperes | Maximum negative current |
+|             | Amperes | current control          |
 
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
@@ -163,6 +163,7 @@ pwm 0 pid
 Use the bare `report` command to obtain a single report. Enable
 continuous reporting with `report mode on`. Reports are JSON objects
 with the following keys.
+
 | Key            | Unit            | Description                                          |
 | ---            | :---:           | ---                                                  |
 | `channel`      | Integer         | Channel `0`, or `1`                                  |
