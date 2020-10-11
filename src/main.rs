@@ -373,8 +373,10 @@ fn main() -> ! {
                                     SCB::sys_reset();
                                 }
                             }
-                            Ok(SessionInput::Error(e)) =>
-                                error!("session input: {:?}", e),
+                            Ok(SessionInput::Error(e)) => {
+                                error!("session input: {:?}", e);
+                                send_line(&mut socket, b"{ \"error\": \"invalid input\" }");
+                            }
                             Err(_) =>
                                 socket.close(),
                         }
