@@ -25,10 +25,6 @@ pub struct Parameters {
 
 impl Parameters {
     /// Perform the voltage to temperature conversion.
-    ///
-    /// Result unit: Kelvin
-    ///
-    /// TODO: verify
     pub fn get_temperature(&self, r: ElectricalResistance) -> ThermodynamicTemperature {
         let inv_temp = 1.0 / self.t0.get::<kelvin>() + (r / self.r0).get::<ratio>().ln() / self.b;
         ThermodynamicTemperature::new::<kelvin>(1.0 / inv_temp)
