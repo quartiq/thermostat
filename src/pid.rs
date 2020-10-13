@@ -81,11 +81,6 @@ impl Controller {
         output
     }
 
-    pub fn reset(&mut self) {
-        self.integral = 0.0;
-        self.last_input = None;
-    }
-
     pub fn summary(&self, channel: usize) -> Summary {
         Summary {
             channel,

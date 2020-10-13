@@ -302,11 +302,8 @@ fn main() -> ! {
                                     let pid = &mut channels.channel_state(channel).pid;
                                     use command_parser::PidParameter::*;
                                     match parameter {
-                                        Target => {
-                                            pid.target = value;
-                                            // reset pid.integral
-                                            pid.reset();
-                                        }
+                                        Target =>
+                                            pid.target = value,
                                         KP =>
                                             pid.parameters.kp = value as f32,
                                         KI =>
