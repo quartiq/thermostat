@@ -2,8 +2,7 @@
 //! declared once and globally.
 
 use core::cell::RefCell;
-use cortex_m::interrupt::Mutex;
-use bare_metal::CriticalSection;
+use cortex_m::interrupt::{CriticalSection, Mutex};
 use stm32f4xx_hal::{
     rcc::Clocks,
     stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
