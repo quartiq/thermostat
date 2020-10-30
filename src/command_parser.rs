@@ -465,7 +465,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 impl Command {
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         match command(input) {
-            Ok((b"", result)) =>
+            Ok((input_remain, result)) if input_remain.len() == 0 =>
                 result,
             Ok((input_remain, _)) =>
                 Err(Error::UnexpectedInput(input_remain[0])),
