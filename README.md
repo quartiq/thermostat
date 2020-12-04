@@ -115,7 +115,9 @@ s-h 0 b 3800
 
 ## Thermo-Electric Cooling (TEC)
 
-Connect the Peltier device to the TEC0/1-/+ outputs.
+- Connect Peltier device 0 to TEC0- and TEC0+.
+- Connect Peliter device 1 to TEC1- and TEC1+.
+- The GND pin is for shielding not for sinking Peltier currents.
 
 ### Limits
 
