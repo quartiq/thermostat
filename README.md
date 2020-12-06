@@ -21,6 +21,26 @@ cargo build --release
 
 The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`
 
+## Debugging
+
+Connect SWDIO/SWCLK/RST/GND to a programmer such as ST-Link v2.1. Run OpenOCD:
+```shell
+openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg
+```
+
+You may need to power up the programmer before powering the device.
+Leave OpenOCD running. Run the GNU debugger:
+```shell
+gdb target/thumbv7em-none-eabihf/release/thermostat
+
+(gdb) source openocd.gdb
+```
+
+## Flashing
+
+```shell
+openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
+```
 
 ## Network
 
@@ -87,7 +107,7 @@ with logging via semihosting.)
 
 **Caveat:** This logging does not flush its output. Doing so would
 hang indefinitely if the output is not read by the USB host. Therefore
-output will be truncated once buffers are full.
+output will be truncated when USB buffers are full.
 
 
 ## Temperature measurement
