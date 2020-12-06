@@ -39,10 +39,10 @@ impl Channels {
         adc.set_sync_enable(false).unwrap();
 
         // Setup channels and start ADC
-        adc.setup_channel(0, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
+        adc.setup_channel(0, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
         let adc_calibration0 = adc.get_calibration(0)
             .expect("adc_calibration0");
-        adc.setup_channel(1, ad7172::Input::Ain2, ad7172::Input::Ain3).unwrap();
+        adc.setup_channel(1, ad7172::Input::Ain0, ad7172::Input::Ain1).unwrap();
         let adc_calibration1 = adc.get_calibration(1)
             .expect("adc_calibration1");
         adc.start_continuous_conversion().unwrap();
