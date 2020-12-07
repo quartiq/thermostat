@@ -50,9 +50,9 @@ def recv_data(tec):
             series_lock.acquire()
             try:
                 time = data['time'] / 1000.0
-                for k, s in series.iteritems():
+                for k, s in series.items():
                     v = data[k]
-                    if data.has_key(k) and type(v) is float:
+                    if k in data and type(v) is float:
                         s.append(time, v)
             finally:
                 series_lock.release()
@@ -65,7 +65,7 @@ thread.start()
 
 fig, ax = plt.subplots()
 
-for k, s in series.iteritems():
+for k, s in series.items():
     s.plot, = ax.plot([], [], label=k)
 legend = ax.legend()
 
@@ -74,7 +74,7 @@ def animate(i):
     
     series_lock.acquire()
     try:
-        for k, s in series.iteritems():
+        for k, s in series.items():
             s.plot.set_data(s.x_data, s.y_data)
             if len(s.y_data) > 0:
                 s.plot.set_label("{}: {:.3f}".format(k, s.y_data[-1]))
@@ -103,7 +103,7 @@ def animate(i):
                     max_y = max(max_y, max_y_)
 
         if min_x is not None and max_x - TIME_WINDOW > min_x:
-            for s in series.itervalues():
+            for s in series.values():
                 s.clip(max_x - TIME_WINDOW)
     finally:
         series_lock.release()
