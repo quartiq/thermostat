@@ -82,8 +82,8 @@ The scope of this setting is per TCP session.
 | `pid`                            | Show PID configuration                              |
 | `pid <0/1> target <value>`       | Set the PID controller target                       |
 | `pid <0/1> kp <value>`           | Set proportional gain                               |
-| `pid <0/1> ki <value>`           | Set integral gain                                   |
-| `pid <0/1> kd <value>`           | Set differential gain                               |
+| `pid <0/1> ki <value>`           | Set integral gain (unit: 10 Hz)                     |
+| `pid <0/1> kd <value>`           | Set differential gain (unit: 0.1 seconds)           |
 | `pid <0/1> output_min <value>`   | Set mininum output                                  |
 | `pid <0/1> output_max <value>`   | Set maximum output                                  |
 | `pid <0/1> integral_min <value>` | Set integral lower bound                            |
@@ -146,12 +146,12 @@ output limits.
 
 Use the `pwm` command to see current settings and maximum values.
 
-| Limit       | Unit    | Description              |
-| ---         | :---:   | ---                      |
-| `max_v`     | Volts   | Maximum voltage          |
-| `max_i_pos` | Amperes | Maximum positive current |
-| `max_i_neg` | Amperes | Maximum negative current |
-|             | Amperes | Output current control   |
+| Limit       | Unit    | Description                             |
+| ---         | :---:   | ---                                     |
+| `max_v`     | Volts   | Maximum voltage                         |
+| `max_i_pos` | Amperes | Maximum positive current                |
+| `max_i_neg` | Amperes | Maximum negative current                |
+|             | Amperes | Output current control (Open-loop mode) |
 
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
