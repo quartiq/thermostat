@@ -72,20 +72,20 @@ The scope of this setting is per TCP session.
 | `report mode`                    | Show current report mode                            |
 | `report mode <off/on>`           | Set report mode                                     |
 | `pwm`                            | Show current PWM settings                           |
-| `pwm <0/1> max_i_pos <ratio>`    | Set PWM duty cycle for **max_i_pos** to *ampere*    |
-| `pwm <0/1> max_i_neg <ratio>`    | Set PWM duty cycle for **max_i_neg** to *ampere*    |
-| `pwm <0/1> max_v <ratio>`        | Set PWM duty cycle for **max_v** to *volt*          |
-| `pwm <0/1> <volts>`              | Disengage PID, set **i_set** DAC to *ampere*        |
+| `pwm <0/1> max_i_pos <amp>`      | Set PWM duty cycle for **max_i_pos** to *ampere*    |
+| `pwm <0/1> max_i_neg <amp>`      | Set PWM duty cycle for **max_i_neg** to *ampere*    |
+| `pwm <0/1> max_v <volts>`        | Set PWM duty cycle for **max_v** to *volt*          |
+| `pwm <0/1> <amp>`                | Disengage PID, set **i_set** DAC to *ampere*        |
 | `pwm <0/1> pid`                  | Set PWM to be controlled by PID                     |
 | `center <0/1> <volts>`           | Set the MAX1968 0A-centerpoint to *volts*           |
 | `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF |
 | `pid`                            | Show PID configuration                              |
-| `pid <0/1> target <value>`       | Set the PID controller target                       |
+| `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature           |
 | `pid <0/1> kp <value>`           | Set proportional gain                               |
 | `pid <0/1> ki <value>`           | Set integral gain (unit: 10 Hz)                     |
 | `pid <0/1> kd <value>`           | Set differential gain (unit: 0.1 seconds)           |
-| `pid <0/1> output_min <value>`   | Set mininum output                                  |
-| `pid <0/1> output_max <value>`   | Set maximum output                                  |
+| `pid <0/1> output_min <amp>`     | Set mininum output                                  |
+| `pid <0/1> output_max <amp>`     | Set maximum output                                  |
 | `pid <0/1> integral_min <value>` | Set integral lower bound                            |
 | `pid <0/1> integral_max <value>` | Set integral upper bound                            |
 | `s-h`                            | Show Steinhart-Hart equation parameters             |
