@@ -3,7 +3,6 @@
 - [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
 - [x] [Download latest firmware build](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download-by-type/file/binary-dist)
 
-NOTE: Firmware is not yet ready for production use. 
 
 ## Building
 
