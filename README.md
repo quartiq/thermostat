@@ -75,7 +75,7 @@ The scope of this setting is per TCP session.
 | `pwm <0/1> max_i_pos <amp>`      | Set PWM duty cycle for **max_i_pos** to *ampere*    |
 | `pwm <0/1> max_i_neg <amp>`      | Set PWM duty cycle for **max_i_neg** to *ampere*    |
 | `pwm <0/1> max_v <volts>`        | Set PWM duty cycle for **max_v** to *volt*          |
-| `pwm <0/1> <amp>`                | Disengage PID, set **i_set** DAC to *ampere*        |
+| `pwm <0/1> i_set <amp>`          | Disengage PID, set **i_set** DAC to *ampere*        |
 | `pwm <0/1> pid`                  | Set PWM to be controlled by PID                     |
 | `center <0/1> <volts>`           | Set the MAX1968 0A-centerpoint to *volts*           |
 | `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF |
@@ -146,12 +146,12 @@ output limits.
 
 Use the `pwm` command to see current settings and maximum values.
 
-| Limit       | Unit    | Description                             |
-| ---         | :---:   | ---                                     |
-| `max_v`     | Volts   | Maximum voltage                         |
-| `max_i_pos` | Amperes | Maximum positive current                |
-| `max_i_neg` | Amperes | Maximum negative current                |
-|             | Amperes | Output current control (Open-loop mode) |
+| Limit       | Unit    | Description                   |
+| ---         | :---:   | ---                           |
+| `max_v`     | Volts   | Maximum voltage               |
+| `max_i_pos` | Amperes | Maximum positive current      |
+| `max_i_neg` | Amperes | Maximum negative current      |
+| `i_set`     | Amperes | (Not a limit; Open-loop mode) |
 
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
@@ -166,7 +166,7 @@ channel.
 
 Example: set output current of channel 0 to 0 A.
 ```
-pwm 0 0
+pwm 0 i_set 0
 ```
 
 ## PID-stabilized temperature control

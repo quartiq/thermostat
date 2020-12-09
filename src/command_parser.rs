@@ -251,6 +251,16 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
     alt((
         map(
             preceded(
+                tag("i_set"),
+                preceded(
+                    whitespace,
+                    float
+                )
+            ),
+            result_with_pin(PwmPin::ISet)
+        ),
+        map(
+            preceded(
                 tag("max_i_pos"),
                 preceded(
                     whitespace,
@@ -278,8 +288,6 @@ fn pwm_setup(input: &[u8]) -> IResult<&[u8], Result<(PwmPin, f64), Error>> {
                 )
             ),
             result_with_pin(PwmPin::MaxV)
-        ),
-        map(float, result_with_pin(PwmPin::ISet)
         ))
     )(input)
 }
@@ -528,8 +536,8 @@ mod test {
     }
 
     #[test]
-    fn parse_pwm_manual() {
-        let command = Command::parse(b"pwm 1 16383");
+    fn parse_pwm_i_set() {
+        let command = Command::parse(b"pwm 1 i_set 16383");
         assert_eq!(command, Ok(Command::Pwm {
             channel: 1,
             pin: PwmPin::ISet,
