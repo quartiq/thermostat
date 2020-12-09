@@ -1,10 +1,14 @@
 # Firmware for the Sinara 8451 Thermostat
 
 - [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
-- [x] [Download latest firmware build](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download-by-type/file/binary-dist)
+- [x] Download latest firmware build: [ELF](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download/1) [BIN](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download/2)
 
 
 ## Building
+
+### Reproducible build with Nix
+
+See the `stm32` folder of the [nix-scripts repository](https://git.m-labs.hk/M-Labs/nix-scripts).
 
 ### Debian-based systems (tested on Ubuntu 19.10)
 
@@ -37,22 +41,20 @@ gdb target/thumbv7em-none-eabihf/release/thermostat
 ```
 
 ## Flashing
-There are several options for performing device firmware upgrade (DFU) on Thermostat. The firmware is an .ELF file. 
+There are several options for flashing Thermostat. DFU requires only a micro-USB connector, whereas OpenOCD needs a JTAG/SWD adapter.
 
-### dfu-util
-This can be done from Linux machine using only micro-USB connector. 
-([Issue #10](https://git.m-labs.hk/M-Labs/thermostat/issues/10))
+### dfu-util on Linux
 * Install the DFU USB tool (dfu-util).
-* Convert firmware from ELF to BIN: ```arm-none-eabi-objcopy -O binary thermostat.elf thermostat.bin```
+* Convert firmware from ELF to BIN: `arm-none-eabi-objcopy -O binary thermostat.elf thermostat.bin` (you can skip this step if using the BIN from Hydra)
 * Connect to the Micro USB connector to Thermostat below the RJ45.
 * Add jumper to Thermostat v2.0 across 2-pin jumper adjacent to JTAG connector.
 * Cycle board power to put it in DFU update mode
-* Push firmware to flash: ```dfu-util -a 0 -s 0x08000000:leave -D thermostat.bin```
+* Push firmware to flash: `dfu-util -a 0 -s 0x08000000:leave -D thermostat.bin`
 * Remove jumper
 * Cycle power to leave DFU update mode
 
-### st.com DfuSe tool
-On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware upgrade (DFU) software. [link](https://www.st.com/en/development-tools/stsw-stm32080.html).  
+### st.com DfuSe tool on Windows
+On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware upgrade (DFU) software. [link](https://www.st.com/en/development-tools/stsw-stm32080.html).
 - add jumper to Thermostat v2.0 across 2-pin jumper adjacent to JTAG connector
 - cycle board power to put it in DFU update mode
 - connect micro-USB to PC
@@ -60,7 +62,7 @@ On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware 
 - remove jumper
 - cycle power to leave DFU update mode
 
-### openocd
+### OpenOCD
 ```shell
 openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
 ```
