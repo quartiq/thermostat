@@ -3,6 +3,7 @@
 - [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
 - [x] [Download latest firmware build](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download-by-type/file/binary-dist)
 
+NOTE: Firmware is not yet ready for production use. 
 
 ## Building
 
@@ -37,7 +38,30 @@ gdb target/thumbv7em-none-eabihf/release/thermostat
 ```
 
 ## Flashing
+There are several options for performing device firmware upgrade (DFU) on Thermostat. The firmware is an .ELF file. 
 
+### dfu-util
+This can be done from Linux machine using only micro-USB connector. 
+([Issue #10](https://git.m-labs.hk/M-Labs/thermostat/issues/10))
+* Install the DFU USB tool (dfu-util).
+* Convert firmware from ELF to BIN: ```arm-none-eabi-objcopy -O binary thermostat.elf thermostat.bin```
+* Connect to the Micro USB connector to Thermostat below the RJ45.
+* Add jumper to Thermostat v2.0 across 2-pin jumper adjacent to JTAG connector.
+* Cycle board power to put it in DFU update mode
+* Push firmware to flash: ```dfu-util -a 0 -s 0x08000000:leave -D thermostat.bin```
+* Remove jumper
+* Cycle power to leave DFU update mode
+
+### st.com DfuSe tool
+On a Windows machine install [st.com](https://st.com) DfuSe USB device firmware upgrade (DFU) software. [link](https://www.st.com/en/development-tools/stsw-stm32080.html).  
+- add jumper to Thermostat v2.0 across 2-pin jumper adjacent to JTAG connector
+- cycle board power to put it in DFU update mode
+- connect micro-USB to PC
+- use st.com software to upload firmware
+- remove jumper
+- cycle power to leave DFU update mode
+
+### openocd
 ```shell
 openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg -c "program target/thumbv7em-none-eabihf/release/thermostat verify reset;exit"
 ```
