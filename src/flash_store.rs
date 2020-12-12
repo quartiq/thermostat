@@ -1,3 +1,4 @@
+use log::{info, error};
 use stm32f4xx_hal::{
     flash::{Error, FlashExt},
     stm32::FLASH,
@@ -18,11 +19,12 @@ impl StoreBackend for FlashBackend {
     type Data = [u8];
 
     fn data(&self) -> &Self::Data {
-        self.flash.read()
+        &self.flash.read()[FLASH_SECTOR_OFFSET..(FLASH_SECTOR_OFFSET + FLASH_SECTOR_SIZE)]
     }
 
     type Error = Error;
     fn erase(&mut self) -> Result<(), Self::Error> {
+        info!("erasing store flash");
         self.flash.unlocked().erase(FLASH_SECTOR)
     }
 
@@ -41,5 +43,17 @@ pub type FlashStore = Store<FlashBackend>;
 
 pub fn store(flash: FLASH) -> FlashStore {
     let backend = FlashBackend { flash };
-    FlashStore::new(backend)
+    let mut store = FlashStore::new(backend);
+
+    // just try to read the store
+    match store.get_bytes_used() {
+        Ok(_) => {}
+        Err(e) => {
+            error!("corrupt store, erasing. error: {:?}", e);
+            let _ = store.erase()
+                .map_err(|e| error!("flash erase failed: {:?}", e));
+        }
+    }
+
+    store
 }
