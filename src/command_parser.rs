@@ -132,8 +132,12 @@ pub enum CenterPoint {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     Quit,
-    Load,
-    Save,
+    Load {
+        channel: Option<usize>,
+    },
+    Save {
+        channel: Option<usize>,
+    },
     Reset,
     Ipv4([u8; 4]),
     Show(ShowCommand),
@@ -437,6 +441,38 @@ fn postfilter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
+fn load(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("load")(input)?;
+    let (input, channel) = alt((
+        |input| {
+            let (input, _) = whitespace(input)?;
+            let (input, channel) = channel(input)?;
+            let (input, _) = end(input)?;
+            Ok((input, Some(channel)))
+        },
+        value(None, end)
+    ))(input)?;
+
+    let result = Ok(Command::Load { channel });
+    Ok((input, result))
+}
+
+fn save(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("save")(input)?;
+    let (input, channel) = alt((
+        |input| {
+            let (input, _) = whitespace(input)?;
+            let (input, channel) = channel(input)?;
+            let (input, _) = end(input)?;
+            Ok((input, Some(channel)))
+        },
+        value(None, end)
+    ))(input)?;
+
+    let result = Ok(Command::Save { channel });
+    Ok((input, result))
+}
+
 fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("ipv4")(input)?;
     let (input, _) = whitespace(input)?;
@@ -457,8 +493,8 @@ fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
-         value(Ok(Command::Load), tag("load")),
-         value(Ok(Command::Save), tag("save")),
+         load,
+         save,
          value(Ok(Command::Reset), tag("reset")),
          ipv4,
          map(report, Ok),
@@ -496,13 +532,25 @@ mod test {
     #[test]
     fn parse_load() {
         let command = Command::parse(b"load");
-        assert_eq!(command, Ok(Command::Load));
+        assert_eq!(command, Ok(Command::Load { channel: None }));
+    }
+
+    #[test]
+    fn parse_load_channel() {
+        let command = Command::parse(b"load 0");
+        assert_eq!(command, Ok(Command::Load { channel: Some(0) }));
     }
 
     #[test]
     fn parse_save() {
         let command = Command::parse(b"save");
-        assert_eq!(command, Ok(Command::Save));
+        assert_eq!(command, Ok(Command::Save { channel: None }));
+    }
+
+    #[test]
+    fn parse_save_channel() {
+        let command = Command::parse(b"save 0");
+        assert_eq!(command, Ok(Command::Save { channel: Some(0) }));
     }
 
     #[test]

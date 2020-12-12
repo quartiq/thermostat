@@ -392,6 +392,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sfkv"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "postcard",
+ "serde",
+]
+
+[[package]]
 name = "smoltcp"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -436,7 +445,6 @@ dependencies = [
 [[package]]
 name = "stm32f4xx-hal"
 version = "0.8.3"
-source = "git+https://github.com/stm32-rs/stm32f4xx-hal.git#e80925770d2fe72f0f01a7b46147f4e31d512689"
 dependencies = [
  "bare-metal 0.2.5",
  "cast",
@@ -444,6 +452,7 @@ dependencies = [
  "cortex-m-rt",
  "embedded-dma",
  "embedded-hal",
+ "log",
  "nb 0.1.3",
  "rand_core",
  "stm32f4",
@@ -491,9 +500,9 @@ dependencies = [
  "num-traits",
  "panic-abort",
  "panic-semihosting",
- "postcard",
  "serde",
  "serde-json-core",
+ "sfkv",
  "smoltcp",
  "stm32-eth",
  "stm32f4xx-hal",

@@ -64,8 +64,8 @@ use channels::{CHANNELS, Channels};
 mod channel;
 mod channel_state;
 mod config;
-use config::Config;
-
+use config::ChannelConfig;
+mod flash_store;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -73,8 +73,7 @@ const WATCHDOG_INTERVAL: u32 = 1_000;
 #[cfg(feature = "semihosting")]
 const WATCHDOG_INTERVAL: u32 = 30_000;
 
-pub const EEPROM_PAGE_SIZE: usize = 8;
-pub const EEPROM_SIZE: usize = 128;
+const CHANNEL_CONFIG_KEY: [&str; 2] = ["ch0", "ch1"];
 
 pub const DEFAULT_IPV4_ADDRESS: Ipv4Address = Ipv4Address([192, 168, 1, 26]);
 const TCP_PORT: u16 = 23;
@@ -160,14 +159,22 @@ fn main() -> ! {
 
     usb::State::setup(usb);
 
-    let mut ipv4_address = DEFAULT_IPV4_ADDRESS;
+    let mut store = flash_store::store(dp.FLASH);
+    let mut store_value_buf = [0u8; 256];
+
     let mut channels = Channels::new(pins);
-    let _ = Config::load(&mut eeprom)
-        .map(|config| {
-            config.apply(&mut channels);
-            ipv4_address = Ipv4Address::from_bytes(&config.ipv4_address);
-        })
-        .map_err(|e| warn!("error loading config: {:?}", e));
+    for c in 0..CHANNELS {
+        match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
+            Ok(Some(config)) =>
+                config.apply(&mut channels, c),
+            Ok(None) =>
+                error!("flash config not found for channel {}", c),
+            Err(e) =>
+                error!("unable to load config {} from flash: {:?}", c, e),
+        }
+    }
+
+    let mut ipv4_address = DEFAULT_IPV4_ADDRESS;
     info!("IPv4 address: {}", ipv4_address);
 
     // EEPROM ships with a read-only EUI-48 identifier
@@ -341,22 +348,30 @@ fn main() -> ! {
                                             error!("unable to choose postfilter for rate {:.3}", rate),
                                     }
                                 }
-                                Command::Load => {
-                                    match Config::load(&mut eeprom) {
-                                        Ok(config) => {
-                                            config.apply(&mut channels);
-                                            new_ipv4_address = Some(Ipv4Address::from_bytes(&config.ipv4_address));
+                                Command::Load { channel } => {
+                                    for c in 0..CHANNELS {
+                                        if channel.is_none() || channel == Some(c) {
+                                            match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
+                                                Ok(Some(config)) =>
+                                                    config.apply(&mut channels, c),
+                                                Ok(None) =>
+                                                    error!("flash config not found"),
+                                                Err(e) =>
+                                                    error!("unable to load config from flash: {:?}", e),
+                                            }
                                         }
-                                        Err(e) =>
-                                            error!("unable to load eeprom config: {:?}", e),
                                     }
                                 }
-                                Command::Save => {
-                                    let config = Config::new(&mut channels, ipv4_address);
-                                    match config.save(&mut eeprom) {
-                                        Ok(()) => {},
-                                        Err(e) =>
-                                            error!("unable to save eeprom config: {:?}", e),
+                                Command::Save { channel } => {
+                                    for c in 0..CHANNELS {
+                                        if channel.is_none() || channel == Some(c) {
+                                            let config = ChannelConfig::new(&mut channels, c);
+                                            let _ = store
+                                                .write_value(CHANNEL_CONFIG_KEY[c], &config, &mut store_value_buf)
+                                                .map_err(
+                                                    |e| error!("unable to save config to flash: {:?}", e)
+                                                );
+                                        }
                                     }
                                 }
                                 Command::Ipv4(address) => {
