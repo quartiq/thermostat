@@ -17,14 +17,14 @@ use cortex_m_rt::entry;
 use stm32f4xx_hal::{
     hal::watchdog::{WatchdogEnable, Watchdog},
     rcc::RccExt,
-    watchdog::IndependentWatchdog,
-    time::{U32Ext, MegaHertz},
     stm32::{CorePeripherals, Peripherals, SCB},
+    time::{U32Ext, MegaHertz},
+    watchdog::IndependentWatchdog,
 };
 use smoltcp::{
     time::Instant,
     socket::TcpSocket,
-    wire::{EthernetAddress, Ipv4Address},
+    wire::EthernetAddress,
 };
 use uom::{
     si::{
@@ -55,7 +55,7 @@ use server::Server;
 mod session;
 use session::{Session, SessionInput};
 mod command_parser;
-use command_parser::{Command, ShowCommand, PwmPin};
+use command_parser::{Command, Ipv4Config, PwmPin, ShowCommand};
 mod timer;
 mod pid;
 mod steinhart_hart;
@@ -75,7 +75,6 @@ const WATCHDOG_INTERVAL: u32 = 30_000;
 
 const CHANNEL_CONFIG_KEY: [&str; 2] = ["ch0", "ch1"];
 
-pub const DEFAULT_IPV4_ADDRESS: Ipv4Address = Ipv4Address([192, 168, 1, 26]);
 const TCP_PORT: u16 = 23;
 
 
@@ -174,8 +173,19 @@ fn main() -> ! {
         }
     }
 
-    let mut ipv4_address = DEFAULT_IPV4_ADDRESS;
-    info!("IPv4 address: {}", ipv4_address);
+    // default net config:
+    let mut ipv4_config = Ipv4Config {
+        address: [192, 168, 1, 26],
+        mask_len: 24,
+        gateway: None,
+    };
+    match store.read_value("ipv4") {
+        Ok(Some(config)) =>
+            ipv4_config = config,
+        Ok(None) => {}
+        Err(e) =>
+            error!("cannot read ipv4 config: {:?}", e),
+    }
 
     // EEPROM ships with a read-only EUI-48 identifier
     let mut eui48 = [0; 6];
@@ -183,12 +193,12 @@ fn main() -> ! {
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
-    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_address, |iface| {
-        let mut new_ipv4_address = None;
+    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config, |iface| {
         Server::<Session>::run(iface, |server| {
             leds.r1.off();
 
             loop {
+                let mut new_ipv4_config = None;
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 let updated_channel = channels.poll_adc(instant);
                 if let Some(channel) = updated_channel {
@@ -368,14 +378,15 @@ fn main() -> ! {
                                             let config = ChannelConfig::new(&mut channels, c);
                                             let _ = store
                                                 .write_value(CHANNEL_CONFIG_KEY[c], &config, &mut store_value_buf)
-                                                .map_err(
-                                                    |e| error!("unable to save config to flash: {:?}", e)
-                                                );
+                                                .map_err(|e| error!("unable to save channel {} config to flash: {:?}", c, e));
                                         }
                                     }
                                 }
-                                Command::Ipv4(address) => {
-                                    new_ipv4_address = Some(Ipv4Address::from_bytes(&address));
+                                Command::Ipv4(config) => {
+                                    let _ = store
+                                        .write_value("ipv4", &config, [0; 16])
+                                        .map_err(|e| error!("unable to save ipv4 config to flash: {:?}", e));
+                                    new_ipv4_config = Some(config);
                                 }
                                 Command::Reset => {
                                     for i in 0..CHANNELS {
@@ -401,11 +412,8 @@ fn main() -> ! {
                     }
                 });
 
-                // Apply new IPv4 address
-                new_ipv4_address.map(|new_ipv4_address| {
-                    server.set_ipv4_address(ipv4_address);
-                    ipv4_address = new_ipv4_address;
-                });
+                // Apply new IPv4 address/gateway
+                new_ipv4_config.map(|config| server.set_ipv4_config(config));
 
                 // Update watchdog
                 wd.feed();

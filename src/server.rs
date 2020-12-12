@@ -3,9 +3,10 @@ use smoltcp::{
     iface::EthernetInterface,
     socket::{SocketSet, SocketHandle, TcpSocket, TcpSocketBuffer, SocketRef},
     time::Instant,
-    wire::{IpCidr, Ipv4Address, Ipv4Cidr},
+    wire::{IpAddress, IpCidr, Ipv4Address, Ipv4Cidr},
 };
-
+use crate::command_parser::Ipv4Config;
+use crate::net::split_ipv4_config;
 
 pub struct SocketState<S> {
     handle: SocketHandle,
@@ -85,12 +86,12 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
         }
     }
 
-    pub fn set_ipv4_address(&mut self, ipv4_address: Ipv4Address) {
+    fn set_ipv4_address(&mut self, ipv4_address: Ipv4Cidr) {
         self.net.update_ip_addrs(|addrs| {
             for addr in addrs.iter_mut() {
                 match addr {
                     IpCidr::Ipv4(_) => {
-                        *addr = IpCidr::Ipv4(Ipv4Cidr::new(ipv4_address, 0));
+                        *addr = IpCidr::Ipv4(ipv4_address);
                         // done
                         break
                     }
@@ -100,5 +101,24 @@ impl<'a, 'b, S: Default> Server<'a, 'b, S> {
                 }
             }
         });
+    }
+
+    fn set_gateway(&mut self, gateway: Option<Ipv4Address>) {
+        let routes = self.net.routes_mut();
+        match gateway {
+            None =>
+                routes.update(|routes_storage| {
+                    routes_storage.remove(&IpCidr::new(IpAddress::v4(0, 0, 0, 0), 0));
+                }),
+            Some(gateway) => {
+                routes.add_default_ipv4_route(gateway).unwrap();
+            }
+        }
+    }
+
+    pub fn set_ipv4_config(&mut self, config: Ipv4Config) {
+        let (address, gateway) = split_ipv4_config(config);
+        self.set_ipv4_address(address);
+        self.set_gateway(gateway);
     }
 }

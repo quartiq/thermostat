@@ -7,9 +7,13 @@ use stm32f4xx_hal::{
     rcc::Clocks,
     stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
-use smoltcp::wire::{EthernetAddress, IpCidr, Ipv4Address};
-use smoltcp::iface::{NeighborCache, EthernetInterfaceBuilder, EthernetInterface};
+use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
+use smoltcp::iface::{
+    EthernetInterfaceBuilder, EthernetInterface,
+    NeighborCache, Routes,
+};
 use stm32_eth::{Eth, RingEntry, PhyAddress, RxDescriptor, TxDescriptor};
+use crate::command_parser::Ipv4Config;
 use crate::pins::EthernetPins;
 
 /// Not on the stack so that stack can be placed in CCMRAM (which the
@@ -29,7 +33,7 @@ pub fn run<F>(
     ethernet_mac: ETHERNET_MAC, ethernet_dma: ETHERNET_DMA,
     eth_pins: EthernetPins,
     ethernet_addr: EthernetAddress,
-    local_addr: Ipv4Address,
+    ipv4_config: Ipv4Config,
     f: F
 ) where
     F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
@@ -51,15 +55,18 @@ pub fn run<F>(
     eth_dev.enable_interrupt();
 
     // IP stack
-    // Netmask 0 means we expect any IP address on the local segment.
-    // No routing.
-    let mut ip_addrs = [IpCidr::new(local_addr.into(), 0)];
+    let (ipv4_cidr, gateway) = split_ipv4_config(ipv4_config);
+    let mut ip_addrs = [ipv4_cidr.into()];
     let mut neighbor_storage = [None; 16];
     let neighbor_cache = NeighborCache::new(&mut neighbor_storage[..]);
+    let mut routes_storage = [None; 1];
+    let mut routes = Routes::new(&mut routes_storage[..]);
+    gateway.map(|gateway| routes.add_default_ipv4_route(gateway).unwrap());
     let iface = EthernetInterfaceBuilder::new(&mut eth_dev)
         .ethernet_addr(ethernet_addr)
         .ip_addrs(&mut ip_addrs[..])
         .neighbor_cache(neighbor_cache)
+        .routes(routes)
         .finalize();
 
     f(iface);
@@ -89,4 +96,11 @@ pub fn is_pending(cs: &CriticalSection) -> bool {
 pub fn clear_pending(cs: &CriticalSection) {
     *NET_PENDING.borrow(cs)
         .borrow_mut() = false;
+}
+
+/// utility for destructuring into smoltcp types
+pub fn split_ipv4_config(config: Ipv4Config) -> (Ipv4Cidr, Option<Ipv4Address>) {
+    let cidr = Ipv4Cidr::new(Ipv4Address(config.address), config.mask_len);
+    let gateway = config.gateway.map(Ipv4Address);
+    (cidr, gateway)
 }

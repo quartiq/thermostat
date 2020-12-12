@@ -39,8 +39,15 @@ serde-json-core = "0.1"
 sfkv = "0.1"
 
 [patch.crates-io]
-stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal.git" }
+# smoltcp = { path = "../smoltcp" }
+# # TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/125
+# stm32f4xx-hal = { git = "https://github.com/thalesfragoso/stm32f4xx-hal", branch = "pwm-impl" }
+#stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal.git" }
+stm32f4xx-hal = { path = "../../stm32f4/stm32f4xx-hal" }
+sfkv = { path = "../sfkv" }
 
+# [patch."https://github.com/stm32-rs/stm32-eth.git"]
+# stm32-eth = { path = "../../stm32f4/stm32-eth" }
 
 [features]
 semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]

@@ -85,6 +85,13 @@ impl fmt::Display for Error {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Ipv4Config {
+    pub address: [u8; 4],
+    pub mask_len: u8,
+    pub gateway: Option<[u8; 4]>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ShowCommand {
     Input,
@@ -139,7 +146,7 @@ pub enum Command {
         channel: Option<usize>,
     },
     Reset,
-    Ipv4([u8; 4]),
+    Ipv4(Ipv4Config),
     Show(ShowCommand),
     Reporting(bool),
     /// PWM parameter setting
@@ -473,9 +480,7 @@ fn save(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     Ok((input, result))
 }
 
-fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-    let (input, _) = tag("ipv4")(input)?;
-    let (input, _) = whitespace(input)?;
+fn ipv4_addr(input: &[u8]) -> IResult<&[u8], Result<[u8; 4], Error>> {
     let (input, a) = unsigned(input)?;
     let (input, _) = tag(".")(input)?;
     let (input, b) = unsigned(input)?;
@@ -483,12 +488,33 @@ fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, c) = unsigned(input)?;
     let (input, _) = tag(".")(input)?;
     let (input, d) = unsigned(input)?;
-    end(input)?;
+    let address = move || Ok([a? as u8, b? as u8, c? as u8, d? as u8]);
+    Ok((input, address()))
+}
 
-    let result = a.and_then(|a| b.and_then(|b| c.and_then(|c| d.map(|d|
-        Command::Ipv4([a as u8, b as u8, c as u8, d as u8])
-    ))));
-    Ok((input, result))
+fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("ipv4")(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, address) = ipv4_addr(input)?;
+    let (input, _) = tag("/")(input)?;
+    let (input, mask_len) = unsigned(input)?;
+    let (input, gateway) = alt((
+        |input| {
+            let (input, _) = whitespace(input)?;
+            let (input, gateway) = ipv4_addr(input)?;
+            Ok((input, gateway.map(Some)))
+        },
+        value(Ok(None), end),
+    ))(input)?;
+
+    let result = move || {
+        Ok(Command::Ipv4(Ipv4Config {
+            address: address?,
+            mask_len: mask_len? as u8,
+            gateway: gateway?,
+        }))
+    };
+    Ok((input, result()))
 }
 
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
@@ -555,8 +581,22 @@ mod test {
 
     #[test]
     fn parse_ipv4() {
-        let command = Command::parse(b"ipv4 192.168.1.26");
-        assert_eq!(command, Ok(Command::Ipv4([192, 168, 1, 26])));
+        let command = Command::parse(b"ipv4 192.168.1.26/24");
+        assert_eq!(command, Ok(Command::Ipv4(Ipv4Config {
+            address: [192, 168, 1, 26],
+            mask_len: 24,
+            gateway: None,
+        })));
+    }
+
+    #[test]
+    fn parse_ipv4_and_gateway() {
+        let command = Command::parse(b"ipv4 10.42.0.126/8 10.1.0.1");
+        assert_eq!(command, Ok(Command::Ipv4(Ipv4Config {
+            address: [10, 42, 0, 126],
+            mask_len: 8,
+            gateway: Some([10, 1, 0, 1]),
+        })));
     }
 
     #[test]

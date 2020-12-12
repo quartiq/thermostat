@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use smoltcp::wire::Ipv4Address;
 use uom::si::{
     electric_potential::volt,
     electric_current::ampere,
