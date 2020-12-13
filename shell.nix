@@ -10,7 +10,7 @@ pkgs.mkShell {
   name = "thermostat-env";
   buildInputs = with pkgs; [
     rust gcc
-    openocd
+    openocd dfu-util
   ] ++ (with python3Packages; [
     numpy matplotlib
   ]);
