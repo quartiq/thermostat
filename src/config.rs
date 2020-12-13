@@ -17,6 +17,7 @@ pub struct ChannelConfig {
     center: CenterPoint,
     pid: pid::Parameters,
     pid_target: f32,
+    pid_engaged: bool,
     sh: steinhart_hart::Parameters,
     pwm: PwmLimits,
     /// uses variant `PostFilter::Invalid` instead of `None` to save space
@@ -36,6 +37,7 @@ impl ChannelConfig {
             center: state.center.clone(),
             pid: state.pid.parameters.clone(),
             pid_target: state.pid.target as f32,
+            pid_engaged: state.pid_engaged,
             sh: state.sh.clone(),
             pwm,
             adc_postfilter,
@@ -47,6 +49,7 @@ impl ChannelConfig {
         state.center = self.center.clone();
         state.pid.parameters = self.pid.clone();
         state.pid.target = self.pid_target.into();
+        state.pid_engaged = self.pid_engaged;
         state.sh = self.sh.clone();
 
         self.pwm.apply(channels, channel);
