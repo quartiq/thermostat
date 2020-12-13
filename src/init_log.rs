@@ -1,3 +1,4 @@
+#[cfg(not(feature = "semihosting"))]
 use crate::usb;
 
 #[cfg(not(feature = "semihosting"))]
