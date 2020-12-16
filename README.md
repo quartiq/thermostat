@@ -157,6 +157,18 @@ Set the Beta parameter:
 s-h 0 b 3800
 ```
 
+### 50 Hz filtering
+
+The AD7172-2 ADC on the SENS inputs supports simultaneous rejection of
+50 Hz ± 1 Hz and 60 Hz ± 1 Hz (dB). Affecting sampling rate, the
+postfilter rate can be tuned with the `postfilter` command.
+
+| Postfilter rate | Rejection | Effective sampling rate |
+| ---             | :---:     | ---                     |
+| 16.67 Hz        | 92 dB     | 8.4 Hz                  |
+| 20 Hz           | 86 dB     | 9.1 Hz                  |
+| 21.25 Hz        | 62 dB     | 10 Hz                   |
+| 27 Hz           | 47 dB     | 10.41 Hz                |
 
 ## Thermo-Electric Cooling (TEC)
 
