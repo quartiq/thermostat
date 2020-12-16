@@ -39,21 +39,29 @@ series = {
     'i_tec': Series(),
     'tec_i': Series(),
     'tec_u_meas': Series(),
+    'interval': Series(),
 }
 series_lock = Lock()
 
 quit = False
+last_packet_time = None
 
 def recv_data(tec):
+    global last_packet_time
     for data in tec.report_mode():
         if data['channel'] == 0:
             series_lock.acquire()
             try:
                 time = data['time'] / 1000.0
+                if last_packet_time:
+                    data['interval'] = time - last_packet_time
+                last_packet_time = time
+
                 for k, s in series.items():
-                    v = data[k]
-                    if k in data and type(v) is float:
-                        s.append(time, v)
+                    if k in data:
+                        v = data[k]
+                        if type(v) is float:
+                            s.append(time, v)
             finally:
                 series_lock.release()
 
@@ -108,9 +116,11 @@ def animate(i):
     finally:
         series_lock.release()
 
-    margin_y = 0.01 * (max_y - min_y)
-    ax.set_xlim(min_x, max_x)
-    ax.set_ylim(min_y - margin_y, max_y + margin_y)
+    if min_x != max_x:
+        ax.set_xlim(min_x, max_x)
+    if min_y != max_y:
+        margin_y = 0.01 * (max_y - min_y)
+        ax.set_ylim(min_y - margin_y, max_y + margin_y)
 
     global legend
     legend.remove()

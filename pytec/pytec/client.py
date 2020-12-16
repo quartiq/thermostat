@@ -1,16 +1,14 @@
 import socket
 import json
 
-CHANNELS = 2
+class CommandError(Exception):
+    pass
 
 class Client:
     def __init__(self, host="192.168.1.26", port=23, timeout=None):
         self._socket = socket.create_connection((host, port), timeout)
         self._lines = [""]
 
-    def _command(self, *command):
-        self._socket.sendall((" ".join(command) + "\n").encode('utf-8'))
-        
     def _read_line(self):
         # read more lines
         while len(self._lines) <= 1:
@@ -24,13 +22,19 @@ class Client:
         self._lines = self._lines[1:]
         return line
 
+    def _command(self, *command):
+        self._socket.sendall((" ".join(command) + "\n").encode('utf-8'))
+
+        line = self._read_line()
+        response = json.loads(line)
+        if "error" in response:
+            raise CommandError(response["error"])
+        return response
+
     def _get_conf(self, topic):
-        self._command(topic)
-        result = []
-        for channel in range(0, CHANNELS):
-            line = self._read_line()
-            conf = json.loads(line)
-            result.append(conf)
+        result = [None, None]
+        for item in self._command(topic):
+            result[int(item["channel"])] = item
         return result
 
     def get_pwm(self):

@@ -89,7 +89,10 @@ Set report mode to `on` for a continuous stream of input data.
 The scope of this setting is per TCP session.
 
 
-### Commands
+### TCP commands
+
+Send commands as simple text string terminated by `\n`. Responses are
+formatted as line-delimited JSON.
 
 | Syntax                           | Function                                                             |
 | ---                              | ---                                                                  |

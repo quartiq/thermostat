@@ -91,20 +91,12 @@ impl Controller {
     }
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U360>;
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Summary {
     channel: usize,
     parameters: Parameters,
     target: f64,
     integral: f64,
-}
-
-impl Summary {
-    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
-        serde_json_core::to_vec(self)
-    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+use heapless::{consts::{U2, U1024}, Vec};
 use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
@@ -412,7 +413,7 @@ impl Channels {
         (duty * max, max)
     }
 
-    pub fn report(&mut self, channel: usize) -> Report {
+    fn report(&mut self, channel: usize) -> Report {
         let vref = self.channel_state(channel).vref;
         let (i_set, _) = self.get_i(channel);
         let i_tec = self.read_itec(channel);
@@ -441,7 +442,23 @@ impl Channels {
         }
     }
 
-    pub fn pwm_summary(&mut self, channel: usize) -> PwmSummary {
+    pub fn reports_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        let mut reports = Vec::<_, U2>::new();
+        for channel in 0..CHANNELS {
+            let _ = reports.push(self.report(channel));
+        }
+        serde_json_core::to_vec(&reports)
+    }
+
+    pub fn pid_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        let mut summaries = Vec::<_, U2>::new();
+        for channel in 0..CHANNELS {
+            let _ = summaries.push(self.channel_state(channel).pid.summary(channel));
+        }
+        serde_json_core::to_vec(&summaries)
+    }
+
+    fn pwm_summary(&mut self, channel: usize) -> PwmSummary {
         PwmSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
@@ -452,19 +469,43 @@ impl Channels {
         }
     }
 
-    pub fn postfilter_summary(&mut self, channel: usize) -> PostFilterSummary {
+    pub fn pwm_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        let mut summaries = Vec::<_, U2>::new();
+        for channel in 0..CHANNELS {
+            let _ = summaries.push(self.pwm_summary(channel));
+        }
+        serde_json_core::to_vec(&summaries)
+    }
+
+    fn postfilter_summary(&mut self, channel: usize) -> PostFilterSummary {
         let rate = self.adc.get_postfilter(channel as u8).unwrap()
             .and_then(|filter| filter.output_rate());
         PostFilterSummary { channel, rate }
     }
 
-    pub fn steinhart_hart_summary(&mut self, channel: usize) -> SteinhartHartSummary {
+    pub fn postfilter_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        let mut summaries = Vec::<_, U2>::new();
+        for channel in 0..CHANNELS {
+            let _ = summaries.push(self.postfilter_summary(channel));
+        }
+        serde_json_core::to_vec(&summaries)
+    }
+
+    fn steinhart_hart_summary(&mut self, channel: usize) -> SteinhartHartSummary {
         let params = self.channel_state(channel).sh.clone();
         SteinhartHartSummary { channel, params }
     }
+
+    pub fn steinhart_hart_summaries_json(&mut self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
+        let mut summaries = Vec::<_, U2>::new();
+        for channel in 0..CHANNELS {
+            let _ = summaries.push(self.steinhart_hart_summary(channel));
+        }
+        serde_json_core::to_vec(&summaries)
+    }
 }
 
-type JsonBuffer = heapless::Vec<u8, heapless::consts::U512>;
+type JsonBuffer = Vec<u8, U1024>;
 
 #[derive(Serialize)]
 pub struct Report {
@@ -482,12 +523,6 @@ pub struct Report {
     tec_i: ElectricCurrent,
     tec_u_meas: ElectricPotential,
     pid_output: Option<ElectricCurrent>,
-}
-
-impl Report {
-    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
-        serde_json_core::to_vec(self)
-    }
 }
 
 pub struct CenterPointJson(CenterPoint);
@@ -529,91 +564,14 @@ pub struct PwmSummary {
     max_i_neg: PwmSummaryField<ElectricCurrent>,
 }
 
-impl PwmSummary {
-    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
-        serde_json_core::to_vec(self)
-    }
-}
-
 #[derive(Serialize)]
 pub struct PostFilterSummary {
     channel: usize,
     rate: Option<f32>,
 }
 
-impl PostFilterSummary {
-    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
-        serde_json_core::to_vec(self)
-    }
-}
-
 #[derive(Serialize)]
 pub struct SteinhartHartSummary {
     channel: usize,
     params: steinhart_hart::Parameters,
-}
-
-impl SteinhartHartSummary {
-    pub fn to_json(&self) -> Result<JsonBuffer, serde_json_core::ser::Error> {
-        serde_json_core::to_vec(self)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn report_to_json() {
-        // `/ 1.1` results in values with a really long serialization
-        let report = Report {
-            channel: 0,
-            time: 3200,
-            adc: Some(ElectricPotential::new::<volt>(0.65 / 1.1)),
-            sens: Some(ElectricalResistance::new::<ohm>(10000.0 / 1.1)),
-            temperature: Some(30.0 / 1.1),
-            pid_engaged: false,
-            i_set: ElectricCurrent::new::<ampere>(0.5 / 1.1),
-            vref: ElectricPotential::new::<volt>(1.5 / 1.1),
-            dac_value: ElectricPotential::new::<volt>(2.0 / 1.1),
-            dac_feedback: ElectricPotential::new::<volt>(2.0 / 1.1),
-            i_tec: ElectricPotential::new::<volt>(2.0 / 1.1),
-            tec_i: ElectricCurrent::new::<ampere>(0.2 / 1.1),
-            tec_u_meas: ElectricPotential::new::<volt>(2.0 / 1.1),
-            pid_output: Some(ElectricCurrent::new::<ampere>(0.5 / 1.1)),
-        };
-        let buf = report.to_json().unwrap();
-        assert_eq!(buf[0], b'{');
-        assert_eq!(buf[buf.len() - 1], b'}');
-    }
-
-    #[test]
-    fn pwm_summary_to_json() {
-        let value = 1.0 / 1.1;
-        let max = 5.0 / 1.1;
-
-        let pwm_summary = PwmSummary {
-            channel: 0,
-            center: CenterPointJson(CenterPoint::Vref),
-            i_set: PwmSummaryField {
-                value: ElectricCurrent::new::<ampere>(value),
-                max: ElectricCurrent::new::<ampere>(max),
-            },
-            max_v: PwmSummaryField {
-                value: ElectricPotential::new::<volt>(value),
-                max: ElectricPotential::new::<volt>(max),
-            },
-            max_i_pos: PwmSummaryField {
-                value: ElectricCurrent::new::<ampere>(value),
-                max: ElectricCurrent::new::<ampere>(max),
-            },
-            max_i_neg: PwmSummaryField {
-                value: ElectricCurrent::new::<ampere>(value),
-                max: ElectricCurrent::new::<ampere>(max),
-            },
-        };
-        let buf = pwm_summary.to_json().unwrap();
-        assert_eq!(buf[0], b'{');
-        assert_eq!(buf[buf.len() - 1], b'}');
-    }
 }
