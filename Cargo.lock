@@ -394,7 +394,8 @@ dependencies = [
 [[package]]
 name = "sfkv"
 version = "0.1.0"
-source = "git+https://git.m-labs.hk/m-labs/sfkv.git#08262fc3e943dab8c6faa112dc313c9a245fce03"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25f5bfac3f66a7c10a6f37ee81aeaa471f4d35dc21665b59ad7c555adcb9e8aa"
 dependencies = [
  "byteorder",
  "postcard",
@@ -446,7 +447,7 @@ dependencies = [
 [[package]]
 name = "stm32f4xx-hal"
 version = "0.8.3"
-source = "git+https://github.com/astro/stm32f4xx-hal.git?branch=flash#45d804dce0cd72733767b4647ab9369a2f169a70"
+source = "git+https://github.com/astro/stm32f4xx-hal.git?branch=flash#9171ef176a90b1177f350fe2bc1eac625769a041"
 dependencies = [
  "bare-metal 0.2.5",
  "cast",
