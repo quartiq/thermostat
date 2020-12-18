@@ -51,13 +51,11 @@ def recv_data(tec):
         ch0 = data[0]
         series_lock.acquire()
         try:
-            time = ch0['time'] / 1000.0
-
             for k, s in series.items():
                 if k in ch0:
                     v = ch0[k]
                     if type(v) is float:
-                        s.append(time, v)
+                        s.append(ch0['time'], v)
         finally:
             series_lock.release()
 
@@ -106,7 +104,7 @@ def animate(i):
                 else:
                     max_y = max(max_y, max_y_)
 
-        if min_x is not None and max_x - TIME_WINDOW > min_x:
+        if min_x and max_x - TIME_WINDOW > min_x:
             for s in series.values():
                 s.clip(max_x - TIME_WINDOW)
     finally:
