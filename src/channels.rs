@@ -3,7 +3,7 @@ use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
 use uom::si::{
-    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance},
+    f64::{ElectricCurrent, ElectricPotential, ElectricalResistance, Time},
     electric_potential::{millivolt, volt},
     electric_current::ampere,
     electrical_resistance::ohm,
@@ -425,7 +425,8 @@ impl Channels {
         );
         Report {
             channel,
-            time: state.adc_time.total_millis(),
+            time: state.get_adc_time(),
+            interval: state.get_adc_interval(),
             adc: state.get_adc(),
             sens: state.get_sens(),
             temperature: state.get_temperature()
@@ -510,7 +511,8 @@ type JsonBuffer = Vec<u8, U1024>;
 #[derive(Serialize)]
 pub struct Report {
     channel: usize,
-    time: i64,
+    time: Time,
+    interval: Time,
     adc: Option<ElectricPotential>,
     sens: Option<ElectricalResistance>,
     temperature: Option<f64>,

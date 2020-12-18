@@ -1,4 +1,8 @@
 use serde::{Serialize, Deserialize};
+use uom::si::{
+    f64::Time,
+    time::second,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
@@ -45,7 +49,9 @@ impl Controller {
         }
     }
 
-    pub fn update(&mut self, input: f64) -> f64 {
+    pub fn update(&mut self, input: f64, time_delta: Time) -> f64 {
+        let time_delta = time_delta.get::<second>();
+
         // error
         let error = input - self.target;
 
@@ -53,7 +59,7 @@ impl Controller {
         let p = f64::from(self.parameters.kp) * error;
 
         // integral
-        self.integral += f64::from(self.parameters.ki) * error;
+        self.integral += f64::from(self.parameters.ki) * error * time_delta;
         if self.integral < self.parameters.integral_min.into() {
             self.integral = self.parameters.integral_min.into();
         }
@@ -64,8 +70,10 @@ impl Controller {
 
         // derivative
         let d = match self.last_input {
-            None => 0.0,
-            Some(last_input) => f64::from(self.parameters.kd) * (input - last_input),
+            None =>
+                0.0,
+            Some(last_input) =>
+                f64::from(self.parameters.kd) * (input - last_input) / time_delta,
         };
         self.last_input = Some(input);
 

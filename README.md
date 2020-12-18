@@ -110,8 +110,8 @@ formatted as line-delimited JSON.
 | `pid`                            | Show PID configuration                                               |
 | `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature                            |
 | `pid <0/1> kp <value>`           | Set proportional gain                                                |
-| `pid <0/1> ki <value>`           | Set integral gain (unit: 10 Hz)                                      |
-| `pid <0/1> kd <value>`           | Set differential gain (unit: 0.1 seconds)                            |
+| `pid <0/1> ki <value>`           | Set integral gain                                                    |
+| `pid <0/1> kd <value>`           | Set differential gain                                                |
 | `pid <0/1> output_min <amp>`     | Set mininum output                                                   |
 | `pid <0/1> output_max <amp>`     | Set maximum output                                                   |
 | `pid <0/1> integral_min <value>` | Set integral lower bound                                             |

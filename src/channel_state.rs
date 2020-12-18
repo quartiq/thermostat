@@ -1,13 +1,15 @@
-use smoltcp::time::Instant;
+use smoltcp::time::{Duration, Instant};
 use uom::si::{
     f64::{
         ElectricPotential,
         ElectricalResistance,
         ThermodynamicTemperature,
+        Time,
     },
     electric_potential::volt,
     electrical_resistance::ohm,
     thermodynamic_temperature::degree_celsius,
+    time::millisecond,
 };
 use crate::{
     ad7172,
@@ -23,6 +25,7 @@ pub struct ChannelState {
     pub adc_data: Option<u32>,
     pub adc_calibration: ad7172::ChannelCalibration,
     pub adc_time: Instant,
+    pub adc_interval: Duration,
     /// VREF for the TEC (1.5V)
     pub vref: ElectricPotential,
     /// i_set 0A center point
@@ -39,6 +42,8 @@ impl ChannelState {
             adc_data: None,
             adc_calibration,
             adc_time: Instant::from_secs(0),
+            // default: 10 Hz
+            adc_interval: Duration::from_millis(100),
             // updated later with Channels.read_vref()
             vref: ElectricPotential::new::<volt>(1.5),
             center: CenterPoint::Vref,
@@ -56,6 +61,7 @@ impl ChannelState {
         } else {
             Some(adc_data)
         };
+        self.adc_interval = now - self.adc_time;
         self.adc_time = now;
     }
 
@@ -63,8 +69,16 @@ impl ChannelState {
     pub fn update_pid(&mut self) -> Option<f64> {
         let temperature = self.get_temperature()?
             .get::<degree_celsius>();
-        let pid_output = self.pid.update(temperature);
+        let pid_output = self.pid.update(temperature, self.get_adc_interval());
         Some(pid_output)
+    }
+
+    pub fn get_adc_time(&self) -> Time {
+        Time::new::<millisecond>(self.adc_time.total_millis() as f64)
+    }
+
+    pub fn get_adc_interval(&self) -> Time {
+        Time::new::<millisecond>(self.adc_interval.total_millis() as f64)
     }
 
     pub fn get_adc(&self) -> Option<ElectricPotential> {
