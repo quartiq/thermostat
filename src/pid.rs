@@ -6,12 +6,19 @@ use uom::si::{
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
+    /// Gain coefficient for proportional term
     pub kp: f32,
+    /// Gain coefficient for integral term
     pub ki: f32,
+    /// Gain coefficient for derivative term
     pub kd: f32,
+    /// Output limit minimum
     pub output_min: f32,
+    /// Output limit maximum
     pub output_max: f32,
+    /// Integral clipping minimum
     pub integral_min: f32,
+    /// Integral clipping maximum
     pub integral_max: f32
 }
 
