@@ -19,8 +19,8 @@ impl Default for Parameters {
     fn default() -> Self {
         Parameters {
             kp: 1.5,
-            ki: 0.1,
-            kd: 150.0,
+            ki: 1.0,
+            kd: 1.5,
             output_min: 0.0,
             output_max: 2.0,
             integral_min: -10.0,
