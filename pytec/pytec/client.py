@@ -164,4 +164,3 @@ class Client:
     def load_config(self):
         """Load current configuration from EEPROM"""
         self._command("load")
-

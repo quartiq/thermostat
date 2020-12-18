@@ -44,26 +44,22 @@ series = {
 series_lock = Lock()
 
 quit = False
-last_packet_time = None
 
 def recv_data(tec):
     global last_packet_time
     for data in tec.report_mode():
-        if data['channel'] == 0:
-            series_lock.acquire()
-            try:
-                time = data['time'] / 1000.0
-                if last_packet_time:
-                    data['interval'] = time - last_packet_time
-                last_packet_time = time
+        ch0 = data[0]
+        series_lock.acquire()
+        try:
+            time = ch0['time'] / 1000.0
 
-                for k, s in series.items():
-                    if k in data:
-                        v = data[k]
-                        if type(v) is float:
-                            s.append(time, v)
-            finally:
-                series_lock.release()
+            for k, s in series.items():
+                if k in ch0:
+                    v = ch0[k]
+                    if type(v) is float:
+                        s.append(time, v)
+        finally:
+            series_lock.release()
 
         if quit:
             break
