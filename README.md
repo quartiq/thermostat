@@ -75,7 +75,7 @@ Ethernet, IP: 192.168.1.26/24
 
 Use netcat to connect to port 23/tcp (telnet)
 ```sh
-nc -vv 192.168.1.26 23
+rlwrap nc -vv 192.168.1.26 23
 ```
 
 telnet clients send binary data after connect. Enter \n once to
@@ -160,7 +160,7 @@ Set the Beta parameter:
 s-h 0 b 3800
 ```
 
-### 50 Hz filtering
+### 50/60 Hz filtering
 
 The AD7172-2 ADC on the SENS inputs supports simultaneous rejection of
 50 Hz ± 1 Hz and 60 Hz ± 1 Hz (dB). Affecting sampling rate, the
