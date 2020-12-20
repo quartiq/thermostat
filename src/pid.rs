@@ -145,20 +145,11 @@ mod test {
         while !values.iter().all(|value| target.contains(value)) {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
-            let output = pid.update(values[next_t]);
+            let output = pid.update(values[next_t], Time::new::<second>(1.0));
             // Overwrite oldest with previous temperature - output
             values[next_t] = values[t] - output;
             t = next_t;
             total_t += 1;
         }
-    }
-
-    #[test]
-    fn summary_to_json() {
-        let mut pid = Controller::new(PARAMETERS.clone());
-        pid.target = 30.0 / 1.1;
-        let buf = pid.summary(0).to_json().unwrap();
-        assert_eq!(buf[0], b'{');
-        assert_eq!(buf[buf.len() - 1], b'}');
     }
 }
