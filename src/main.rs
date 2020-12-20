@@ -441,7 +441,11 @@ fn main() -> ! {
                 });
 
                 // Apply new IPv4 address/gateway
-                new_ipv4_config.map(|config| server.set_ipv4_config(config));
+                new_ipv4_config.take()
+                    .map(|config| {
+                        server.set_ipv4_config(config.clone());
+                        ipv4_config = config;
+                    });
 
                 // Update watchdog
                 wd.feed();
