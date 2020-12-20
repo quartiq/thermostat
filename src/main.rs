@@ -183,7 +183,7 @@ fn main() -> ! {
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
-    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config, |iface| {
+    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config.clone(), |iface| {
         Server::<Session>::run(iface, |server| {
             leds.r1.off();
 
@@ -279,6 +279,12 @@ fn main() -> ! {
                                             let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
                                         }
                                     }
+                                }
+                                Command::Show(ShowCommand::Ipv4) => {
+                                    let (cidr, gateway) = net::split_ipv4_config(ipv4_config.clone());
+                                    let _ = write!(socket, "{{\"addr\":\"{}\"", cidr);
+                                    gateway.map(|gateway| write!(socket, ",\"gateway\":\"{}\"", gateway));
+                                    let _ = writeln!(socket, "}}");
                                 }
                                 Command::PwmPid { channel } => {
                                     channels.channel_state(channel).pid_engaged = true;

@@ -100,6 +100,7 @@ pub enum ShowCommand {
     Pid,
     SteinhartHart,
     PostFilter,
+    Ipv4,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -494,27 +495,32 @@ fn ipv4_addr(input: &[u8]) -> IResult<&[u8], Result<[u8; 4], Error>> {
 
 fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("ipv4")(input)?;
-    let (input, _) = whitespace(input)?;
-    let (input, address) = ipv4_addr(input)?;
-    let (input, _) = tag("/")(input)?;
-    let (input, mask_len) = unsigned(input)?;
-    let (input, gateway) = alt((
+    alt((
         |input| {
             let (input, _) = whitespace(input)?;
-            let (input, gateway) = ipv4_addr(input)?;
-            Ok((input, gateway.map(Some)))
-        },
-        value(Ok(None), end),
-    ))(input)?;
+            let (input, address) = ipv4_addr(input)?;
+            let (input, _) = tag("/")(input)?;
+            let (input, mask_len) = unsigned(input)?;
+            let (input, gateway) = alt((
+                |input| {
+                    let (input, _) = whitespace(input)?;
+                    let (input, gateway) = ipv4_addr(input)?;
+                    Ok((input, gateway.map(Some)))
+                },
+                value(Ok(None), end),
+            ))(input)?;
 
-    let result = move || {
-        Ok(Command::Ipv4(Ipv4Config {
-            address: address?,
-            mask_len: mask_len? as u8,
-            gateway: gateway?,
-        }))
-    };
-    Ok((input, result()))
+            let result = move || {
+                Ok(Command::Ipv4(Ipv4Config {
+                    address: address?,
+                    mask_len: mask_len? as u8,
+                    gateway: gateway?,
+                }))
+            };
+            Ok((input, result()))
+        },
+        value(Ok(Command::Show(ShowCommand::Ipv4)), end),
+    ))(input)
 }
 
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
@@ -577,6 +583,12 @@ mod test {
     fn parse_save_channel() {
         let command = Command::parse(b"save 0");
         assert_eq!(command, Ok(Command::Save { channel: Some(0) }));
+    }
+
+    #[test]
+    fn parse_show_ipv4() {
+        let command = Command::parse(b"ipv4");
+        assert_eq!(command, Ok(Command::Show(ShowCommand::Ipv4)));
     }
 
     #[test]
