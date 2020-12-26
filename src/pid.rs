@@ -60,20 +60,25 @@ impl Controller {
         let time_delta = time_delta.get::<second>();
 
         // error
-        let error = input - self.target;
+        let error = self.target - input;
 
         // proportional
         let p = f64::from(self.parameters.kp) * error;
 
         // integral
-        self.integral += f64::from(self.parameters.ki) * error * time_delta;
+        if let Some(last_output_val) = self.last_output {
+            // anti integral windup
+            if last_output_val < self.parameters.output_max.into() && last_output_val > self.parameters.output_min.into() {
+                self.integral += error * time_delta;    
+            }
+        }
         if self.integral < self.parameters.integral_min.into() {
             self.integral = self.parameters.integral_min.into();
         }
         if self.integral > self.parameters.integral_max.into() {
             self.integral = self.parameters.integral_max.into();
         }
-        let i = self.integral;
+        let i = self.integral * f64::from(self.parameters.ki);
 
         // derivative
         let d = match self.last_input {
