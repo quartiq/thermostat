@@ -62,7 +62,7 @@ impl Controller {
         // error
         let error = input - self.target;
 
-        // partial
+        // proportional
         let p = f64::from(self.parameters.kp) * error;
 
         // integral
