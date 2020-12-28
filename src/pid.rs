@@ -124,21 +124,29 @@ mod test {
     use super::*;
 
     const PARAMETERS: Parameters = Parameters {
-        kp: 0.055,
-        ki: 0.005,
-        kd: 0.04,
+        kp: 0.03,
+        ki: 0.002,
+        kd: 0.15,
         output_min: -10.0,
         output_max: 10.0,
-        integral_min: -100.0,
-        integral_max: 100.0,
+        integral_min: -1000.0,
+        integral_max: 1000.0,
     };
 
     #[test]
     fn test_controller() {
-        const DEFAULT: f64 = 0.0;
-        const TARGET: f64 = -1234.56;
-        const ERROR: f64 = 0.01;
-        const DELAY: usize = 10;
+        // Initial and ambient temperature
+        const DEFAULT: f64 = 20.0;    
+        // Target temperature  
+        const TARGET: f64 = 40.0;   
+        // Control tolerance    
+        const ERROR: f64 = 0.01;    
+        // System response delay    
+        const DELAY: usize = 10;  
+        // Heat lost
+        const LOSS: f64 = 0.05;    
+        // Limit simulation cycle, reaching this limit before settling fails test      
+        const CYCLE_LIMIT: u32 = 1000;  
 
         let mut pid = Controller::new(PARAMETERS.clone());
         pid.target = TARGET;
@@ -147,14 +155,16 @@ mod test {
         let mut t = 0;
         let mut total_t = 0;
         let target = (TARGET - ERROR)..=(TARGET + ERROR);
-        while !values.iter().all(|value| target.contains(value)) {
+        while !values.iter().all(|value| target.contains(value)) && total_t < CYCLE_LIMIT {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
             let output = pid.update(values[next_t], Time::new::<second>(1.0));
             // Overwrite oldest with previous temperature - output
-            values[next_t] = values[t] - output;
+            values[next_t] = values[t] + output - (values[t] - DEFAULT) * LOSS;
             t = next_t;
             total_t += 1;
+            println!("{}", values[t].to_string());
         }
+        assert_ne!(CYCLE_LIMIT, total_t);
     }
 }
