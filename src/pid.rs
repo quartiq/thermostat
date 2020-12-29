@@ -85,7 +85,7 @@ impl Controller {
             None =>
                 0.0,
             Some(last_input) =>
-                f64::from(self.parameters.kd) * (input - last_input) / time_delta,
+                f64::from(self.parameters.kd) * (last_input - input) / time_delta,
         };
         self.last_input = Some(input);
 
