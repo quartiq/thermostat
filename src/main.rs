@@ -399,7 +399,9 @@ fn main() -> ! {
                                         if channel.is_none() || channel == Some(c) {
                                             let config = ChannelConfig::new(&mut channels, c);
                                             match store.write_value(CHANNEL_CONFIG_KEY[c], &config, &mut store_value_buf) {
-                                                Ok(()) => {}
+                                                Ok(()) => {
+                                                    send_line(&mut socket, b"{}");
+                                                }
                                                 Err(e) => {
                                                     error!("unable to save channel {} config to flash: {:?}", c, e);
                                                     let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
