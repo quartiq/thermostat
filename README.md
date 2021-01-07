@@ -252,3 +252,7 @@ with the following keys.
 | `tec_i`        | Amperes         | TEC output current feedback derived from `i_tec`     |
 | `tec_u_meas`   | Volts           | Measurement of the voltage across the TEC            |
 | `pid_output`   | Amperes         | PID control output                                   |
+
+## PID Tuning
+
+The thermostat implements a PID control loop for each of the TEC channels, more details on setting up the PID control loop can be found [here](./doc/PID%20tuning.md).
