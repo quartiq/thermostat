@@ -25,10 +25,10 @@ pub struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Parameters {
-            kp: 1.5,
-            ki: 1.0,
-            kd: 1.5,
-            output_min: 0.0,
+            kp: 0.0,
+            ki: 0.0,
+            kd: 0.0,
+            output_min: -2.0,
             output_max: 2.0,
             integral_min: -10.0,
             integral_max: 10.0,
