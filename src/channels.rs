@@ -438,7 +438,7 @@ impl Channels {
             dac_feedback: self.read_dac_feedback(channel),
             i_tec,
             tec_i,
-            tec_u_meas: self.read_tec_u_meas(channel),
+            tec_u_meas: (self.read_tec_u_meas(channel) - ElectricPotential::new::<volt>(1.5)) * 4.0,
             pid_output,
         }
     }
