@@ -364,6 +364,16 @@ impl Channels {
         (duty * max, max)
     }
 
+    // Get actual current passing through TEC
+    pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
+        (self.read_itec(channel) - self.read_vref(channel)) / ElectricalResistance::new::<ohm>(0.4)
+    }
+
+    // Get actual voltage across TEC
+    pub fn get_tec_v(&mut self, channel: usize) -> ElectricPotential {
+        (self.read_tec_u_meas(channel) - ElectricPotential::new::<volt>(1.5)) * 4.0
+    }
+
     fn set_pwm(&mut self, channel: usize, pin: PwmPin, duty: f64) -> f64 {
         fn set<P: hal::PwmPin<Duty=u16>>(pin: &mut P, duty: f64) -> f64 {
             let max = pin.get_max_duty();
@@ -417,7 +427,7 @@ impl Channels {
         let vref = self.channel_state(channel).vref;
         let (i_set, _) = self.get_i(channel);
         let i_tec = self.read_itec(channel);
-        let tec_i = (i_tec - vref) / ElectricalResistance::new::<ohm>(0.4);
+        let tec_i = self.get_tec_i(channel);
         let (dac_value, _) = self.get_dac(channel);
         let state = self.channel_state(channel);
         let pid_output = state.pid.last_output.map(|last_output|
@@ -438,7 +448,7 @@ impl Channels {
             dac_feedback: self.read_dac_feedback(channel),
             i_tec,
             tec_i,
-            tec_u_meas: (self.read_tec_u_meas(channel) - ElectricPotential::new::<volt>(1.5)) * 4.0,
+            tec_u_meas: self.get_tec_v(channel),
             pid_output,
         }
     }
