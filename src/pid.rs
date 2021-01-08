@@ -109,6 +109,16 @@ impl Controller {
             integral: self.integral,
         }
     }
+
+    pub fn update_ki(&mut self, new_ki: f32) {
+        if new_ki == 0.0 {
+            self.integral = 0.0;
+        } else {
+            // Rescale integral with changes to kI, aka "Bumpless operation"
+            self.integral = f64::from(self.parameters.ki) * self.integral / f64::from(new_ki);
+        }
+        self.parameters.ki = new_ki;
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

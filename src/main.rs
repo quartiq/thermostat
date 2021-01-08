@@ -332,8 +332,8 @@ fn main() -> ! {
                                             pid.target = value,
                                         KP =>
                                             pid.parameters.kp = value as f32,
-                                        KI =>
-                                            pid.parameters.ki = value as f32,
+                                        KI => 
+                                            pid.update_ki(value as f32),
                                         KD =>
                                             pid.parameters.kd = value as f32,
                                         OutputMin =>
