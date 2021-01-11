@@ -9,7 +9,6 @@ use uom::si::{
     },
     electric_potential::volt,
     electrical_resistance::ohm,
-    // electric_current::ampere,
     thermodynamic_temperature::degree_celsius,
     time::millisecond,
 };
