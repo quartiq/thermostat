@@ -364,12 +364,12 @@ impl Channels {
         (duty * max, max)
     }
 
-    // Get actual current passing through TEC
+    // Get current passing through TEC
     pub fn get_tec_i(&mut self, channel: usize) -> ElectricCurrent {
         (self.read_itec(channel) - self.read_vref(channel)) / ElectricalResistance::new::<ohm>(0.4)
     }
 
-    // Get actual voltage across TEC
+    // Get voltage across TEC
     pub fn get_tec_v(&mut self, channel: usize) -> ElectricPotential {
         (self.read_tec_u_meas(channel) - ElectricPotential::new::<volt>(1.5)) * 4.0
     }
