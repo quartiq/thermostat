@@ -73,10 +73,10 @@ impl Channels {
     pub fn poll_adc(&mut self, instant: Instant) -> Option<u8> {
         self.adc.data_ready().unwrap().map(|channel| {
             let data = self.adc.read_data().unwrap();
-
+            let current = self.get_tec_i(channel.into());
             let state = self.channel_state(channel);
             state.update(instant, data);
-            match state.update_pid() {
+            match state.update_pid(current) {
                 Some(pid_output) if state.pid_engaged => {
                     // Forward PID output to i_set DAC
                     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));

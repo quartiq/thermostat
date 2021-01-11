@@ -1,8 +1,12 @@
 use serde::{Serialize, Deserialize};
 use uom::si::{
-    f64::Time,
+    f64::{Time, ElectricCurrent},
     time::second,
+    electric_current::ampere,
 };
+
+/// Allowable current error for integral accumulation
+const CURRENT_ERROR_MAX: f64 = 0.1;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
@@ -56,7 +60,7 @@ impl Controller {
         }
     }
 
-    pub fn update(&mut self, input: f64, time_delta: Time) -> f64 {
+    pub fn update(&mut self, input: f64, time_delta: Time, current: ElectricCurrent) -> f64 {
         let time_delta = time_delta.get::<second>();
 
         // error
@@ -67,8 +71,12 @@ impl Controller {
 
         // integral
         if let Some(last_output_val) = self.last_output {
+            let electric_current_error = ElectricCurrent::new::<ampere>(last_output_val) - current;
             // anti integral windup
-            if last_output_val < self.parameters.output_max.into() && last_output_val > self.parameters.output_min.into() {
+            if last_output_val < self.parameters.output_max.into() &&
+               last_output_val > self.parameters.output_min.into() &&
+               electric_current_error < ElectricCurrent::new::<ampere>(CURRENT_ERROR_MAX) &&
+               electric_current_error > -ElectricCurrent::new::<ampere>(CURRENT_ERROR_MAX) {
                 self.integral += error * time_delta;    
             }
         }
@@ -168,7 +176,7 @@ mod test {
         while !values.iter().all(|value| target.contains(value)) && total_t < CYCLE_LIMIT {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
-            let output = pid.update(values[next_t], Time::new::<second>(1.0));
+            let output = pid.update(values[next_t], Time::new::<second>(1.0), values[next_t]);
             // Overwrite oldest with previous temperature - output
             values[next_t] = values[t] + output - (values[t] - DEFAULT) * LOSS;
             t = next_t;
