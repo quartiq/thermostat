@@ -11,5 +11,7 @@ MEMORY
   CCMRAM (rw)     : ORIGIN = 0x10000000, LENGTH = 64K
 }
 
-_stack_start = ORIGIN(CCMRAM) + LENGTH(CCMRAM);
+_flash_start = ORIGIN(FLASH);
+_config_start = ORIGIN(CONFIG);
 _dfu_msg = ORIGIN(DFU_MSG);
+_stack_start = ORIGIN(CCMRAM) + LENGTH(CCMRAM);
