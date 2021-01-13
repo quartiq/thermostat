@@ -179,6 +179,7 @@ pub enum Command {
         channel: usize,
         rate: Option<f32>,
     },
+    Dfu,
 }
 
 fn end(input: &[u8]) -> IResult<&[u8], ()> {
@@ -535,6 +536,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
          pid,
          steinhart_hart,
          postfilter,
+         value(Ok(Command::Dfu), tag("dfu")),
     ))(input)
 }
 

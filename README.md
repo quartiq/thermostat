@@ -124,6 +124,7 @@ formatted as line-delimited JSON.
 | `load [0/1]`                     | Restore configuration for channel all/0/1 from flash                 |
 | `save [0/1]`                     | Save configuration for channel all/0/1 to flash                      |
 | `reset`                          | Reset the device                                                     |
+| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode |
 | `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`     | Configure IPv4 address, netmask length, and optional default gateway |
 
 

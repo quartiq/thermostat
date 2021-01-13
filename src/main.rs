@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
-#![feature(maybe_uninit_extra, maybe_uninit_ref)]
+#![feature(maybe_uninit_extra, maybe_uninit_ref, asm)]
 #![cfg_attr(test, allow(unused))]
 // TODO: #![deny(warnings, unused)]
 
@@ -66,6 +66,7 @@ mod channel_state;
 mod config;
 use config::ChannelConfig;
 mod flash_store;
+mod dfu;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -76,7 +77,6 @@ const WATCHDOG_INTERVAL: u32 = 30_000;
 const CHANNEL_CONFIG_KEY: [&str; 2] = ["ch0", "ch1"];
 
 const TCP_PORT: u16 = 23;
-
 
 fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
     let send_free = socket.send_capacity() - socket.send_queue();
@@ -422,6 +422,16 @@ fn main() -> ! {
                                         channels.power_down(i);
                                     }
 
+                                    SCB::sys_reset();
+                                }
+                                Command::Dfu => {
+                                    for i in 0..CHANNELS {
+                                        channels.power_down(i);
+                                    }
+                                    unsafe {
+                                        dfu::set_dfu_trigger();
+                                    }
+                                    
                                     SCB::sys_reset();
                                 }
                             }
