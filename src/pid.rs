@@ -172,11 +172,12 @@ mod test {
         let mut values = [DEFAULT; DELAY];
         let mut t = 0;
         let mut total_t = 0;
+        let mut output: f64 = 0.0;
         let target = (TARGET - ERROR)..=(TARGET + ERROR);
         while !values.iter().all(|value| target.contains(value)) && total_t < CYCLE_LIMIT {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
-            let output = pid.update(values[next_t], Time::new::<second>(1.0), values[next_t]);
+            output = pid.update(values[next_t], Time::new::<second>(1.0), ElectricCurrent::new::<ampere>(output));
             // Overwrite oldest with previous temperature - output
             values[next_t] = values[t] + output - (values[t] - DEFAULT) * LOSS;
             t = next_t;

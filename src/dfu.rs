@@ -14,6 +14,7 @@ pub unsafe fn set_dfu_trigger() {
 /// Called by reset handler in lib.rs immediately after reset.
 /// This function should not be called outside of reset handler as 
 /// bootloader expects MCU to be in reset state when called.
+#[cfg(target_arch = "arm")]
 #[pre_init]
 unsafe fn __pre_init() {
     if _dfu_msg == DFU_TRIG_MSG {
