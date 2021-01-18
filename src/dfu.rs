@@ -1,7 +1,6 @@
-use cortex_m_rt::{pre_init};
-use stm32f4xx_hal::{
-    stm32::{RCC, SYSCFG},
-};
+use cortex_m_rt::pre_init;
+use stm32f4xx_hal::stm32::{RCC, SYSCFG};
+
 const DFU_TRIG_MSG: u32 = 0xDECAFBAD;
 
 extern "C" {
