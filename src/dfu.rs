@@ -1,5 +1,7 @@
 use cortex_m_rt::{pre_init};
-
+use stm32f4xx_hal::{
+    stm32::{RCC, SYSCFG},
+};
 const DFU_TRIG_MSG: u32 = 0xDECAFBAD;
 
 extern "C" {
@@ -21,22 +23,16 @@ unsafe fn __pre_init() {
         _dfu_msg = 0x00000000;
 
         // Enable system config controller clock
-        const RCC_APB2ENR: *mut u32 = 0xE000_ED88 as *mut u32;
-        const RCC_APB2ENR_ENABLE_SYSCFG_CLOCK: u32 = 0x00004000;
-
-        core::ptr::write_volatile(
-            RCC_APB2ENR,
-            *RCC_APB2ENR | RCC_APB2ENR_ENABLE_SYSCFG_CLOCK,
-        );
+        let rcc = &*RCC::ptr();
+        rcc.apb2enr.modify(|_, w| w.syscfgen().set_bit());
 
         // Bypass BOOT pins and remap bootloader to 0x00000000
-        const SYSCFG_MEMRMP: *mut u32 = 0x40013800 as *mut u32;
-        const SYSCFG_MEMRMP_MAP_ROM: u32 = 0x00000001;
+        let syscfg = &*SYSCFG::ptr() ;
+        syscfg.memrm.write(|w| w.mem_mode().bits(0b01));  
 
-        core::ptr::write_volatile(
-            SYSCFG_MEMRMP,
-            *SYSCFG_MEMRMP | SYSCFG_MEMRMP_MAP_ROM,
-        );
+        // Impose instruction and memory barriers
+        cortex_m::asm::isb();
+        cortex_m::asm::dsb();
         
         asm!(
             // Set stack pointer to bootloader location
