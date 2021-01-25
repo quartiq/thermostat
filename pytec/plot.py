@@ -28,18 +28,18 @@ class Series:
         self.y_data = self.y_data[drop:]
         
 series = {
-    'adc': Series(),
-    'sens': Series(lambda x: x * 0.0001),
-    'temperature': Series(lambda t: t - target_temperature),
-    'i_set': Series(),
+    # 'adc': Series(),
+    # 'sens': Series(lambda x: x * 0.0001),
+    'temperature': Series(),
+    # 'i_set': Series(),
     'pid_output': Series(),
-    'vref': Series(),
-    'dac_value': Series(),
-    'dac_feedback': Series(),
-    'i_tec': Series(),
+    # 'vref': Series(),
+    # 'dac_value': Series(),
+    # 'dac_feedback': Series(),
+    # 'i_tec': Series(),
     'tec_i': Series(),
     'tec_u_meas': Series(),
-    'interval': Series(),
+    # 'interval': Series(),
 }
 series_lock = Lock()
 
