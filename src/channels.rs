@@ -22,6 +22,8 @@ use crate::{
 
 pub const CHANNELS: usize = 2;
 pub const R_SENSE: f64 = 0.05;
+// DAC chip outputs 0-5v, which is then passed through a resistor dividor to provide 0-3v range
+const DAC_OUT_V_MAX: f64 = 3.0;
 
 // TODO: -pub
 pub struct Channels {
@@ -106,53 +108,43 @@ impl Channels {
     }
 
     /// i_set DAC
-    fn get_dac(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
-        let dac_factor = match channel.into() {
-            0 => self.channel0.dac_factor,
-            1 => self.channel1.dac_factor,
-            _ => unreachable!(),
-        };
+    fn get_dac(&mut self, channel: usize) -> ElectricPotential {
         let voltage = self.channel_state(channel).dac_value;
-        let max = ElectricPotential::new::<volt>(ad5680::MAX_VALUE as f64 / dac_factor);
-        (voltage, max)
+        voltage
     }
 
-    pub fn get_i(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
+    pub fn get_i(&mut self, channel: usize) -> ElectricCurrent {
         let center_point = self.get_center(channel);
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
-        let (voltage, max) = self.get_dac(channel);
+        let voltage = self.get_dac(channel);
         let i_tec = (voltage - center_point) / (10.0 * r_sense);
-        let max = (max - center_point) / (10.0 * r_sense);
-        (i_tec, max)
+        i_tec
     }
 
     /// i_set DAC
-    fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
-        let dac_factor = match channel.into() {
-            0 => self.channel0.dac_factor,
-            1 => self.channel1.dac_factor,
-            _ => unreachable!(),
-        };
-        let value = (voltage.get::<volt>() * dac_factor) as u32;
-        let value = match channel {
+    fn set_dac(&mut self, channel: usize, voltage: ElectricPotential) -> ElectricPotential {
+        let value = ((voltage / ElectricPotential::new::<volt>(DAC_OUT_V_MAX)).get::<ratio>() * (ad5680::MAX_VALUE as f64)) as u32 ;
+        match channel {
             0 => self.channel0.dac.set(value).unwrap(),
             1 => self.channel1.dac.set(value).unwrap(),
             _ => unreachable!(),
         };
-        let voltage = ElectricPotential::new::<volt>(value as f64 / dac_factor);
         self.channel_state(channel).dac_value = voltage;
-        let max = ElectricPotential::new::<volt>(ad5680::MAX_VALUE as f64 / dac_factor);
-        (voltage, max)
+        voltage
     }
 
-    pub fn set_i(&mut self, channel: usize, i_tec: ElectricCurrent) -> (ElectricCurrent, ElectricCurrent) {
-        let center_point = self.get_center(channel);
+    pub fn set_i(&mut self, channel: usize, i_tec: ElectricCurrent) -> ElectricCurrent {
+        let vref_meas = match channel.into() {
+            0 => self.channel0.vref_meas,
+            1 => self.channel1.vref_meas,
+            _ => unreachable!(),
+        };
+        let center_point = vref_meas;
         let r_sense = ElectricalResistance::new::<ohm>(R_SENSE);
         let voltage = i_tec * 10.0 * r_sense + center_point;
-        let (voltage, max) = self.set_dac(channel, voltage);
+        let voltage = self.set_dac(channel, voltage);
         let i_tec = (voltage - center_point) / (10.0 * r_sense);
-        let max = (max - center_point) / (10.0 * r_sense);
-        (i_tec, max)
+        i_tec
     }
 
     pub fn read_dac_feedback(&mut self, channel: usize) -> ElectricPotential {
@@ -255,12 +247,29 @@ impl Channels {
         }
     }
 
-    /// Calibrate the I_SET DAC using the DAC_FB ADC pin.
+    /// Calibrates the DAC output to match vref of the MAX driver to reduce zero-current offset of the MAX driver output.
     ///
-    /// These loops perform a breadth-first search for the DAC setting
-    /// that will produce a `target_voltage`.
+    /// The thermostat DAC applies a control voltage signal to the CTLI pin of MAX driver chip to control its output current.
+    /// The CTLI input signal is centered around VREF of the MAX chip. Applying VREF to CTLI sets the output current to 0.
+    /// 
+    /// This calibration routine measures the VREF voltage and the DAC output with the STM32 ADC, and uses a breadth-first     
+    /// search to find the DAC setting that will produce a DAC output voltage closest to VREF. This DAC output voltage will 
+    /// be stored and used in subsequent i_set routines to bias the current control signal to the measured VREF, reducing 
+    /// the offset error of the current control signal.
+    ///
+    /// The input offset of the STM32 ADC is eliminated by using the same ADC for the measurements, and by only using the
+    /// difference in VREF and DAC output for the calibration.
+    /// 
+    /// This routine should be called only once after boot, repeated reading of the vref signal and changing of the stored 
+    /// VREF measurement can introduce significant noise at the current output, degrading the stabilily performance of the
+    /// thermostat. 
     pub fn calibrate_dac_value(&mut self, channel: usize) {
-        let target_voltage = ElectricPotential::new::<volt>(2.5);
+        let samples = 50;
+        let mut target_voltage = ElectricPotential::new::<volt>(0.0);
+        for _ in 0..samples {
+            target_voltage = target_voltage + self.get_center(channel);
+        }
+        target_voltage = target_voltage / samples as f64;
         let mut start_value = 1;
         let mut best_error = ElectricPotential::new::<volt>(100.0);
 
@@ -285,10 +294,10 @@ impl Channels {
                     best_error = error;
                     start_value = prev_value;
 
-                    let dac_factor = value as f64 / dac_feedback.get::<volt>();
+                    let vref = (value as f64 / ad5680::MAX_VALUE as f64) * ElectricPotential::new::<volt>(DAC_OUT_V_MAX);
                     match channel {
-                        0 => self.channel0.dac_factor = dac_factor,
-                        1 => self.channel1.dac_factor = dac_factor,
+                        0 => self.channel0.vref_meas = vref,
+                        1 => self.channel1.vref_meas = vref,
                         _ => unreachable!(),
                     }
                 }
@@ -345,11 +354,10 @@ impl Channels {
         }
     }
 
-    pub fn get_max_v(&mut self, channel: usize) -> (ElectricPotential, ElectricPotential) {
-        let vref = self.channel_state(channel).vref;
-        let max = 4.0 * vref;
+    pub fn get_max_v(&mut self, channel: usize) -> ElectricPotential {
+        let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let duty = self.get_pwm(channel, PwmPin::MaxV);
-        (duty * max, max)
+        duty * max
     }
 
     pub fn get_max_i_pos(&mut self, channel: usize) -> (ElectricCurrent, ElectricCurrent) {
@@ -402,8 +410,7 @@ impl Channels {
     }
 
     pub fn set_max_v(&mut self, channel: usize, max_v: ElectricPotential) -> (ElectricPotential, ElectricPotential) {
-        let vref = self.channel_state(channel).vref;
-        let max = 4.0 * vref;
+        let max = 4.0 * ElectricPotential::new::<volt>(3.3);
         let duty = (max_v / max).get::<ratio>();
         let duty = self.set_pwm(channel, PwmPin::MaxV, duty);
         (duty * max, max)
@@ -425,10 +432,10 @@ impl Channels {
 
     fn report(&mut self, channel: usize) -> Report {
         let vref = self.channel_state(channel).vref;
-        let (i_set, _) = self.get_i(channel);
+        let i_set = self.get_i(channel);
         let i_tec = self.read_itec(channel);
         let tec_i = self.get_tec_i(channel);
-        let (dac_value, _) = self.get_dac(channel);
+        let dac_value = self.get_dac(channel);
         let state = self.channel_state(channel);
         let pid_output = state.pid.last_output.map(|last_output|
             ElectricCurrent::new::<ampere>(last_output)
@@ -473,8 +480,8 @@ impl Channels {
         PwmSummary {
             channel,
             center: CenterPointJson(self.channel_state(channel).center.clone()),
-            i_set: self.get_i(channel).into(),
-            max_v: self.get_max_v(channel).into(),
+            i_set: (self.get_i(channel), ElectricCurrent::new::<ampere>(3.0)).into(),
+            max_v: (self.get_max_v(channel), ElectricPotential::new::<volt>(5.0)).into(),
             max_i_pos: self.get_max_i_pos(channel).into(),
             max_i_neg: self.get_max_i_neg(channel).into(),
         }

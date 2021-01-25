@@ -316,7 +316,7 @@ fn main() -> ! {
                                     send_line(&mut socket, b"{}");
                                 }
                                 Command::CenterPoint { channel, center } => {
-                                    let (i_tec, _) = channels.get_i(channel);
+                                    let i_tec = channels.get_i(channel);
                                     let state = channels.channel_state(channel);
                                     state.center = center;
                                     if !state.pid_engaged {
