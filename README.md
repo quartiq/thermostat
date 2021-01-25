@@ -101,7 +101,7 @@ formatted as line-delimited JSON.
 | `report mode <off/on>`           | Set report mode                                                      |
 | `pwm`                            | Show current PWM settings                                            |
 | `pwm <0/1> max_i_pos <amp>`      | Set PWM duty cycle for **max_i_pos** to *ampere*                     |
-| `pwm <0/1> max_i_neg <amp>`      | Set PWM duty cycle for **max_i_neg** to *ampere*                     |
+| `pwm <0/1> max_i_neg <amp>`      | Set PWM duty cycle for **max_i_neg** to *- ampere*                     |
 | `pwm <0/1> max_v <volts>`        | Set PWM duty cycle for **max_v** to *volt*                           |
 | `pwm <0/1> i_set <amp>`          | Disengage PID, set **i_set** DAC to *ampere*                         |
 | `pwm <0/1> pid`                  | Set PWM to be controlled by PID                                      |
@@ -176,9 +176,13 @@ postfilter rate can be tuned with the `postfilter` command.
 
 ## Thermo-Electric Cooling (TEC)
 
-- Connect Peltier device 0 to TEC0- and TEC0+.
-- Connect Peliter device 1 to TEC1- and TEC1+.
-- The GND pin is for shielding not for sinking Peltier currents.
+- Connect TEC module device 0 to TEC0- and TEC0+.
+- Connect TEC module device 1 to TEC1- and TEC1+.
+- The GND pin is for shielding not for sinking TEC module currents.
+
+When using a TEC module with the Thermostat, the Thermostat expects the thermal load (where the thermistor is located) to heat up with a positive software current set point, and cool down with a negative current set point.
+
+Testing heat flow direction with a low set current is recommended before installation of the TEC module.
 
 ### Limits
 
@@ -197,6 +201,16 @@ Use the `pwm` command to see current settings and maximum values.
 Example: set the maximum voltage of channel 0 to 1.5 V.
 ```
 pwm 0 max_v 1.5
+```
+
+Example: set the maximum negative current of channel 0 to -3 A.
+```
+pwm 0 max_i_neg 3
+```
+
+Example: set the maximum positive current of channel 1 to 3 A.
+```
+pwm 0 max_i_pos 3
 ```
 
 ### Open-loop mode
