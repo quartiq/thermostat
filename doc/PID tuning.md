@@ -2,8 +2,6 @@
 
 ## Note on hardware setup
 
-When using a TEC module with the Thermostat, the Thermostat expects the thermal load (where the thermistor is connected) to heat up when a positive current flow from the TEC + terminal, through the TEC, to the TEC - terminal, and cool down when the current flows in the reverse direction.
-
 The heat sinking side of the TEC module should be thermally bonded to a large heat-sinking thermal mass to ensure maximum temperature stability, a large optical table had provided good results in tests.
 
 The thermal load under control should be well insulated from the surrounding for maximum stability, closed cell foam had been tested showing good results.
@@ -76,6 +74,8 @@ At the end of the test, the ultimate gain `Ku`, oscillation period `Pu` and a fe
 
 Multiple suggested sets of PID parameters based on different calculation rules are displayed. While all sets are expected to work, the different sets trade off response time with overshoot differently, and testing is needed to see which set works best for the system on hand.
 
-With a well designed and constructed setup, the PID parameters calculated by the auto tune utility can provide mK level control stability with no manual tweaking.
+With a well designed and constructed setup, the PID parameters calculated by the auto tune utility together with some manual tweaking can yield sub-mK control stability.
 
-![tec3pessen](./assets/tec3pessen.png)
+Below shows data captured on an experiment setup, with 300uK stability over 12 hours.
+
+![twelve_hours](./assets/twelve_hours.png)
