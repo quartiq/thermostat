@@ -243,11 +243,8 @@ def main():
                         lookback, noiseband, ch['interval'])
 
     for data in tec.report_mode():
-        try:
-            ch = data[channel]
-        # Workaround for report_mode may yeild empty object
-        except KeyError:
-            continue
+
+        ch = data[channel]
 
         temperature = ch['temperature']
 

@@ -213,9 +213,11 @@ fn main() -> ! {
                             socket.close()
                         } else if socket.can_send() && socket.can_recv() {
                             match socket.recv(|buf| session.feed(buf)) {
-                                Ok(SessionInput::Nothing) => {
-                                    send_line(&mut socket, b"{}");
-                                }
+                                // SessionInput::Nothing happens when the line reader parses a string of characters that is not
+                                // followed by a newline character. Could be due to partial commands not terminated with newline,
+                                // socket RX ring buffer wraps around, or when the command is sent as seperate TCP packets etc.
+                                // Do nothing and feed more data to the line reader in the next loop cycle.
+                                Ok(SessionInput::Nothing) => {}
                                 Ok(SessionInput::Command(command)) => match command {
                                     Command::Quit =>
                                         socket.close(),
