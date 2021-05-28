@@ -35,12 +35,12 @@ impl Iir {
         self.xy[0] = self.target - x0;
 
         let y0 = 0.0;
-        let _y = &self.xy
+        let y_ = self.xy
             .iter()
             .zip(&self.ba)
-            .map(|(xi, ai)| *xi as f64 * *ai as f64)
+            .map(|(x, a)| *x as f64 * *a as f64)
             .fold(y0, |y, xa| y + xa);
-
-        self.xy[2]
+        self.xy[2] = y_;
+        y_
     }
 }
