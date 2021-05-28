@@ -11,13 +11,16 @@ use uom::si::{
     electrical_resistance::ohm,
     thermodynamic_temperature::degree_celsius,
     time::millisecond,
+    time::second,
 };
 use crate::{
     ad7172,
     pid,
     steinhart_hart as sh,
     command_parser::CenterPoint,
+    iir_float
 };
+
 
 const R_INNER: f64 = 2.0 * 5100.0;
 const VREF_SENS: f64 = 3.3 / 2.0;
@@ -35,6 +38,8 @@ pub struct ChannelState {
     pub pid_engaged: bool,
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
+    pub iir_engaged: bool,
+    pub iir: iir_float::Iir
 }
 
 impl ChannelState {
@@ -52,6 +57,8 @@ impl ChannelState {
             pid_engaged: false,
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),
+            iir_engaged: false,
+            iir: iir_float::Iir::new()
         }
     }
 
@@ -72,6 +79,13 @@ impl ChannelState {
             .get::<degree_celsius>();
         let pid_output = self.pid.update(temperature, self.get_adc_interval(), current);
         Some(pid_output)
+    }
+
+    pub fn update_iir(&mut self) -> Option<f64> {
+        let temperature = self.get_temperature()?
+            .get::<degree_celsius>();
+        let iir_output = self.iir.tick(temperature);
+        Some(iir_output)
     }
 
     pub fn get_adc_time(&self) -> Time {

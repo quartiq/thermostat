@@ -101,6 +101,7 @@ pub enum ShowCommand {
     SteinhartHart,
     PostFilter,
     Ipv4,
+    Iir,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -180,6 +181,17 @@ pub enum Command {
         rate: Option<f32>,
     },
     Dfu,
+    Iir {
+        channel: usize,
+        values: [f64; 5],
+    },
+    Iirtarget{
+        channel: usize,
+        target: f64,
+    },
+    PwmIir{
+        channel: usize,
+    }
 }
 
 fn end(input: &[u8]) -> IResult<&[u8], ()> {
@@ -310,6 +322,11 @@ fn pwm_pid(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag("pid"))(input)
 }
 
+/// `pwm <0-1> iir` - Set PWM to be controlled by IIR
+fn pwm_iir(input: &[u8]) -> IResult<&[u8], ()> {
+    value((), tag("iir"))(input)
+}
+
 fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("pwm")(input)?;
     alt((
@@ -321,6 +338,10 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 |input| {
                     let (input, ()) = pwm_pid(input)?;
                     Ok((input, Ok(Command::PwmPid { channel })))
+                },
+                |input| {
+                    let (input, ()) = pwm_iir(input)?;
+                    Ok((input, Ok(Command::PwmIir { channel })))
                 },
                 |input| {
                     let (input, config) = pwm_setup(input)?;
@@ -524,6 +545,57 @@ fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
+/// `iir` | `iir <iir_parameter>`
+fn iir(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("iir")(input)?;
+    alt((
+        preceded(
+            whitespace,
+            iir_parameter
+        ),
+        value(Ok(Command::Show(ShowCommand::Iir)), end)
+    ))(input)
+}
+
+/// `iir` | `iir <iir_parameter>`
+fn iirtarget(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("target_iir")(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, channel) = channel(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, tg) = float(input)?;
+    let target = tg.unwrap();
+    let result = Ok(Command::Iirtarget { channel, target });
+    Ok((input, result))
+
+}
+
+
+
+/// `pid <0-1> <values>`
+fn iir_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, channel) = channel(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, val0) = float(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, val1) = float(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, val2) = float(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, val3) = float(input)?;
+    let (input, _) = whitespace(input)?;
+    let (input, val4) = float(input)?;
+
+    // let values = [val0, val1, val2, val3, val4].iter().map(|val| val.unwrap()).collect();
+    let values = [val0.unwrap(),val1.unwrap(),val2.unwrap(),val3.unwrap(),val4.unwrap()];
+
+    let result = Ok(Command::Iir { channel, values });
+    Ok((input, result))
+}
+
+
+
+
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
          load,
@@ -537,6 +609,8 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
          steinhart_hart,
          postfilter,
          value(Ok(Command::Dfu), tag("dfu")),
+         iir,
+         iirtarget,
     ))(input)
 }
 

@@ -76,18 +76,23 @@ impl Channels {
         self.adc.data_ready().unwrap().map(|channel| {
             let data = self.adc.read_data().unwrap();
             let current = self.get_tec_i(channel.into());
-            let state = self.channel_state(channel);
-            state.update(instant, data);
-            match state.update_pid(current) {
-                Some(pid_output) if state.pid_engaged => {
+            self.channel_state(channel).update(instant, data);
+            match self.channel_state(channel).update_pid(current) {
+                Some(pid_output) if self.channel_state(channel).pid_engaged => {
                     // Forward PID output to i_set DAC
                     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));
                     self.power_up(channel);
                 }
-                None if state.pid_engaged => {
+                None if self.channel_state(channel).pid_engaged => {
                     self.power_down(channel);
                 }
                 _ => {}
+            }
+
+            let iir_output = self.channel_state(channel).update_iir();
+            if self.channel_state(channel).iir_engaged {
+                self.set_i(channel.into(), ElectricCurrent::new::<ampere>(iir_output.unwrap()));
+                self.power_up(channel);
             }
 
             channel
@@ -251,18 +256,18 @@ impl Channels {
     ///
     /// The thermostat DAC applies a control voltage signal to the CTLI pin of MAX driver chip to control its output current.
     /// The CTLI input signal is centered around VREF of the MAX chip. Applying VREF to CTLI sets the output current to 0.
-    /// 
-    /// This calibration routine measures the VREF voltage and the DAC output with the STM32 ADC, and uses a breadth-first     
-    /// search to find the DAC setting that will produce a DAC output voltage closest to VREF. This DAC output voltage will 
-    /// be stored and used in subsequent i_set routines to bias the current control signal to the measured VREF, reducing 
+    ///
+    /// This calibration routine measures the VREF voltage and the DAC output with the STM32 ADC, and uses a breadth-first
+    /// search to find the DAC setting that will produce a DAC output voltage closest to VREF. This DAC output voltage will
+    /// be stored and used in subsequent i_set routines to bias the current control signal to the measured VREF, reducing
     /// the offset error of the current control signal.
     ///
     /// The input offset of the STM32 ADC is eliminated by using the same ADC for the measurements, and by only using the
     /// difference in VREF and DAC output for the calibration.
-    /// 
-    /// This routine should be called only once after boot, repeated reading of the vref signal and changing of the stored 
+    ///
+    /// This routine should be called only once after boot, repeated reading of the vref signal and changing of the stored
     /// VREF measurement can introduce significant noise at the current output, degrading the stabilily performance of the
-    /// thermostat. 
+    /// thermostat.
     pub fn calibrate_dac_value(&mut self, channel: usize) {
         let samples = 50;
         let mut target_voltage = ElectricPotential::new::<volt>(0.0);

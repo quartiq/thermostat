@@ -67,6 +67,7 @@ mod config;
 use config::ChannelConfig;
 mod flash_store;
 mod dfu;
+mod iir_float;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -146,6 +147,8 @@ fn main() -> ! {
     leds.g3.off();
     leds.g4.off();
 
+
+
     usb::State::setup(usb);
 
     let mut store = flash_store::store(dp.FLASH);
@@ -183,12 +186,17 @@ fn main() -> ! {
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
+
+
     net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config.clone(), |iface| {
         Server::<Session>::run(iface, |server| {
             leds.r1.off();
             let mut should_reset = false;
 
             loop {
+
+
+
                 let mut new_ipv4_config = None;
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 let updated_channel = channels.poll_adc(instant);
@@ -212,6 +220,7 @@ fn main() -> ! {
                         } else if socket.may_send() && !socket.may_recv() {
                             socket.close()
                         } else if socket.can_send() && socket.can_recv() {
+
                             match socket.recv(|buf| session.feed(buf)) {
                                 // SessionInput::Nothing happens when the line reader parses a string of characters that is not
                                 // followed by a newline character. Could be due to partial commands not terminated with newline,
@@ -299,6 +308,7 @@ fn main() -> ! {
                                         match pin {
                                             PwmPin::ISet => {
                                                 channels.channel_state(channel).pid_engaged = false;
+                                                channels.channel_state(channel).iir_engaged = false;
                                                 leds.g3.off();
                                                 let current = ElectricCurrent::new::<ampere>(value);
                                                 channels.set_i(channel, current);
@@ -332,11 +342,12 @@ fn main() -> ! {
                                         let pid = &mut channels.channel_state(channel).pid;
                                         use command_parser::PidParameter::*;
                                         match parameter {
-                                            Target =>
-                                                pid.target = value,
+                                            Target => {
+                                                pid.target = value;
+                                            },
                                             KP =>
                                                 pid.parameters.kp = value as f32,
-                                            KI => 
+                                            KI =>
                                                 pid.update_ki(value as f32),
                                             KD =>
                                                 pid.parameters.kd = value as f32,
@@ -436,6 +447,42 @@ fn main() -> ! {
                                         }
                                         should_reset = true;
                                     }
+                                    Command::Iir {channel, values} => {
+                                        let iir = &mut channels.channel_state(channel).iir;
+                                        iir.ba = values;
+                                        send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
+                                        let _ = writeln!(socket, "{:?}", iir.ba);
+                                    }
+                                    Command::Iirtarget {channel, target} => {
+                                        let iir = &mut channels.channel_state(channel).iir;
+                                        iir.target = target;
+                                        send_line(&mut socket, b"test");
+                                        let _ = writeln!(socket, "{:?}", target);
+                                    }
+                                    Command::Show(ShowCommand::Iir) => {
+                                        let iir = &mut channels.channel_state(0 as usize).iir;
+                                        send_line(&mut socket, b"Channel 1 ----------------------------------");
+                                        send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
+                                        let _ = writeln!(socket, "{:?}", iir.ba);
+                                        send_line(&mut socket, b"target:");
+                                        let _ = writeln!(socket, "{:?}", iir.target);
+                                        send_line(&mut socket, b"engaged:");
+                                        let _ = writeln!(socket, "{:?}", channels.channel_state(0 as usize).iir_engaged);
+                                        send_line(&mut socket, b"Channel 2 ----------------------------------");
+                                        let iir = &mut channels.channel_state(1 as usize).iir;
+                                        send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
+                                        let _ = writeln!(socket, "{:?}", iir.ba);
+                                        send_line(&mut socket, b"target:");
+                                        let _ = writeln!(socket, "{:?}", iir.target);
+                                        send_line(&mut socket, b"engaged:");
+                                        let _ = writeln!(socket, "{:?}", channels.channel_state(1 as usize).iir_engaged);
+                                    }
+                                    Command::PwmIir { channel } => {
+                                        channels.channel_state(channel).iir_engaged = true;
+                                        leds.g3.on();
+                                        send_line(&mut socket, b"{}");
+                                    }
+
                                 }
                                 Ok(SessionInput::Error(e)) => {
                                     error!("session input: {:?}", e);
@@ -462,7 +509,7 @@ fn main() -> ! {
                 } else {
                     // Should reset, close all TCP sockets.
                     let mut any_socket_alive = false;
-                    server.for_each(|mut socket, _| {                        
+                    server.for_each(|mut socket, _| {
                         if socket.is_active() {
                             socket.abort();
                             any_socket_alive = true;
@@ -472,7 +519,7 @@ fn main() -> ! {
                     // this makes sure system does not reset right after socket.abort() is called.
                     if !any_socket_alive {
                         SCB::sys_reset();
-                    }  
+                    }
                 }
 
                 // Apply new IPv4 address/gateway
