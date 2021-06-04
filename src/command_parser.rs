@@ -195,7 +195,22 @@ pub enum Command {
     PwmMatrix{
         channel: usize,
         iirout: usize
-    }
+    },
+    MatrixTemp{
+        target: bool,
+        nr: u32,
+        temp: u32,
+    },
+    MatrixMatrix{
+        target: bool,
+        nr: u32,
+        matrix: u32,
+    },
+    MatrixVal{
+        target: bool,
+        nr: u32,
+        val: f64,
+    },
 }
 
 fn end(input: &[u8]) -> IResult<&[u8], ()> {
@@ -611,9 +626,106 @@ fn iir_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 }
 
 
-// fn matrix(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-//
-// }
+fn matrix(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("matrix")(input)?;
+    let (input, _) = whitespace(input)?;
+
+    let (input, target) =
+        alt((value(true, tag("target")),
+             value(false, tag("in"))
+        ))(input)?;
+
+    let (input, _) = whitespace(input)?;
+    let (input, in_w) = unsigned(input)?;
+    let nr = in_w.unwrap();
+    let (input, _) = whitespace(input)?;
+    let (input, result) = alt((
+        |input| {
+            let (input, _) = tag("temp")(input)?;
+            let (input, _) = whitespace(input)?;
+            let (input, temp_w) = unsigned(input)?;
+            let temp = temp_w.unwrap();
+            Ok((input, Ok(Command::MatrixTemp { target, nr, temp })))
+        },
+        |input| {
+            let (input, _) = tag("matrix")(input)?;
+            let (input, _) = whitespace(input)?;
+            let (input, matrix_w) = unsigned(input)?;
+            let matrix = matrix_w.unwrap();
+            Ok((input, Ok(Command::MatrixMatrix { target, nr, matrix })))
+        },
+        |input| {
+            let (input, _) = tag("val")(input)?;
+            let (input, _) = whitespace(input)?;
+            let (input, val_w) = float(input)?;
+            let val = val_w.unwrap();
+            Ok((input, Ok(Command::MatrixVal { target, nr, val })))
+        }
+    ))(input)?;
+
+    // let (input, result) = alt((
+    //     |input| {
+    //         let (input, _) = tag("in")(input)?;
+    //         let (input, in_w) = unsigned(input)?;
+    //         let nr = in_w.unwrap();
+    //         let (input, _) = whitespace(input)?;
+    //         let (input, result) = alt((
+    //             |input| {
+    //                 let (input, _) = tag("temp")(input)?;
+    //                 let (input, temp_w) = unsigned(input)?;
+    //                 let temp = temp_w.unwrap();
+    //                 let target = false;
+    //                 Ok((input, Ok(Command::MatrixTemp { target, nr, temp })))
+    //             },
+    //             |input| {
+    //                 let (input, _) = tag("matrix")(input)?;
+    //                 let (input, matrix_w) = unsigned(input)?;
+    //                 let matrix = matrix_w.unwrap();
+    //                 let target = false;
+    //                 Ok((input, Ok(Command::MatrixMatrix { target, nr, matrix })))
+    //             },
+    //             |input| {
+    //                 let (input, _) = tag("val")(input)?;
+    //                 let (input, val_w) = float(input)?;
+    //                 let val = val_w.unwrap();
+    //                 let target = false;
+    //                 Ok((input, Ok(Command::MatrixVal { target, nr, val })))
+    //             }
+    //         ))(input)?;
+    //     },
+    //     |input| {
+    //         let (input, _) = tag("target")(input)?;
+    //         let (input, in_w) = unsigned(input)?;
+    //         let nr = in_w.unwrap();
+    //         let (input, _) = whitespace(input)?;
+    //         let (input, result) = alt((
+    //             |input| {
+    //                 let (input, _) = tag("temp")(input)?;
+    //                 let (input, temp_w) = unsigned(input)?;
+    //                 let temp = temp_w.unwrap();
+    //                 let target = true;
+    //                 Ok((input, Ok(Command::MatrixTemp { target, nr, temp })))
+    //             },
+    //             |input| {
+    //                 let (input, _) = tag("matrix")(input)?;
+    //                 let (input, matrix_w) = unsigned(input)?;
+    //                 let matrix = matrix_w.unwrap();
+    //                 let target = true;
+    //                 Ok((input, Ok(Command::MatrixMatrix { target, nr, matrix })))
+    //             },
+    //             |input| {
+    //                 let (input, _) = tag("val")(input)?;
+    //                 let (input, val_w) = float(input)?;
+    //                 let val = val_w.unwrap();
+    //                 let target = true;
+    //                 Ok((input, Ok(Command::MatrixVal { target, nr, val })))
+    //             }
+    //         ))(input)?;
+    //     },
+    // ))(input)?;
+    end(input)?;
+    Ok((input, result))
+}
 
 
 
@@ -632,6 +744,7 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
          value(Ok(Command::Dfu), tag("dfu")),
          iir,
          iirtarget,
+         matrix,
     ))(input)
 }
 

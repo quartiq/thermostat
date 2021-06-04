@@ -491,6 +491,19 @@ fn main() -> ! {
                                         let _ = writeln!(socket, "{:?}", iirout);
                                     }
 
+                                    Command::MatrixTemp { target, nr, temp } => {
+
+                                    }
+
+                                    Command::MatrixMatrix { target, nr, matrix } => {
+
+                                    }
+
+                                    Command::MatrixVal { target, nr, val } => {
+
+                                    }
+
+
                                 }
                                 Ok(SessionInput::Error(e)) => {
                                     error!("session input: {:?}", e);
