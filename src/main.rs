@@ -492,15 +492,32 @@ fn main() -> ! {
                                     }
 
                                     Command::MatrixTemp { target, nr, temp } => {
-
+                                        if target {
+                                            channels.iirs.targets[nr as usize].source = (temp+1) as usize;
+                                        }
+                                        else {
+                                            channels.iirs.inputs[nr as usize].source = (temp+1) as usize;
+                                        }
                                     }
 
                                     Command::MatrixMatrix { target, nr, matrix } => {
-
+                                        if target {
+                                            channels.iirs.targets[nr as usize].source = (matrix+3) as usize;
+                                        }
+                                        else {
+                                            channels.iirs.inputs[nr as usize].source = (matrix+3) as usize;
+                                        }
                                     }
 
                                     Command::MatrixVal { target, nr, val } => {
-
+                                        if target {
+                                            channels.iirs.targets[nr as usize].source = 0 as usize;
+                                            channels.iirs.targets[nr as usize].val = val;
+                                        }
+                                        else {
+                                            channels.iirs.inputs[nr as usize].source = 0 as usize;
+                                            channels.iirs.inputs[nr as usize].val = val;
+                                        }
                                     }
 
 
