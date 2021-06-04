@@ -38,7 +38,8 @@ pub struct ChannelState {
     pub pid: pid::Controller,
     pub sh: sh::Parameters,
     pub iir_engaged: bool,
-    pub iir: iir_float::Iir
+    pub iir: iir_float::Iir,
+    pub matrix_engaged: usize,
 }
 
 impl ChannelState {
@@ -57,7 +58,8 @@ impl ChannelState {
             pid: pid::Controller::new(pid::Parameters::default()),
             sh: sh::Parameters::default(),
             iir_engaged: false,
-            iir: iir_float::Iir::new()
+            iir: iir_float::Iir::new(),
+            matrix_engaged: 0
         }
     }
 

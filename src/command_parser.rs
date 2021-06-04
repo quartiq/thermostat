@@ -191,6 +191,10 @@ pub enum Command {
     },
     PwmIir{
         channel: usize,
+    },
+    PwmMatrix{
+        channel: usize,
+        iirout: usize
     }
 }
 
@@ -327,6 +331,12 @@ fn pwm_iir(input: &[u8]) -> IResult<&[u8], ()> {
     value((), tag("iir"))(input)
 }
 
+/// `pwm <0-1> matrix` - Set PWM to be controlled by IIR
+fn pwm_matrix(input: &[u8]) -> IResult<&[u8], ()> {
+    value((), tag("matrix"))(input)
+
+}
+
 fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     let (input, _) = tag("pwm")(input)?;
     alt((
@@ -342,6 +352,13 @@ fn pwm(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
                 |input| {
                     let (input, ()) = pwm_iir(input)?;
                     Ok((input, Ok(Command::PwmIir { channel })))
+                },
+                |input| {
+                    let (input, ()) = pwm_matrix(input)?;
+                    let (input, _) = whitespace(input)?;
+                    let (input, iirout_w) = unsigned(input)?;
+                    let iirout = iirout_w.unwrap() as usize;
+                    Ok((input, Ok(Command::PwmMatrix { channel, iirout })))
                 },
                 |input| {
                     let (input, config) = pwm_setup(input)?;
@@ -593,6 +610,10 @@ fn iir_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     Ok((input, result))
 }
 
+
+// fn matrix(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+//
+// }
 
 
 

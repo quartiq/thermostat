@@ -484,6 +484,13 @@ fn main() -> ! {
                                         send_line(&mut socket, b"{}");
                                     }
 
+                                    Command::PwmMatrix { channel, iirout} => {
+                                        channels.channel_state(channel).matrix_engaged = iirout;
+                                        leds.g3.on();
+                                        send_line(&mut socket, b"{matrix iir engaged:}");
+                                        let _ = writeln!(socket, "{:?}", iirout);
+                                    }
+
                                 }
                                 Ok(SessionInput::Error(e)) => {
                                     error!("session input: {:?}", e);

@@ -97,9 +97,18 @@ impl Channels {
                 self.set_i(channel.into(), ElectricCurrent::new::<ampere>(iir_output.unwrap()));
                 self.power_up(channel);
             }
-            
 
-            self.iirs.tick(&mut self.channel0.state, &mut self.channel1.state);
+            // only update iir matrix once (with channel0)
+            if channel == 0 {
+                self.iirs.tick(&mut self.channel0.state, &mut self.channel1.state);
+            }
+
+            // check if and which iir output goes to pwm
+            let iir_out = self.channel_state(channel).matrix_engaged;
+            if iir_out != 0 {
+                self.set_i(channel.into(), ElectricCurrent::new::<ampere>(self.iirs.iirarray[iir_out-1].xy[2]));
+                self.power_up(channel);
+            }
             channel
         })
     }
