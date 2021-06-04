@@ -11,7 +11,6 @@ use uom::si::{
     electrical_resistance::ohm,
     thermodynamic_temperature::degree_celsius,
     time::millisecond,
-    time::second,
 };
 use crate::{
     ad7172,
