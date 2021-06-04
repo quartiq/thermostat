@@ -92,21 +92,13 @@ impl Channels {
                 _ => {}
             }
 
-            // let iir_output = self.channel_state(channel).update_iir();
-            // if self.channel_state(channel).iir_engaged {
-            //     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(iir_output.unwrap()));
-            //     self.power_up(channel);
-            // }
-            let ch_num: usize = channel.into();
-            if ch_num == 1 as usize {
-                let temp0 = self.channel_state(0 as usize).get_temperature().unwrap()
-                    .get::<degree_celsius>();
-                let iir_output = self.channel_state(1 as usize).iir.tick(temp0);
-                if self.channel_state(1 as usize).iir_engaged {
-                    self.set_i(1 as usize, ElectricCurrent::new::<ampere>(iir_output-1.5));
-                    self.power_up(1 as usize);
-                }
+            let iir_output = self.channel_state(channel).update_iir();
+            if self.channel_state(channel).iir_engaged {
+                self.set_i(channel.into(), ElectricCurrent::new::<ampere>(iir_output.unwrap()));
+                self.power_up(channel);
             }
+            
+
             self.iirs.tick(&mut self.channel0.state, &mut self.channel1.state);
             channel
         })
