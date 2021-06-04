@@ -12,8 +12,6 @@ use crate::{
 const ARRSIZE: usize = 8;
 
 
-
-
 pub type Iirs = [iir_float::Iir; ARRSIZE];
 pub type StateVec  = [State; ARRSIZE];
 
@@ -57,6 +55,7 @@ impl IirMatrix {
     /// Time tick. Updates all IIRs and states in order.
     pub fn tick(&mut self, channel0: &mut ChannelState, channel1: &mut ChannelState ) {
         for i in 0..ARRSIZE{
+            // update input
             if self.inputs[i].source == 0 {
                 self.inputs[i].val = self.inputs[i].constval;
             }
@@ -64,6 +63,34 @@ impl IirMatrix {
                 self.inputs[i].val = channel0.get_temperature().unwrap()
                     .get::<degree_celsius>();
             }
+            else if self.inputs[i].source == 2 {
+                self.inputs[i].val = channel1.get_temperature().unwrap()
+                    .get::<degree_celsius>();
+            }
+            else {
+                self.inputs[i].val = self.iirarray[i-3].xy[2];
+            }
+
+            // update target
+            if self.targets[i].source == 0 {
+                self.targets[i].val = self.targets[i].constval;
+            }
+            else if self.targets[i].source == 1 {
+                self.targets[i].val = channel0.get_temperature().unwrap()
+                    .get::<degree_celsius>();
+            }
+            else if self.targets[i].source == 2 {
+                self.targets[i].val = channel1.get_temperature().unwrap()
+                    .get::<degree_celsius>();
+            }
+            else {
+                self.targets[i].val = self.iirarray[i-3].xy[2];
+            }
+            self.iirarray[i].target = self.targets[i].val;
+
+            // update IIR
+            self.iirarray[i].tick(self.inputs[i].val);
+
         }
 
     }
