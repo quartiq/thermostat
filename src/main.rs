@@ -68,6 +68,7 @@ use config::ChannelConfig;
 mod flash_store;
 mod dfu;
 mod iir_float;
+mod iir_array;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]

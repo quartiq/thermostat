@@ -11,6 +11,7 @@ pub type Vec5 = [f64; 5];
 
 
 /// Main IIR struct holds coefficient vector and a shift value which defines the fixed point position
+#[derive(Debug, Copy, Clone)]
 pub struct Iir {
     pub ba: Vec5,   // b and a coeffitients can be changed. [b0,b1,b2,a1,a2]
     pub xy: Vec5,   // x and y internal filter states       [x0,x1,y0,y1,y2]

@@ -18,6 +18,7 @@ use crate::{
     command_parser::{CenterPoint, PwmPin},
     pins,
     steinhart_hart,
+    iir_array,
 };
 
 pub const CHANNELS: usize = 2;
@@ -33,6 +34,7 @@ pub struct Channels {
     /// stm32f4 integrated adc
     pins_adc: pins::PinsAdc,
     pub pwm: pins::PwmPins,
+    pub iirs: iir_array::IirMatrix,
 }
 
 impl Channels {
@@ -54,7 +56,8 @@ impl Channels {
         let channel1 = Channel::new(pins.channel1, adc_calibration1);
         let pins_adc = pins.pins_adc;
         let pwm = pins.pwm;
-        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
+        let iirs = iir_array::IirMatrix::new();
+        let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm, iirs };
         for channel in 0..CHANNELS {
             channels.channel_state(channel).vref = channels.read_vref(channel);
             channels.calibrate_dac_value(channel);
@@ -104,6 +107,7 @@ impl Channels {
                     self.power_up(1 as usize);
                 }
             }
+            self.iirs.tick();
             channel
         })
     }
