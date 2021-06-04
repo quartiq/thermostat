@@ -107,7 +107,7 @@ impl Channels {
                     self.power_up(1 as usize);
                 }
             }
-            self.iirs.tick();
+            self.iirs.tick(&mut self.channel0.state, &mut self.channel1.state);
             channel
         })
     }
