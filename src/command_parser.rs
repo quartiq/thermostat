@@ -606,7 +606,8 @@ fn iirtarget(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
 
 /// `pid <0-1> <values>`
 fn iir_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
-    let (input, channel) = channel(input)?;
+    let (input, channel_w) = unsigned(input)?;
+    let channel = channel_w.unwrap() as usize;
     let (input, _) = whitespace(input)?;
     let (input, val0) = float(input)?;
     let (input, _) = whitespace(input)?;

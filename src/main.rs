@@ -449,10 +449,19 @@ fn main() -> ! {
                                         should_reset = true;
                                     }
                                     Command::Iir {channel, values} => {
-                                        let iir = &mut channels.channel_state(channel).iir;
-                                        iir.ba = values;
-                                        send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
-                                        let _ = writeln!(socket, "{:?}", iir.ba);
+                                        if channel < 3 {
+                                            let iir = &mut channels.channel_state(channel).iir;
+                                            iir.ba = values;
+                                            send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
+                                            let _ = writeln!(socket, "{:?}", iir.ba);
+                                        }
+                                        else {
+                                            channels.iirs.iirarray[channel-2].ba = values;
+                                            send_line(&mut socket, b"Updating IIR array filter number:");
+                                            let _ = writeln!(socket, "{:?}", channel-2);
+                                            send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
+                                            let _ = writeln!(socket, "{:?}", channels.iirs.iirarray[channel-2].ba);
+                                        }
                                     }
                                     Command::Iirtarget {channel, target} => {
                                         let iir = &mut channels.channel_state(channel).iir;
