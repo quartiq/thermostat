@@ -68,7 +68,7 @@ impl IirMatrix {
                     .get::<degree_celsius>();
             }
             else {
-                self.inputs[i].val = self.iirarray[i-3].xy[2];
+                self.inputs[i].val = self.iirarray[self.inputs[i].source - 3].xy[2];
             }
 
             // update target
@@ -84,7 +84,7 @@ impl IirMatrix {
                     .get::<degree_celsius>();
             }
             else {
-                self.targets[i].val = self.iirarray[i-3].xy[2];
+                self.targets[i].val = self.iirarray[self.targets[i].source - 3].xy[2];
             }
             self.iirarray[i].target = self.targets[i].val;
 
