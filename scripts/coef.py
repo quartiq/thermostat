@@ -57,7 +57,7 @@ def pd(fc, k_db, g_db, fs=1, plot=False):
 
     ba = [0, 0, 0, 0, 0]
     ba[0] = k * ((1 + fcw) / ((1 / g) + fcw))
-    ba[1] = -k * k * ((1 - fcw) / ((1 / g) + fcw))
+    ba[1] = -k * ((1 - fcw) / ((1 / g) + fcw))
     ba[3] = ((1 / g) - fcw) / ((1 / g) + fcw)
 
     if plot:

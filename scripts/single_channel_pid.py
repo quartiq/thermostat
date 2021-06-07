@@ -7,12 +7,12 @@ import datetime as dt
 
 ''' This script configures the thermostat iir matrix for a single channel 0 PID using two IIRs.'''
 
-target = 50  # temperature target (°C)
+target =45  # temperature target (°C)
 
 # gains in dB, freqs relative to f_sample
 k_i = 40  # integral gain (aka gain at DC)
 fc_i = 0.0001  # integral gain cutoff
-k_p = 10  # proportional gain
+k_p = 3  # proportional gain
 k_d = 20  # derivative gain (aka gain at nyquist)
 fc_d = 0.01  # derivative gain cutoff
 
