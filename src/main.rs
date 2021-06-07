@@ -310,6 +310,7 @@ fn main() -> ! {
                                             PwmPin::ISet => {
                                                 channels.channel_state(channel).pid_engaged = false;
                                                 channels.channel_state(channel).iir_engaged = false;
+                                                channels.channel_state(channel).matrix_engaged = 0;
                                                 leds.g3.off();
                                                 let current = ElectricCurrent::new::<ampere>(value);
                                                 channels.set_i(channel, current);
@@ -449,7 +450,7 @@ fn main() -> ! {
                                         should_reset = true;
                                     }
                                     Command::Iir {channel, values} => {
-                                        if channel < 3 {
+                                        if channel < 2 {
                                             let iir = &mut channels.channel_state(channel).iir;
                                             iir.ba = values;
                                             send_line(&mut socket, b"Coefficients set [b0,b1,b2,a1,a2]:");
@@ -496,8 +497,15 @@ fn main() -> ! {
                                     Command::PwmMatrix { channel, iirout} => {
                                         channels.channel_state(channel).matrix_engaged = iirout;
                                         leds.g3.on();
-                                        send_line(&mut socket, b"{matrix iir engaged:}");
-                                        let _ = writeln!(socket, "{:?}", iirout);
+                                        if iirout == 0 {
+                                            send_line(&mut socket, b"{matrix iir disengaged (choose 1 for iir 0):}");
+                                            let current = ElectricCurrent::new::<ampere>(0.0);
+                                            channels.set_i(channel, current);
+                                        }
+                                        else {
+                                            send_line(&mut socket, b"{matrix iir engaged:}");
+                                            let _ = writeln!(socket, "{:?}", iirout-1);
+                                        }
                                     }
 
                                     Command::MatrixTemp { target, nr, temp } => {
@@ -507,6 +515,7 @@ fn main() -> ! {
                                         else {
                                             channels.iirs.inputs[nr as usize].source = (temp+1) as usize;
                                         }
+                                        let _ = writeln!(socket, "set matrix iir {:?} (target {:?}) to temp input {:?}", nr, target, temp);
                                     }
 
                                     Command::MatrixMatrix { target, nr, matrix } => {
@@ -516,17 +525,19 @@ fn main() -> ! {
                                         else {
                                             channels.iirs.inputs[nr as usize].source = (matrix+3) as usize;
                                         }
+                                        let _ = writeln!(socket, "set matrix iir {:?} (target {:?}) to matrix output {:?}", nr, target, matrix);
                                     }
 
                                     Command::MatrixVal { target, nr, val } => {
                                         if target {
                                             channels.iirs.targets[nr as usize].source = 0 as usize;
-                                            channels.iirs.targets[nr as usize].val = val;
+                                            channels.iirs.targets[nr as usize].constval = val;
                                         }
                                         else {
                                             channels.iirs.inputs[nr as usize].source = 0 as usize;
-                                            channels.iirs.inputs[nr as usize].val = val;
+                                            channels.iirs.inputs[nr as usize].constval = val;
                                         }
+                                        let _ = writeln!(socket, "set matrix iir {:?} (target {:?}) to fixed {:?}", nr, target, val);
                                     }
 
 
