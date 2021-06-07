@@ -11,7 +11,6 @@ use panic_semihosting as _;
 
 use log::{error, info, warn};
 
-use core::fmt::Write;
 use cortex_m::asm::wfi;
 use cortex_m_rt::entry;
 use stm32f4xx_hal::{
@@ -25,20 +24,6 @@ use smoltcp::{
     time::Instant,
     socket::TcpSocket,
     wire::EthernetAddress,
-};
-use uom::{
-    si::{
-        f64::{
-            ElectricCurrent,
-            ElectricPotential,
-            ElectricalResistance,
-            ThermodynamicTemperature,
-        },
-        electric_current::ampere,
-        electric_potential::volt,
-        electrical_resistance::ohm,
-        thermodynamic_temperature::degree_celsius,
-    },
 };
 
 mod init_log;
@@ -55,7 +40,7 @@ use server::Server;
 mod session;
 use session::{Session, SessionInput};
 mod command_parser;
-use command_parser::{Command, Ipv4Config, PwmPin, ShowCommand};
+use command_parser::Ipv4Config;
 mod timer;
 mod pid;
 mod steinhart_hart;
@@ -67,6 +52,8 @@ mod config;
 use config::ChannelConfig;
 mod flash_store;
 mod dfu;
+mod command_handler;
+use command_handler::Handler;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -149,7 +136,7 @@ fn main() -> ! {
     usb::State::setup(usb);
 
     let mut store = flash_store::store(dp.FLASH);
-    let mut store_value_buf = [0u8; 256];
+    
 
     let mut channels = Channels::new(pins);
     for c in 0..CHANNELS {
@@ -218,223 +205,13 @@ fn main() -> ! {
                                 // socket RX ring buffer wraps around, or when the command is sent as seperate TCP packets etc.
                                 // Do nothing and feed more data to the line reader in the next loop cycle.
                                 Ok(SessionInput::Nothing) => {}
-                                Ok(SessionInput::Command(command)) => match command {
-                                    Command::Quit =>
-                                        socket.close(),
-                                    Command::Reporting(_reporting) => {
-                                        // handled by session
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::Show(ShowCommand::Reporting) => {
-                                        let _ = writeln!(socket, "{{ \"report\": {:?} }}", session.reporting());
-                                    }
-                                    Command::Show(ShowCommand::Input) => {
-                                        match channels.reports_json() {
-                                            Ok(buf) => {
-                                                send_line(&mut socket, &buf[..]);
-                                            }
-                                            Err(e) => {
-                                                error!("unable to serialize report: {:?}", e);
-                                                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-
-                                            }
-                                        }
-                                    }
-                                    Command::Show(ShowCommand::Pid) => {
-                                        match channels.pid_summaries_json() {
-                                            Ok(buf) => {
-                                                send_line(&mut socket, &buf);
-                                            }
-                                            Err(e) => {
-                                                error!("unable to serialize pid summary: {:?}", e);
-                                                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                            }
-                                        }
-                                    }
-                                    Command::Show(ShowCommand::Pwm) => {
-                                        match channels.pwm_summaries_json() {
-                                            Ok(buf) => {
-                                                send_line(&mut socket, &buf);
-                                            }
-                                            Err(e) => {
-                                                error!("unable to serialize pwm summary: {:?}", e);
-                                                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                            }
-                                        }
-                                    }
-                                    Command::Show(ShowCommand::SteinhartHart) => {
-                                        match channels.steinhart_hart_summaries_json() {
-                                            Ok(buf) => {
-                                                send_line(&mut socket, &buf);
-                                            }
-                                            Err(e) => {
-                                                error!("unable to serialize steinhart-hart summaries: {:?}", e);
-                                                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                            }
-                                        }
-                                    }
-                                    Command::Show(ShowCommand::PostFilter) => {
-                                        match channels.postfilter_summaries_json() {
-                                            Ok(buf) => {
-                                                send_line(&mut socket, &buf);
-                                            }
-                                            Err(e) => {
-                                                error!("unable to serialize postfilter summary: {:?}", e);
-                                                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                            }
-                                        }
-                                    }
-                                    Command::Show(ShowCommand::Ipv4) => {
-                                        let (cidr, gateway) = net::split_ipv4_config(ipv4_config.clone());
-                                        let _ = write!(socket, "{{\"addr\":\"{}\"", cidr);
-                                        gateway.map(|gateway| write!(socket, ",\"gateway\":\"{}\"", gateway));
-                                        let _ = writeln!(socket, "}}");
-                                    }
-                                    Command::PwmPid { channel } => {
-                                        channels.channel_state(channel).pid_engaged = true;
-                                        leds.g3.on();
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::Pwm { channel, pin, value } => {
-                                        match pin {
-                                            PwmPin::ISet => {
-                                                channels.channel_state(channel).pid_engaged = false;
-                                                leds.g3.off();
-                                                let current = ElectricCurrent::new::<ampere>(value);
-                                                channels.set_i(channel, current);
-                                                channels.power_up(channel);
-                                            }
-                                            PwmPin::MaxV => {
-                                                let voltage = ElectricPotential::new::<volt>(value);
-                                                channels.set_max_v(channel, voltage);
-                                            }
-                                            PwmPin::MaxIPos => {
-                                                let current = ElectricCurrent::new::<ampere>(value);
-                                                channels.set_max_i_pos(channel, current);
-                                            }
-                                            PwmPin::MaxINeg => {
-                                                let current = ElectricCurrent::new::<ampere>(value);
-                                                channels.set_max_i_neg(channel, current);
-                                            }
-                                        }
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::CenterPoint { channel, center } => {
-                                        let i_tec = channels.get_i(channel);
-                                        let state = channels.channel_state(channel);
-                                        state.center = center;
-                                        if !state.pid_engaged {
-                                            channels.set_i(channel, i_tec);
-                                        }
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::Pid { channel, parameter, value } => {
-                                        let pid = &mut channels.channel_state(channel).pid;
-                                        use command_parser::PidParameter::*;
-                                        match parameter {
-                                            Target =>
-                                                pid.target = value,
-                                            KP =>
-                                                pid.parameters.kp = value as f32,
-                                            KI => 
-                                                pid.update_ki(value as f32),
-                                            KD =>
-                                                pid.parameters.kd = value as f32,
-                                            OutputMin =>
-                                                pid.parameters.output_min = value as f32,
-                                            OutputMax =>
-                                                pid.parameters.output_max = value as f32,
-                                            IntegralMin =>
-                                                pid.parameters.integral_min = value as f32,
-                                            IntegralMax =>
-                                                pid.parameters.integral_max = value as f32,
-                                        }
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::SteinhartHart { channel, parameter, value } => {
-                                        let sh = &mut channels.channel_state(channel).sh;
-                                        use command_parser::ShParameter::*;
-                                        match parameter {
-                                            T0 => sh.t0 = ThermodynamicTemperature::new::<degree_celsius>(value),
-                                            B => sh.b = value,
-                                            R0 => sh.r0 = ElectricalResistance::new::<ohm>(value),
-                                        }
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::PostFilter { channel, rate: None } => {
-                                        channels.adc.set_postfilter(channel as u8, None).unwrap();
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::PostFilter { channel, rate: Some(rate) } => {
-                                        let filter = ad7172::PostFilter::closest(rate);
-                                        match filter {
-                                            Some(filter) => {
-                                                channels.adc.set_postfilter(channel as u8, Some(filter)).unwrap();
-                                                send_line(&mut socket, b"{}");
-                                            }
-                                            None => {
-                                                error!("unable to choose postfilter for rate {:.3}", rate);
-                                                send_line(&mut socket, b"{{\"error\": \"unable to choose postfilter rate\"}}");
-                                            }
-                                        }
-                                    }
-                                    Command::Load { channel } => {
-                                        for c in 0..CHANNELS {
-                                            if channel.is_none() || channel == Some(c) {
-                                                match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
-                                                    Ok(Some(config)) => {
-                                                        config.apply(&mut channels, c);
-                                                        send_line(&mut socket, b"{}");
-                                                    }
-                                                    Ok(None) => {
-                                                        error!("flash config not found");
-                                                        send_line(&mut socket, b"{{\"error\": \"flash config not found\"}}");
-                                                    }
-                                                    Err(e) => {
-                                                        error!("unable to load config from flash: {:?}", e);
-                                                        let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Command::Save { channel } => {
-                                        for c in 0..CHANNELS {
-                                            if channel.is_none() || channel == Some(c) {
-                                                let config = ChannelConfig::new(&mut channels, c);
-                                                match store.write_value(CHANNEL_CONFIG_KEY[c], &config, &mut store_value_buf) {
-                                                    Ok(()) => {
-                                                        send_line(&mut socket, b"{}");
-                                                    }
-                                                    Err(e) => {
-                                                        error!("unable to save channel {} config to flash: {:?}", c, e);
-                                                        let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Command::Ipv4(config) => {
-                                        let _ = store
-                                            .write_value("ipv4", &config, [0; 16])
-                                            .map_err(|e| error!("unable to save ipv4 config to flash: {:?}", e));
-                                        new_ipv4_config = Some(config);
-                                        send_line(&mut socket, b"{}");
-                                    }
-                                    Command::Reset => {
-                                        for i in 0..CHANNELS {
-                                            channels.power_down(i);
-                                        }
-                                        should_reset = true;
-                                    }
-                                    Command::Dfu => {
-                                        for i in 0..CHANNELS {
-                                            channels.power_down(i);
-                                        }
-                                        unsafe {
-                                            dfu::set_dfu_trigger();
-                                        }
-                                        should_reset = true;
+                                Ok(SessionInput::Command(command)) => {
+                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut leds, &mut store, &mut ipv4_config) {
+                                        Ok(Handler::NewIPV4(ip)) => new_ipv4_config = Some(ip),                                
+                                        Ok(Handler::Handled) => {},
+                                        Ok(Handler::CloseSocket) => socket.close(),
+                                        Ok(Handler::Reset) => should_reset = true,
+                                        Err(_) => {},
                                     }
                                 }
                                 Ok(SessionInput::Error(e)) => {
