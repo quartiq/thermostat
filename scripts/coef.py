@@ -70,5 +70,5 @@ def pd(fc, k_db, g_db, fs=1, plot=False):
 
 
 if __name__ == "__main__":
-    pi(0.0001, 0, 40, 1, True)
+    ba_i=pi(0.0001, 0, 40, 1, True)
     pd(0.01, 0, 20, 1, True)

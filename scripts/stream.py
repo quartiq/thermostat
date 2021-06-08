@@ -19,7 +19,7 @@ def animate(i, xs, temps1, currents1):
 
     m1, m2, m3 = msg.split("\"temperature\":")
     m2, m4 = m2.split(",\"pid_engaged")
-    temp1 = float(m2)
+    temp1 = float(m2)-45
 
     m4, m5 = m4.split("\"i_set\":")
     m5, m6 = m5.split(",\"vref\":")
