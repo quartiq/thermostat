@@ -2,6 +2,7 @@ import socket
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import datetime as dt
+import time
 import sys
 
 print(f"Name of the script      : {sys.argv[0]}")
@@ -16,10 +17,17 @@ temp_offset2 = -45   # for example to display the temp error instead
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 xs = []
+time0 = time.time()
 temps1 = []
 currents1 = []
 temps2 = []
 currents2 = []
+
+if sys.argv[1] == 'log':
+    f = open(sys.argv[2], "w")
+    f.write("time, temp1, curr1, temp2, curr2\n")
+    f.close()
+
 
 def animate(i, xs, temps1, currents1, temps2, currents2):
     s.send('report\n'.encode())
@@ -52,7 +60,9 @@ def animate(i, xs, temps1, currents1, temps2, currents2):
     if -10 > i_set2:
         i_set2 = -10
 
-    xs.append(dt.datetime.now().strftime('%H:%M:%S.%f'))
+    # xs.append(dt.datetime.now().strftime('%S.%f'))
+    xs.append(time.time()-time0)
+
     temps1.append(temp1)
     currents1.append(i_set1)
 
@@ -69,8 +79,10 @@ def animate(i, xs, temps1, currents1, temps2, currents2):
 
     # Draw x and y lists
     ax.clear()
-    ax.plot(xs, temps1, currents1)
-    ax.plot(xs, temps2, currents2)
+    ax.plot(xs, temps1)
+    ax.plot(xs, currents1)
+    ax.plot(xs, temps2)
+    ax.plot(xs, currents2)
     ax.grid()
 
     # Format plot
@@ -78,6 +90,14 @@ def animate(i, xs, temps1, currents1, temps2, currents2):
     plt.subplots_adjust(bottom=0.30)
     plt.title('Thermostat data')
     plt.ylabel('Temperature (°C) / Current (A)')
+
+
+    # Logging
+    if sys.argv[1] == 'log':
+        f = open(sys.argv[2], "a")
+        str = '{}, {}, {}, {}, {}\n'.format(xs[-1], temps1[-1], currents1[-1], temps2[-1], currents2[-1])
+        f.write(str)
+        f.close()
 
 # Set up plot to call animate() function periodically
 ani = animation.FuncAnimation(fig, animate, fargs=(xs, temps1, currents1, temps2, currents2), interval=200)
