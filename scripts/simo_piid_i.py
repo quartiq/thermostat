@@ -9,11 +9,11 @@ output of the first. (aka for very slow changes)'''
 target = 45  # temperature target (°C)
 
 # gains in dB, freqs relative to f_sample
-k_i1 = 60  # integral gain 1 (aka gain at DC)
-fc_i1 = 0.0001  # integral gain cutoff 1
-k_i2 = 60  # integral gain 2 (aka gain at DC)
-fc_i2 = 0.0001  # integral gain cutoff 2
-k_p = 16  # proportional gain
+k_i1 = 1000  # integral gain 1 (aka gain at DC)
+fc_i1 = 0.002  # integral gain cutoff 1
+k_i2 = 1000  # integral gain 2 (aka gain at DC)
+fc_i2 = 0.002  # integral gain cutoff 2
+k_p = 0  # proportional gain
 k_d = 30  # derivative gain (aka gain at nyquist)
 fc_d = 0.01  # derivative gain cutoff
 
@@ -56,7 +56,7 @@ s.send('iir 4 {:4.8f} {:4.8f} {:4.8f} {:4.8f} {:4.8f}\n'.format(ba_2[0], ba_2[1]
 time.sleep(0.1)
 s.send('matrix target 3 matrix 2\n'.encode())  # set target of iir3 to iir2
 time.sleep(0.1)
-s.send('iir 5 0.002 0.002 0 1 0\n'.encode())
+s.send('iir 5 0.02 0.02 0 1 0\n'.encode())
 time.sleep(0.1)
 s.send('pwm 0 matrix 3\n'.encode())  # set pwm 0 to PIID output
 time.sleep(0.1)

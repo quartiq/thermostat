@@ -37,9 +37,9 @@ def animate(i, xs, temps1, currents1):
     temps1.append(temp1)
     currents1.append(i_set1)
      # Limit x and y lists to 100 items
-    xs = xs[-200:]
-    temps1 = temps1[-200:]
-    currents1 = currents1[-200:]
+    xs = xs[-50:]
+    temps1 = temps1[-50:]
+    currents1 = currents1[-50:]
 
     # Draw x and y lists
     ax.clear()

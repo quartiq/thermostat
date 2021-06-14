@@ -2,6 +2,10 @@ import socket
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import datetime as dt
+import sys
+
+print(f"Name of the script      : {sys.argv[0]}")
+print(f"Arguments of the script : {sys.argv[1:]}")
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('192.168.1.26', 23))
@@ -57,11 +61,11 @@ def animate(i, xs, temps1, currents1, temps2, currents2):
 
 
      # Limit x and y lists to 100 items
-    xs = xs[-200:]
-    temps1 = temps1[-200:]
-    currents1 = currents1[-200:]
-    temps2 = temps2[-200:]
-    currents2 = currents2[-200:]
+    xs = xs[-50:]
+    temps1 = temps1[-50:]
+    currents1 = currents1[-50:]
+    temps2 = temps2[-50:]
+    currents2 = currents2[-50:]
 
     # Draw x and y lists
     ax.clear()
