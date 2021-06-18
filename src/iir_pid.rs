@@ -36,7 +36,7 @@ impl Iir {
 
         // shift in x0
         self.xy.copy_within(0..4, 1);
-        self.xy[0] = x0;       // invert to stay consistent with previous implementation
+        self.xy[0] = -x0;       // invert to stay consistent with previous implementation
 
         let y0 = 0.0;
         let y_ = self.xy
