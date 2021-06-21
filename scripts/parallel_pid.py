@@ -11,9 +11,9 @@ target = 45  # temperature target (°C)
 
 # gains in dB, freqs relative to f_sample
 # gains in dB, freqs relative to f_sample
-k_i = -30 # integral gain (at nyquist)
-k_p = 10  # proportional gain
-k_d = 40  # derivative gain (aka gain at nyquist)
+k_i = -40 # integral gain (at nyquist)
+k_p = 0  # proportional gain
+k_d = 30  # derivative gain (aka gain at nyquist)
 
 ba_0 = pid(k_i, k_p, k_d)
 
@@ -24,15 +24,15 @@ msg = ''
 
 s.send('pwm 0 max_v 3\n'.encode())
 time.sleep(0.1)
-s.send('pwm 0 max_i_pos 0.8\n'.encode())
+s.send('pwm 0 max_i_pos 0.5\n'.encode())
 time.sleep(0.1)
-s.send('pwm 0 max_i_neg 0.8\n'.encode())
+s.send('pwm 0 max_i_neg 0.5\n'.encode())
 time.sleep(0.1)
 s.send('pwm 1 max_v 3\n'.encode())
 time.sleep(0.1)
-s.send('pwm 1 max_i_pos 0.8\n'.encode())
+s.send('pwm 1 max_i_pos 0.5\n'.encode())
 time.sleep(0.1)
-s.send('pwm 1 max_i_neg 0.8\n'.encode())
+s.send('pwm 1 max_i_neg 0.5\n'.encode())
 time.sleep(0.1)
 s.send('matrix target 0 val {}\n'.format(target).encode())
 time.sleep(0.1)

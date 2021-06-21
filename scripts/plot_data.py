@@ -33,4 +33,10 @@ ax.plot(time, temp1, label='temp 1')
 ax.plot(time, curr1, label='current 1')
 ax.plot(time, temp2, label='temp 2')
 ax.plot(time, curr2, label='current 2')
-ax.plot(time, temp1, label='temp 1')
+
+
+ax.set_title('Thermostat data')
+ax.set_ylabel('Temperature (°C) / Current (A)')
+ax.legend()
+
+ax.grid()

@@ -5,8 +5,8 @@ import datetime as dt
 import time
 import sys
 
-print(f"Name of the script      : {sys.argv[0]}")
-print(f"Arguments of the script : {sys.argv[1:]}")
+
+
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('192.168.1.26', 23))
@@ -24,6 +24,7 @@ temps2 = []
 currents2 = []
 
 if sys.argv[1] == 'log':
+    print(f"Logging to file: {sys.argv[2]}")
     f = open(sys.argv[2], "w")
     f.write("time, temp1, curr1, temp2, curr2\n")
     f.close()
