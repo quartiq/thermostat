@@ -7,9 +7,8 @@ import datetime as dt
 
 ''' This script configures thermostat for a single iir_pid loop.'''
 
-target = 40  # temperature target (°C)
+target = 45  # temperature target (°C)
 
-# gains in dB, freqs relative to f_sample
 # gains in dB, freqs relative to f_sample
 k_i = -30 # integral gain (at nyquist)
 k_p = 0  # proportional gain
