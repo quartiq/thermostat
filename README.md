@@ -8,7 +8,7 @@
 
 ### Reproducible build with Nix
 
-See the `stm32` folder of the [nix-scripts repository](https://git.m-labs.hk/M-Labs/nix-scripts).
+See the `mcu` folder of the [nix-scripts repository](https://git.m-labs.hk/M-Labs/nix-scripts).
 
 ### Debian-based systems (tested on Ubuntu 19.10)
 
