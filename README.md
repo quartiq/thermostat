@@ -1,7 +1,7 @@
 # Firmware for the Sinara 8451 Thermostat
 
-- [x] [Continuous Integration](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat)
-- [x] Download latest firmware build: [ELF](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download/1) [BIN](https://nixbld.m-labs.hk/job/stm32/stm32/thermostat/latest/download/2)
+- [x] [Continuous Integration](https://nixbld.m-labs.hk/job/mcu/mcu/thermostat)
+- [x] Download latest firmware build: [ELF](https://nixbld.m-labs.hk/job/mcu/mcu/thermostat/latest/download/1) [BIN](https://nixbld.m-labs.hk/job/mcu/mcu/thermostat/latest/download/2)
 
 
 ## Building
