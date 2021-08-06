@@ -220,7 +220,7 @@ impl Pins {
             usb_pwrclk: otg_fs_pwrclk,
             pin_dm: gpioa.pa11.into_alternate_af10(),
             pin_dp: gpioa.pa12.into_alternate_af10(),
-            hclk: clocks.hclk(),
+            // hclk: clocks.hclk(),
         };
 
         (pins, leds, eeprom, eth_pins, usb)
