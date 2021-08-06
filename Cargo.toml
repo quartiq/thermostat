@@ -22,7 +22,7 @@ cortex-m = "0.6"
 cortex-m-rt = { version = "0.6", features = ["device"] }
 # cortex-m-log = { version = "0.6", features = ["log-integration"] }
 stm32f4xx-hal = { version = "0.8", features = ["rt", "stm32f427", "usb_fs"] }
-stm32-eth = { version = "0.2", features = ["stm32f427", "smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
+stm32-eth = { rev = "0ab4556", features = ["stm32f427", "smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
 smoltcp = { version = "0.7.0", default-features = false, features = ["proto-ipv4", "socket-tcp", "log"] }
 # bit_field = "0.10"
 # byteorder = { version = "1", default-features = false }
@@ -38,11 +38,8 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 # serde-json-core = "0.1"
 # sfkv = "0.1"
 rtt-target = { version = "0.3", features = ["cortex-m"] }
-
-# rtt-target bump
-[dependencies.rtt-logger]
-git = "https://github.com/quartiq/rtt-logger.git"
-rev = "70b0eb5"
+# rtt target bump
+rtt-logger = { git = "https://github.com/quartiq/rtt-logger.git", rev = "70b0eb5" }
 
 # [patch.crates-io]
 # TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/239

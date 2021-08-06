@@ -354,7 +354,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 [[package]]
 name = "stm32-eth"
 version = "0.2.0"
-source = "git+https://github.com/stm32-rs/stm32-eth.git#0ab4556e762c232ac7f2fc3116733359395ec4fc"
+source = "git+https://github.com/stm32-rs/stm32-eth.git?rev=0ab4556#0ab4556e762c232ac7f2fc3116733359395ec4fc"
 dependencies = [
  "aligned",
  "cortex-m 0.6.7",
