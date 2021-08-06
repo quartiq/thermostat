@@ -37,6 +37,12 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 heapless = "0.5"
 serde-json-core = "0.1"
 sfkv = "0.1"
+rtt-target = { version = "0.3", features = ["cortex-m"] }
+
+# rtt-target bump
+[dependencies.rtt-logger]
+git = "https://github.com/quartiq/rtt-logger.git"
+rev = "70b0eb5"
 
 [patch.crates-io]
 # TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/239

@@ -30,6 +30,7 @@ use smoltcp::{
 // mod init_log;
 // use init_log::init_log;
 // mod usb;
+use rtt_logger::RTTLogger;
 mod leds;
 mod pins;
 use pins::Pins;
@@ -98,6 +99,12 @@ fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
 #[cfg(not(test))]
 #[entry]
 fn main() -> ! {
+        // setup Logger
+    static LOGGER: RTTLogger = RTTLogger::new(log::LevelFilter::Info);
+    rtt_target::rtt_init_print!();
+    log::set_logger(&LOGGER)
+        .map(|()| log::set_max_level(log::LevelFilter::Trace))
+        .unwrap();
     // init_log();
     info!("thermostat");
 

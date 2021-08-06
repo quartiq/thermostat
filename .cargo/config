@@ -1,5 +1,6 @@
 [target.thumbv7em-none-eabihf]
-runner = "gdb -q -x openocd.gdb"
+# runner = "gdb -q -x openocd.gdb"
+runner = "probe-run --chip STM32F427ZITx"
 rustflags = [
   "-C", "link-arg=-Tlink.x",
 ]

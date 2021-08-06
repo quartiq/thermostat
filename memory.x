@@ -14,4 +14,4 @@ MEMORY
 _flash_start = ORIGIN(FLASH);
 _config_start = ORIGIN(CONFIG);
 _dfu_msg = ORIGIN(DFU_MSG);
-_stack_start = ORIGIN(CCMRAM) + LENGTH(CCMRAM);
+/* _stack_start = ORIGIN(CCMRAM) + LENGTH(CCMRAM); */
