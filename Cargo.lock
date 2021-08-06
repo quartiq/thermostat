@@ -453,9 +453,9 @@ dependencies = [
 
 [[package]]
 name = "smoltcp"
-version = "0.6.0"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fe46639fd2ec79eadf8fe719f237a7a0bd4dac5d957f1ca5bbdbc1c3c39e53a"
+checksum = "3e4a069bef843d170df47e7c0a8bf8d037f217d9f5b325865acc3e466ffe40d3"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -472,7 +472,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 [[package]]
 name = "stm32-eth"
 version = "0.2.0"
-source = "git+https://github.com/stm32-rs/stm32-eth.git#4d6b29bf1ecdd1f68e5bc304a3d4f170049896c8"
+source = "git+https://github.com/stm32-rs/stm32-eth.git#0ab4556e762c232ac7f2fc3116733359395ec4fc"
 dependencies = [
  "aligned",
  "cortex-m 0.6.7",
