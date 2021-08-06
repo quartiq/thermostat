@@ -110,7 +110,7 @@ fn main() -> ! {
 
     let mut cp = CorePeripherals::take().unwrap();
     cp.SCB.enable_icache();
-    cp.SCB.enable_dcache(&mut cp.CPUID);
+    // cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let dp = Peripherals::take().unwrap();
     let clocks = dp.RCC.constrain()
@@ -122,9 +122,9 @@ fn main() -> ! {
         .pclk2(64.mhz())
         .freeze();
 
-    let mut wd = IndependentWatchdog::new(dp.IWDG);
-    wd.start(WATCHDOG_INTERVAL.ms());
-    wd.feed();
+    // let mut wd = IndependentWatchdog::new(dp.IWDG);
+    // wd.start(WATCHDOG_INTERVAL.ms());
+    // wd.feed();
 
     timer::setup(cp.SYST, clocks);
 
@@ -283,7 +283,7 @@ fn main() -> ! {
                     });
                 */
                 // Update watchdog
-                wd.feed();
+                // wd.feed();
 
                 leds.g4.off();
                 cortex_m::interrupt::free(|cs| {
