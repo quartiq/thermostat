@@ -15,28 +15,28 @@ default-target = "thumbv7em-none-eabihf"
 
 [dependencies]
 panic-halt = "0.2"
-panic-semihosting = { version = "0.5", optional = true }
+# panic-semihosting = { version = "0.5", optional = true }
 log = "0.4"
-bare-metal = "1"
+# bare-metal = "1"
 cortex-m = "0.6"
 cortex-m-rt = { version = "0.6", features = ["device"] }
-cortex-m-log = { version = "0.6", features = ["log-integration"] }
+# cortex-m-log = { version = "0.6", features = ["log-integration"] }
 stm32f4xx-hal = { version = "0.8", features = ["rt", "stm32f427", "usb_fs"] }
 stm32-eth = { version = "0.2", features = ["stm32f427", "smoltcp-phy"], git = "https://github.com/stm32-rs/stm32-eth.git" }
 smoltcp = { version = "0.7.0", default-features = false, features = ["proto-ipv4", "socket-tcp", "log"] }
-bit_field = "0.10"
-byteorder = { version = "1", default-features = false }
+# bit_field = "0.10"
+# byteorder = { version = "1", default-features = false }
 nom = { version = "5", default-features = false }
 num-traits = { version = "0.2", default-features = false, features = ["libm"] }
-usb-device = "0.2"
-usbd-serial = "0.1"
-nb = "1"
+# usb-device = "0.2"
+# usbd-serial = "0.1"
+# nb = "1"
 uom = { version = "0.30", default-features = false, features = ["autoconvert", "si", "f64", "use_serde"] }
 eeprom24x = "0.3"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 heapless = "0.5"
-serde-json-core = "0.1"
-sfkv = "0.1"
+# serde-json-core = "0.1"
+# sfkv = "0.1"
 rtt-target = { version = "0.3", features = ["cortex-m"] }
 
 # rtt-target bump
@@ -44,12 +44,12 @@ rtt-target = { version = "0.3", features = ["cortex-m"] }
 git = "https://github.com/quartiq/rtt-logger.git"
 rev = "70b0eb5"
 
-#[patch.crates-io]
+# [patch.crates-io]
 # TODO: pending https://github.com/stm32-rs/stm32f4xx-hal/pull/239
-#stm32f4xx-hal = { git = "https://github.com/astro/stm32f4xx-hal.git", branch = "flash" }
+# stm32f4xx-hal = { git = "https://github.com/astro/stm32f4xx-hal.git", branch = "flash" }
 
-[features]
-semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]
+#[features]
+#semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]
 
 [profile.release]
 codegen-units = 1

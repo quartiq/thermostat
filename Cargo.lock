@@ -39,18 +39,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bare-metal"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8fe8f5a8a398345e52358e18ff07cc17a568fbca5c6f73873d3a62056309603"
-
-[[package]]
-name = "bit_field"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcb6dd1c2376d2e096796e234a70e17e94cc2d5d54ff8ce42b28cef1d0d359a4"
-
-[[package]]
 name = "bitfield"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -90,7 +78,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9075300b07c6a56263b9b582c214d0ff037b00d45ec9fde1cc711490c56f1bb9"
 dependencies = [
  "aligned",
- "bare-metal 0.2.5",
+ "bare-metal",
  "bitfield",
  "cortex-m 0.7.3",
  "volatile-register",
@@ -102,21 +90,10 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ac919ef424449ec8c08d515590ce15d9262c0ca5f0da5b0c901e971a3b783b3"
 dependencies = [
- "bare-metal 0.2.5",
+ "bare-metal",
  "bitfield",
  "embedded-hal",
  "volatile-register",
-]
-
-[[package]]
-name = "cortex-m-log"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d63959cb1e003dd97233fee6762351540253237eadf06fcdcb98cbfa3f9be4a"
-dependencies = [
- "cortex-m 0.6.7",
- "cortex-m-semihosting",
- "log",
 ]
 
 [[package]]
@@ -138,15 +115,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "cortex-m-semihosting"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bffa6c1454368a6aa4811ae60964c38e6996d397ff8095a8b9211b1c1f749bc"
-dependencies = [
- "cortex-m 0.7.3",
 ]
 
 [[package]]
@@ -214,7 +182,6 @@ dependencies = [
  "as-slice",
  "generic-array 0.13.3",
  "hash32",
- "serde",
  "stable_deref_trait",
 ]
 
@@ -285,33 +252,6 @@ name = "panic-halt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de96540e0ebde571dc55c73d60ef407c653844e6f9a1e2fdbd40c07b9252d812"
-
-[[package]]
-name = "panic-semihosting"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3d55dedd501dfd02514646e0af4d7016ce36bc12ae177ef52056989966a1eec"
-dependencies = [
- "cortex-m 0.7.3",
- "cortex-m-semihosting",
-]
-
-[[package]]
-name = "postcard"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a9ba0d1b66f31fb374fede892eb4b0818ea819d5e7bc587345ce50a6949e782"
-dependencies = [
- "heapless",
- "postcard-cobs",
- "serde",
-]
-
-[[package]]
-name = "postcard-cobs"
-version = "0.1.5-pre"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c68cb38ed13fd7bc9dd5db8f165b7c8d9c1a315104083a2b10f11354c2af97f"
 
 [[package]]
 name = "proc-macro2"
@@ -411,16 +351,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde-json-core"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbf406405ada9ef326ca78677324ac66994ff348fc48a16030be08caeed29825"
-dependencies = [
- "heapless",
- "serde",
-]
-
-[[package]]
 name = "serde_derive"
 version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -429,17 +359,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "sfkv"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25f5bfac3f66a7c10a6f37ee81aeaa471f4d35dc21665b59ad7c555adcb9e8aa"
-dependencies = [
- "byteorder",
- "postcard",
- "serde",
 ]
 
 [[package]]
@@ -478,7 +397,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11460b4de3a84f072e2cf6e76306c64d27f405a0e83bace0a726f555ddf4bf33"
 dependencies = [
- "bare-metal 0.2.5",
+ "bare-metal",
  "cortex-m 0.6.7",
  "cortex-m-rt",
  "vcell",
@@ -490,7 +409,7 @@ version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3a2f044469d1e3aff2cd02bee8b2724f3d5d91f3175e5d1ec99770320d16192"
 dependencies = [
- "bare-metal 0.2.5",
+ "bare-metal",
  "cast",
  "cortex-m 0.6.7",
  "cortex-m-rt",
@@ -508,7 +427,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8665561cb3422ddf54d257bf6cb3c5432ba0684f6937c4ad987bad16aa6ca496"
 dependencies = [
- "bare-metal 0.2.5",
+ "bare-metal",
  "cortex-m 0.6.7",
 ]
 
@@ -539,31 +458,21 @@ dependencies = [
 name = "thermostat"
 version = "0.0.0"
 dependencies = [
- "bare-metal 1.0.0",
- "bit_field",
- "byteorder",
  "cortex-m 0.6.7",
- "cortex-m-log",
  "cortex-m-rt",
  "eeprom24x",
  "heapless",
  "log",
- "nb 1.0.0",
  "nom",
  "num-traits",
  "panic-halt",
- "panic-semihosting",
  "rtt-logger",
  "rtt-target",
  "serde",
- "serde-json-core",
- "sfkv",
  "smoltcp",
  "stm32-eth",
  "stm32f4xx-hal",
  "uom",
- "usb-device",
- "usbd-serial",
 ]
 
 [[package]]
@@ -600,17 +509,6 @@ name = "usb-device"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6be90410d4772074ea49525e2e753b65920b94b57eee21a6ef7b6a6fe6296245"
-
-[[package]]
-name = "usbd-serial"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db75519b86287f12dcf0d171c7cf4ecc839149fe9f3b720ac4cfce52959e1dfe"
-dependencies = [
- "embedded-hal",
- "nb 0.1.3",
- "usb-device",
-]
 
 [[package]]
 name = "vcell"
