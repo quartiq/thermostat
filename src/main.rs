@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
-#![feature(maybe_uninit_extra, maybe_uninit_ref, asm)]
+// #![feature(maybe_uninit_extra, maybe_uninit_ref, asm)]
 #![cfg_attr(test, allow(unused))]
 // TODO: #![deny(warnings, unused)]
 
@@ -24,36 +24,37 @@ use smoltcp::{
     time::Instant,
     socket::TcpSocket,
     wire::EthernetAddress,
+    socket::SocketSet,
 };
 
-mod init_log;
-use init_log::init_log;
-mod usb;
+// mod init_log;
+// use init_log::init_log;
+// mod usb;
 mod leds;
 mod pins;
 use pins::Pins;
-mod ad7172;
-mod ad5680;
+// mod ad7172;
+// mod ad5680;
 mod net;
-mod server;
-use server::Server;
-mod session;
-use session::{Session, SessionInput};
+// mod server;
+// use server::Server;
+// mod session;
+// use session::{Session, SessionInput};
 mod command_parser;
 use command_parser::Ipv4Config;
 mod timer;
-mod pid;
-mod steinhart_hart;
-mod channels;
-use channels::{CHANNELS, Channels};
-mod channel;
-mod channel_state;
-mod config;
-use config::ChannelConfig;
-mod flash_store;
-mod dfu;
-mod command_handler;
-use command_handler::Handler;
+// mod pid;
+// mod steinhart_hart;
+// mod channels;
+// use channels::{CHANNELS, Channels};
+// mod channel;
+// mod channel_state;
+// mod config;
+// use config::ChannelConfig;
+// mod flash_store;
+// mod dfu;
+// mod command_handler;
+// use command_handler::Handler;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -65,6 +66,7 @@ const CHANNEL_CONFIG_KEY: [&str; 2] = ["ch0", "ch1"];
 
 const TCP_PORT: u16 = 23;
 
+/*
 fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
     let send_free = socket.send_capacity() - socket.send_queue();
     if data.len() > send_free + 1 {
@@ -90,12 +92,13 @@ fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
     // not success
     false
 }
+*/
 
 /// Initialization and main loop
 #[cfg(not(test))]
 #[entry]
 fn main() -> ! {
-    init_log();
+    // init_log();
     info!("thermostat");
 
     let mut cp = CorePeripherals::take().unwrap();
@@ -133,11 +136,11 @@ fn main() -> ! {
     leds.g3.off();
     leds.g4.off();
 
-    usb::State::setup(usb);
+    // usb::State::setup(usb);
 
-    let mut store = flash_store::store(dp.FLASH);
+    // let mut store = flash_store::store(dp.FLASH);
     
-
+    /*
     let mut channels = Channels::new(pins);
     for c in 0..CHANNELS {
         match store.read_value::<ChannelConfig>(CHANNEL_CONFIG_KEY[c]) {
@@ -149,6 +152,7 @@ fn main() -> ! {
                 error!("unable to load config {} from flash: {:?}", c, e),
         }
     }
+    */
 
     // default net config:
     let mut ipv4_config = Ipv4Config {
@@ -156,6 +160,7 @@ fn main() -> ! {
         mask_len: 24,
         gateway: None,
     };
+    /*
     match store.read_value("ipv4") {
         Ok(Some(config)) =>
             ipv4_config = config,
@@ -163,6 +168,7 @@ fn main() -> ! {
         Err(e) =>
             error!("cannot read ipv4 config: {:?}", e),
     }
+    */
 
     // EEPROM ships with a read-only EUI-48 identifier
     let mut eui48 = [0; 6];
@@ -170,12 +176,24 @@ fn main() -> ! {
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
-    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config.clone(), |iface| {
-        Server::<Session>::run(iface, |server| {
-            leds.r1.off();
-            let mut should_reset = false;
+    net::run(clocks, dp.ETHERNET_MAC, dp.ETHERNET_DMA, eth_pins, hwaddr, ipv4_config.clone(), |mut iface| {
+        //Server::<Session>::run(iface, |server| {
+        //    leds.r1.off();
+        //    let mut should_reset = false;
+        let mut sockets_storage: [_; 4] = Default::default();
+        let mut sockets = SocketSet::new(&mut sockets_storage[..]);
 
             loop {
+                let now = Instant::from_millis(i64::from(timer::now()));
+                cortex_m::interrupt::free(net::clear_pending);
+                match iface.poll(&mut sockets, now) {
+            Ok(_) => Ok(()),
+            Err(smoltcp::Error::Malformed) => Ok(()),
+            Err(smoltcp::Error::Unrecognized) => Ok(()),
+            Err(e) => Err(e),
+        }.unwrap();
+
+                /*
                 let mut new_ipv4_config = None;
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 let updated_channel = channels.poll_adc(instant);
@@ -183,8 +201,6 @@ fn main() -> ! {
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
                 }
 
-                let instant = Instant::from_millis(i64::from(timer::now()));
-                cortex_m::interrupt::free(net::clear_pending);
                 server.poll(instant)
                     .unwrap_or_else(|e| {
                         warn!("poll: {:?}", e);
@@ -258,7 +274,7 @@ fn main() -> ! {
                         server.set_ipv4_config(config.clone());
                         ipv4_config = config;
                     });
-
+                */
                 // Update watchdog
                 wd.feed();
 
@@ -272,7 +288,7 @@ fn main() -> ! {
                 });
                 leds.g4.on();
             }
-        });
+        //});
     });
 
     unreachable!()

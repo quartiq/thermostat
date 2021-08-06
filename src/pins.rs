@@ -30,7 +30,7 @@ use stm32f4xx_hal::{
 use eeprom24x::{self, Eeprom24x};
 use stm32_eth::EthPins;
 use crate::{
-    channel::{Channel0, Channel1},
+    // channel::{Channel0, Channel1},
     leds::Leds,
 };
 
@@ -65,6 +65,7 @@ pub trait ChannelPins {
     type TecUMeasPin;
 }
 
+/*
 impl ChannelPins for Channel0 {
     type DacSpi = Dac0Spi;
     type DacSync = PE4<Output<PushPull>>;
@@ -84,6 +85,7 @@ impl ChannelPins for Channel1 {
     type DacFeedbackPin = PA5<Analog>;
     type TecUMeasPin = PC3<Analog>;
 }
+*/
 
 /// SPI peripheral used for communication with the ADC
 pub type AdcSpi = Spi<SPI2, (PB10<Alternate<AF5>>, PB14<Alternate<AF5>>, PB15<Alternate<AF5>>)>;
@@ -103,12 +105,12 @@ pub struct ChannelPinSet<C: ChannelPins> {
 }
 
 pub struct Pins {
-    pub adc_spi: AdcSpi,
+    // pub adc_spi: AdcSpi,
     pub adc_nss: AdcNss,
     pub pins_adc: PinsAdc,
     pub pwm: PwmPins,
-    pub channel0: ChannelPinSet<Channel0>,
-    pub channel1: ChannelPinSet<Channel1>,
+    //pub channel0: ChannelPinSet<Channel0>,
+    //pub channel1: ChannelPinSet<Channel1>,
 }
 
 impl Pins {
@@ -130,7 +132,7 @@ impl Pins {
         let gpiof = gpiof.split();
         let gpiog = gpiog.split();
 
-        let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
+        // let adc_spi = Self::setup_spi_adc(clocks, spi2, gpiob.pb10, gpiob.pb14, gpiob.pb15);
         let adc_nss = gpiob.pb12.into_push_pull_output();
 
         let pins_adc = Adc::adc1(adc1, true, Default::default());
@@ -142,6 +144,7 @@ impl Pins {
             gpioe.pe13, gpioe.pe14
         );
 
+        /*
         let (dac0_spi, dac0_sync) = Self::setup_dac0(
             clocks, spi4,
             gpioe.pe2, gpioe.pe4, gpioe.pe6
@@ -181,13 +184,15 @@ impl Pins {
             dac_feedback_pin: dac_feedback1_pin,
             tec_u_meas_pin: tec_u_meas1_pin,
         };
+        */
 
         let pins = Pins {
-            adc_spi, adc_nss,
+            // adc_spi,
+            adc_nss,
             pins_adc,
             pwm,
-            channel0,
-            channel1,
+            //channel0,
+            //channel1,
         };
 
         let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
@@ -220,7 +225,7 @@ impl Pins {
 
         (pins, leds, eeprom, eth_pins, usb)
     }
-
+/*
     /// Configure the GPIO pins for SPI operation, and initialize SPI
     fn setup_spi_adc<M1, M2, M3>(
         clocks: Clocks,
@@ -277,6 +282,7 @@ impl Pins {
 
         (spi, sync)
     }
+*/
 }
 
 pub struct PwmPins {
