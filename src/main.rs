@@ -109,7 +109,7 @@ fn main() -> ! {
     info!("thermostat");
 
     let mut cp = CorePeripherals::take().unwrap();
-    cp.SCB.enable_icache();
+    // cp.SCB.enable_icache();
     // cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let dp = Peripherals::take().unwrap();
@@ -126,7 +126,7 @@ fn main() -> ! {
     // wd.start(WATCHDOG_INTERVAL.ms());
     // wd.feed();
 
-    timer::setup(cp.SYST, clocks);
+    // timer::setup(cp.SYST, clocks);
 
     let (pins, mut leds, mut eeprom, eth_pins, usb) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
@@ -178,8 +178,8 @@ fn main() -> ! {
     */
 
     // EEPROM ships with a read-only EUI-48 identifier
-    let mut eui48 = [0; 6];
-    eeprom.read_data(0xFA, &mut eui48).unwrap();
+    let mut eui48 = [0x80, 0x1f, 0x12, 0x63, 0x84, 0x1a];
+    // eeprom.read_data(0xFA, &mut eui48).unwrap();
     let hwaddr = EthernetAddress(eui48);
     info!("EEPROM MAC address: {}", hwaddr);
 
