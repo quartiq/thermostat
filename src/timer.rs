@@ -2,7 +2,7 @@ use core::cell::RefCell;
 use core::ops::Deref;
 use cortex_m::interrupt::Mutex;
 use cortex_m_rt::exception;
-use stm32f4xx_hal::{
+use stm32_eth::hal::{
     rcc::Clocks,
     time::U32Ext,
     timer::{Timer, Event as TimerEvent},

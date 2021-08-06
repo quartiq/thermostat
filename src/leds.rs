@@ -1,4 +1,4 @@
-use stm32f4xx_hal::{
+use stm32_eth::hal::{
     gpio::{
         gpiod::{PD9, PD10, PD11},
         Output, PushPull,

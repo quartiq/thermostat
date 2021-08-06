@@ -3,9 +3,10 @@
 
 use core::cell::RefCell;
 use cortex_m::interrupt::{CriticalSection, Mutex};
-use stm32f4xx_hal::{
+use stm32_eth::hal::{
+    interrupt,
     rcc::Clocks,
-    stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
+    stm32::{Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
 use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
 use smoltcp::iface::{

@@ -27,14 +27,14 @@ smoltcp = { version = "0.7.0", default-features = false, features = ["proto-ipv4
 # bit_field = "0.10"
 # byteorder = { version = "1", default-features = false }
 nom = { version = "5", default-features = false }
-num-traits = { version = "0.2", default-features = false, features = ["libm"] }
+# num-traits = { version = "0.2", default-features = false, features = ["libm"] }
 # usb-device = "0.2"
 # usbd-serial = "0.1"
 # nb = "1"
 uom = { version = "0.30", default-features = false, features = ["autoconvert", "si", "f64", "use_serde"] }
 eeprom24x = "0.3"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-heapless = "0.5"
+# heapless = "0.5"
 # serde-json-core = "0.1"
 # sfkv = "0.1"
 rtt-target = { version = "0.3", features = ["cortex-m"] }
@@ -49,7 +49,7 @@ rev = "70b0eb5"
 # stm32f4xx-hal = { git = "https://github.com/astro/stm32f4xx-hal.git", branch = "flash" }
 
 #[features]
-#semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]
+# semihosting = ["panic-semihosting", "cortex-m-log/semihosting"]
 
 [profile.release]
 codegen-units = 1

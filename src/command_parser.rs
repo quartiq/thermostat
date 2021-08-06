@@ -11,7 +11,7 @@ use nom::{
     multi::{fold_many0, fold_many1},
     error::ErrorKind,
 };
-use num_traits::{Num, ParseFloatError};
+use uom::num_traits::{Num, ParseFloatError};
 use serde::{Serialize, Deserialize};
 
 

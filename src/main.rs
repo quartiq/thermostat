@@ -13,7 +13,7 @@ use log::{error, info, warn};
 
 use cortex_m::asm::wfi;
 use cortex_m_rt::entry;
-use stm32f4xx_hal::{
+use stm32_eth::hal::{
     hal::watchdog::{WatchdogEnable, Watchdog},
     rcc::RccExt,
     stm32::{CorePeripherals, Peripherals, SCB},
@@ -126,9 +126,9 @@ fn main() -> ! {
     // wd.start(WATCHDOG_INTERVAL.ms());
     // wd.feed();
 
-    // timer::setup(cp.SYST, clocks);
+    timer::setup(cp.SYST, clocks);
 
-    let (pins, mut leds, mut eeprom, eth_pins, usb) = Pins::setup(
+    let (pins, mut leds, mut eeprom, eth_pins) = Pins::setup(
         clocks, dp.TIM1, dp.TIM3,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.I2C1,

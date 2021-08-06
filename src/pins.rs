@@ -1,4 +1,4 @@
-use stm32f4xx_hal::{
+use stm32_eth::hal::{
     adc::Adc,
     gpio::{
         AF5, Alternate, AlternateOD, Analog, Floating, Input,
@@ -13,7 +13,7 @@ use stm32f4xx_hal::{
     },
     hal::{self, blocking::spi::Transfer, digital::v2::OutputPin},
     i2c::I2c,
-    otg_fs::USB,
+    // otg_fs::USB,
     rcc::Clocks,
     pwm::{self, PwmChannels},
     spi::{Spi, NoMiso},
@@ -36,8 +36,8 @@ use crate::{
 
 pub type Eeprom = Eeprom24x<
     I2c<I2C1, (
-        PB8<AlternateOD<stm32f4xx_hal::gpio::AF4>>,
-        PB9<AlternateOD<stm32f4xx_hal::gpio::AF4>>
+        PB8<AlternateOD<stm32_eth::hal::gpio::AF4>>,
+        PB9<AlternateOD<stm32_eth::hal::gpio::AF4>>
     )>,
     eeprom24x::page_size::B8,
     eeprom24x::addr_size::OneByte
@@ -123,7 +123,7 @@ impl Pins {
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
         otg_fs_global: OTG_FS_GLOBAL, otg_fs_device: OTG_FS_DEVICE, otg_fs_pwrclk: OTG_FS_PWRCLK,
-    ) -> (Self, Leds, Eeprom, EthernetPins, USB) {
+    ) -> (Self, Leds, Eeprom, EthernetPins) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -214,6 +214,7 @@ impl Pins {
             rx_d1: gpioc.pc5,
         };
 
+        /*
         let usb = USB {
             usb_global: otg_fs_global,
             usb_device: otg_fs_device,
@@ -222,8 +223,8 @@ impl Pins {
             pin_dp: gpioa.pa12.into_alternate_af10(),
             // hclk: clocks.hclk(),
         };
-
-        (pins, leds, eeprom, eth_pins, usb)
+        */
+        (pins, leds, eeprom, eth_pins)
     }
 /*
     /// Configure the GPIO pins for SPI operation, and initialize SPI
