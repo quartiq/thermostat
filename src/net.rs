@@ -10,7 +10,7 @@ use stm32_eth::hal::{
 };
 use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
 use smoltcp::iface::{
-    EthernetInterfaceBuilder, EthernetInterface,
+    InterfaceBuilder, Interface,
     NeighborCache, Routes,
 };
 use stm32_eth::{Eth, RingEntry, PhyAddress, RxDescriptor, TxDescriptor};
@@ -37,7 +37,7 @@ pub fn run<F>(
     ipv4_config: Ipv4Config,
     f: F
 ) where
-    F: FnOnce(EthernetInterface<&mut stm32_eth::Eth<'static, 'static>>),
+    F: FnOnce(Interface<&mut stm32_eth::Eth<'static, 'static>>),
 {
     let rx_ring = unsafe {
         RX_RING.get_or_insert(Default::default())
@@ -63,7 +63,7 @@ pub fn run<F>(
     let mut routes_storage = [None; 1];
     let mut routes = Routes::new(&mut routes_storage[..]);
     gateway.map(|gateway| routes.add_default_ipv4_route(gateway).unwrap());
-    let iface = EthernetInterfaceBuilder::new(&mut eth_dev)
+    let iface = InterfaceBuilder::new(&mut eth_dev)
         .ethernet_addr(ethernet_addr)
         .ip_addrs(&mut ip_addrs[..])
         .neighbor_cache(neighbor_cache)

@@ -8,7 +8,16 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a785a543aea40f5e4e2e93bb2655d31bc21bb391fff65697150973e383f16bb"
 dependencies = [
- "as-slice",
+ "as-slice 0.1.5",
+]
+
+[[package]]
+name = "aligned"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2240c1c4e8d56ed2ba3c79e241c32fb5ae6bd73e23f70ef90f0650f3d45d0d5"
+dependencies = [
+ "as-slice 0.2.1",
 ]
 
 [[package]]
@@ -20,6 +29,15 @@ dependencies = [
  "generic-array 0.12.4",
  "generic-array 0.13.3",
  "generic-array 0.14.4",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "as-slice"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "516b6b4f0e40d50dcda9365d53964ec74560ad4284da2e7fc97122cd83174516"
+dependencies = [
  "stable_deref_trait",
 ]
 
@@ -93,7 +111,7 @@ version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9075300b07c6a56263b9b582c214d0ff037b00d45ec9fde1cc711490c56f1bb9"
 dependencies = [
- "aligned",
+ "aligned 0.3.5",
  "bare-metal 0.2.5",
  "bitfield",
  "cortex-m 0.7.3",
@@ -200,9 +218,9 @@ dependencies = [
 
 [[package]]
 name = "managed"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c75de51135344a4f8ed3cfe2720dc27736f7711989703a0b43aadf3753c55577"
+checksum = "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d"
 
 [[package]]
 name = "memchr"
@@ -379,9 +397,8 @@ dependencies = [
 
 [[package]]
 name = "smoltcp"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e4a069bef843d170df47e7c0a8bf8d037f217d9f5b325865acc3e466ffe40d3"
+version = "0.8.0"
+source = "git+https://github.com/smoltcp-rs/smoltcp.git?rev=1134eb2#1134eb28d8c6886034f6ccad452101dc5e6d679c"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -398,9 +415,9 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 [[package]]
 name = "stm32-eth"
 version = "0.2.0"
-source = "git+https://github.com/quartiq/stm32-eth.git?rev=a6e18b7#a6e18b7d1dc0b1e622bf91fc2c1e55dfc20ca34c"
+source = "git+https://github.com/quartiq/stm32-eth.git?rev=4ff2014#4ff20141790ebaadacdbb17155e9a1a95b8b9b92"
 dependencies = [
- "aligned",
+ "aligned 0.4.0",
  "cortex-m 0.7.3",
  "smoltcp",
  "stm32f4xx-hal",

@@ -40,12 +40,15 @@ rtt-target = { version = "0.3", features = ["cortex-m"] }
 rtt-logger = { git = "https://github.com/quartiq/rtt-logger.git", rev = "70b0eb5" }
 
 [dependencies.stm32-eth]
-rev = "a6e18b7"
-features = ["stm32f427", "smoltcp-phy"]
 git = "https://github.com/quartiq/stm32-eth.git"
+rev = "4ff2014"
+# path = "../stm32-eth"
+features = ["stm32f427", "smoltcp-phy"]
 
 [dependencies.smoltcp]
-version = "0.7"
+# version = "0.7"
+git = "https://github.com/smoltcp-rs/smoltcp.git"
+rev = "1134eb2"
 default-features = false
 features = ["proto-ipv4", "socket-tcp", "log"]
 
