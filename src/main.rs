@@ -113,6 +113,15 @@ fn main() -> ! {
     // cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let dp = Peripherals::take().unwrap();
+
+    // keep DBGMCU alive in wfi/wfe
+    dp.DBGMCU.cr.modify(|_, w| {
+        w.dbg_sleep().set_bit();
+        w.dbg_standby().set_bit();
+        w.dbg_stop().set_bit()
+    });
+    dp.RCC.ahb1enr.modify(|_, w| w.dma1en().enabled());
+
     let clocks = dp.RCC.constrain()
         .cfgr
         .use_hse(HSE)
