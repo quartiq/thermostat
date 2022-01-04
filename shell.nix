@@ -9,7 +9,7 @@ let
     if latestRustNightly
     then pkgs.rustChannelOfTargets "nightly" null [ "thumbv7em-none-eabihf" ]
     else (pkgs.recurseIntoAttrs (
-      pkgs.callPackage (import <nix-scripts/stm32/rustPlatform.nix>) {}
+      pkgs.callPackage (import <nix-scripts/mcu/rustPlatform.nix>) {}
     )).rust.cargo;
 in
 pkgs.mkShell {
