@@ -45,7 +45,7 @@ There are several options for flashing Thermostat. DFU requires only a micro-USB
 
 ### dfu-util on Linux
 * Install the DFU USB tool (dfu-util).
-* Convert firmware from ELF to BIN: `arm-none-eabi-objcopy -O binary thermostat.elf thermostat.bin` (you can skip this step if using the BIN from Hydra)
+* Convert firmware from ELF to BIN: `arm-none-eabi-objcopy -O binary thermostat thermostat.bin` (you can skip this step if using the BIN from Hydra)
 * Connect to the Micro USB connector to Thermostat below the RJ45.
 * Add jumper to Thermostat v2.0 across 2-pin jumper adjacent to JTAG connector.
 * Cycle board power to put it in DFU update mode
