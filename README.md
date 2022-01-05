@@ -98,12 +98,12 @@ formatted as line-delimited JSON.
 | `report mode`                    | Show current report mode                                             |
 | `report mode <off/on>`           | Set report mode                                                      |
 | `pwm`                            | Show current PWM settings                                            |
-| `pwm <0/1> max_i_pos <amp>`      | Set PWM duty cycle for **max_i_pos** to *ampere*                     |
-| `pwm <0/1> max_i_neg <amp>`      | Set PWM duty cycle for **max_i_neg** to *- ampere*                     |
-| `pwm <0/1> max_v <volts>`        | Set PWM duty cycle for **max_v** to *volt*                           |
-| `pwm <0/1> i_set <amp>`          | Disengage PID, set **i_set** DAC to *ampere*                         |
-| `pwm <0/1> pid`                  | Set PWM to be controlled by PID                                      |
-| `center <0/1> <volts>`           | Set the MAX1968 0A-centerpoint to *volts*                            |
+| `pwm <0/1> max_i_pos <amp>`      | Set maximum positive output current                                  |
+| `pwm <0/1> max_i_neg <amp>`      | Set maximum negative output current                                  |
+| `pwm <0/1> max_v <volt>`         | Set maximum output voltage                                           |
+| `pwm <0/1> i_set <amp>`          | Disengage PID, set fixed output current                              |
+| `pwm <0/1> pid`                  | Let output current to be controlled by the PID                       |
+| `center <0/1> <volt>`            | Set the MAX1968 0A-centerpoint to the specified fixed voltage        |
 | `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF                  |
 | `pid`                            | Show PID configuration                                               |
 | `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature                            |
@@ -122,7 +122,7 @@ formatted as line-delimited JSON.
 | `load [0/1]`                     | Restore configuration for channel all/0/1 from flash                 |
 | `save [0/1]`                     | Save configuration for channel all/0/1 to flash                      |
 | `reset`                          | Reset the device                                                     |
-| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode |
+| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode        |
 | `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`     | Configure IPv4 address, netmask length, and optional default gateway |
 
 
