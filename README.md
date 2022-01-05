@@ -10,20 +10,18 @@
 
 See the `mcu` folder of the [nix-scripts repository](https://git.m-labs.hk/M-Labs/nix-scripts).
 
-### Debian-based systems (tested on Ubuntu 19.10)
+### Development environment
 
-- install git, clone this repository
-- install [rustup](https://rustup.rs/)
+Clone this repository and [nix-scripts](https://git.m-labs.hk/M-Labs/nix-scripts).
 
 ```shell
-rustup toolchain install nightly
-rustup update
-rustup target add thumbv7em-none-eabihf --toolchain nightly
-rustup default nightly
+nix-shell -I nix-scripts=[path to nix-scripts checkout]
 cargo build --release
 ```
 
 The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`
+
+Alternatively, you can install the Rust toolchain without Nix using rustup; see the channel manifest file in nix-scripts (`channel-rust-nightly.toml`) to determine which Rust version to use.
 
 ## Debugging
 
