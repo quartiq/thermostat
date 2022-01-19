@@ -8,20 +8,22 @@
 
 ### Reproducible build with Nix
 
-See the `mcu` folder of the [nix-scripts repository](https://git.m-labs.hk/M-Labs/nix-scripts).
+Thermostat firmware is packaged using the [Nix](https://nixos.org) Flakes system. Install Nix 2.4+ and enable flakes by adding ``experimental-features = nix-command flakes`` to ``nix.conf`` (e.g. ``~/.config/nix/nix.conf``). 
+
+Once you have Flakes enabled, you can use ``nix build`` to build the firmware.
 
 ### Development environment
 
-Clone this repository and [nix-scripts](https://git.m-labs.hk/M-Labs/nix-scripts).
+Clone this repository and with Nix Flakes enabled, use the following commands:
 
 ```shell
-nix-shell -I nix-scripts=[path to nix-scripts checkout]
+nix develop
 cargo build --release
 ```
 
-The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`
+The resulting ELF file will be located under `target/thumbv7em-none-eabihf/release/thermostat`.
 
-Alternatively, you can install the Rust toolchain without Nix using rustup; see the channel manifest file in nix-scripts (`channel-rust-nightly.toml`) to determine which Rust version to use.
+Alternatively, you can install the Rust toolchain without Nix using rustup; see the Rust manifest file pulled in `flake.nix` to determine which Rust version to use.
 
 ## Debugging
 
