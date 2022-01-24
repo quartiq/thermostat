@@ -9,7 +9,7 @@
       pkgs = import nixpkgs { system = "x86_64-linux"; overlays = [ (import mozilla-overlay) ]; };
       rustManifest = pkgs.fetchurl {
         url = "https://static.rust-lang.org/dist/2020-10-30/channel-rust-nightly.toml";
-        sha256 = "0iygcwzh8s0lfdghj5809krvzifc1ii1wm4sd3qqn7s0rz1s14hi";
+        sha256 = "sha256-4NFISQPmGjbz534No4/ZbXaHT5xbjU25WXgj1MTH0TA=";
       };
 
       targets = [
