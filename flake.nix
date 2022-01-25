@@ -8,8 +8,8 @@
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; overlays = [ (import mozilla-overlay) ]; };
       rustManifest = pkgs.fetchurl {
-        url = "https://static.rust-lang.org/dist/2020-10-30/channel-rust-nightly.toml";
-        sha256 = "sha256-4NFISQPmGjbz534No4/ZbXaHT5xbjU25WXgj1MTH0TA=";
+        url = "https://static.rust-lang.org/dist/2021-10-26/channel-rust-nightly.toml";
+        sha256 = "sha256-1hLbypXA+nuH7o3AHCokzSBZAvQxvef4x9+XxO3aBao=";
       };
 
       targets = [
