@@ -5,14 +5,14 @@ use core::cell::RefCell;
 use cortex_m::interrupt::{CriticalSection, Mutex};
 use stm32f4xx_hal::{
     rcc::Clocks,
-    stm32::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
+    pac::{interrupt, Peripherals, ETHERNET_MAC, ETHERNET_DMA},
 };
 use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
 use smoltcp::iface::{
     EthernetInterfaceBuilder, EthernetInterface,
     NeighborCache, Routes,
 };
-use stm32_eth::{Eth, RingEntry, PhyAddress, RxDescriptor, TxDescriptor};
+use stm32_eth::{Eth, RingEntry, RxDescriptor, TxDescriptor};
 use crate::command_parser::Ipv4Config;
 use crate::pins::EthernetPins;
 
@@ -48,7 +48,6 @@ pub fn run<F>(
     let mut eth_dev = Eth::new(
         ethernet_mac, ethernet_dma,
         &mut rx_ring[..], &mut tx_ring[..],
-        PhyAddress::_0,
         clocks,
         eth_pins,
     ).unwrap();

@@ -41,7 +41,7 @@ impl StoreBackend for FlashBackend {
 
     fn program(&mut self, offset: usize, payload: &[u8]) -> Result<(), Self::Error> {
         self.flash.unlocked()
-            .program(get_offset() + offset, payload.iter().cloned())
+            .program(get_offset() + offset, payload.iter())
     }
 
     fn backup_space(&self) -> &'static mut [u8] {

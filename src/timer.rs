@@ -18,8 +18,10 @@ static TIMER_MS: Mutex<RefCell<u32>> = Mutex::new(RefCell::new(0));
 
 /// Setup SysTick exception
 pub fn setup(syst: SYST, clocks: Clocks) {
-    let mut timer = Timer::syst(syst, TIMER_RATE.hz(), clocks);
-    timer.listen(TimerEvent::TimeOut);
+    
+    let timer = Timer::syst(syst, &clocks);
+    let mut countdown = timer.start_count_down(TIMER_RATE.hz());
+    countdown.listen(TimerEvent::TimeOut);
 }
 
 /// SysTick exception (Timer)

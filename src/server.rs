@@ -24,14 +24,14 @@ const TCP_TX_BUFFER_SIZE: usize = 2048;
 /// Contains a number of server sockets that get all sent the same
 /// data (through `fmt::Write`).
 pub struct Server<'a, 'b, S> {
-    net: EthernetInterface<'a, 'a, 'a, &'a mut stm32_eth::Eth<'static, 'static>>,
-    sockets: SocketSet<'b, 'b, 'b>,
+    net: EthernetInterface<'a, &'a mut stm32_eth::Eth<'static, 'static>>,
+    sockets: SocketSet<'b>,
     states: [SocketState<S>; SOCKET_COUNT],
 }
 
 impl<'a, 'b, S: Default> Server<'a, 'b, S> {
     /// Run a server with stack-allocated sockets
-    pub fn run<F>(net: EthernetInterface<'a, 'a, 'a, &'a mut stm32_eth::Eth<'static, 'static>>, f: F)
+    pub fn run<F>(net: EthernetInterface<'a, &'a mut stm32_eth::Eth<'static, 'static>>, f: F)
     where
         F: FnOnce(&mut Server<'a, '_, S>),
     {
