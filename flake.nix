@@ -35,7 +35,7 @@
         cargoLock = { 
           lockFile = ./Cargo.lock;
           outputHashes = {
-            "stm32-eth-0.2.0" = "sha256-HXRr/NDhdIKqyjdA4D8ZmcO1dDpDawdlYPUOwcEbPQk=";
+            "stm32-eth-0.2.0" = "sha256-48RpZgagUqgVeKm7GXdk3Oo0v19ScF9Uby0nTFlve2o=";
           };
         };
 
