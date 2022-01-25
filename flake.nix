@@ -36,7 +36,6 @@
           lockFile = ./Cargo.lock;
           outputHashes = {
             "stm32-eth-0.2.0" = "sha256-HXRr/NDhdIKqyjdA4D8ZmcO1dDpDawdlYPUOwcEbPQk=";
-            "stm32f4xx-hal-0.8.3" = "sha256-MOv7tVtVMxr3IYMaN0Q8EQWxv3rubmCxjXMXuw/ZKAw=";
           };
         };
 
