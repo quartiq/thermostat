@@ -111,8 +111,6 @@ pub enum PidParameter {
     KD,
     OutputMin,
     OutputMax,
-    IntegralMin,
-    IntegralMax,
 }
 
 /// Steinhart-Hart equation parameter
@@ -369,8 +367,6 @@ fn pid_parameter(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
              value(PidParameter::KD, tag("kd")),
              value(PidParameter::OutputMin, tag("output_min")),
              value(PidParameter::OutputMax, tag("output_max")),
-             value(PidParameter::IntegralMin, tag("integral_min")),
-             value(PidParameter::IntegralMax, tag("integral_max"))
         ))(input)?;
     let (input, _) = whitespace(input)?;
     let (input, value) = float(input)?;
@@ -698,16 +694,6 @@ mod test {
             channel: 0,
             parameter: PidParameter::Target,
             value: 36.5,
-        }));
-    }
-
-    #[test]
-    fn parse_pid_integral_max() {
-        let command = Command::parse(b"pid 1 integral_max 2000");
-        assert_eq!(command, Ok(Command::Pid {
-            channel: 1,
-            parameter: PidParameter::IntegralMax,
-            value: 2000.0,
         }));
     }
 

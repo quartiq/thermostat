@@ -3,7 +3,6 @@ use uom::si::{
     f64::{
         ElectricPotential,
         ElectricalResistance,
-        ElectricCurrent,
         ThermodynamicTemperature,
         Time,
     },
@@ -67,10 +66,10 @@ impl ChannelState {
     }
 
     /// Update PID state on ADC input, calculate new DAC output
-    pub fn update_pid(&mut self, current: ElectricCurrent) -> Option<f64> {
+    pub fn update_pid(&mut self) -> Option<f64> {
         let temperature = self.get_temperature()?
             .get::<degree_celsius>();
-        let pid_output = self.pid.update(temperature, self.get_adc_interval(), current);
+        let pid_output = self.pid.update(temperature);
         Some(pid_output)
     }
 

@@ -67,22 +67,16 @@ class Client:
                   'ki': 0.02,
                   'kd': 0.0,
                   'output_min': 0.0,
-                  'output_max': 3.0,
-                  'integral_min': -100.0,
-                  'integral_max': 100.0},
-              'target': 37.0,
-              'integral': 38.41138597026372},
+                  'output_max': 3.0},
+              'target': 37.0},
              {'channel': 1,
               'parameters': {
                   'kp': 10.0,
                   'ki': 0.02,
                   'kd': 0.0,
                   'output_min': 0.0,
-                  'output_max': 3.0,
-                  'integral_min': -100.0,
-                  'integral_max': 100.0},
-              'target': 36.5,
-              'integral': nan}]
+                  'output_max': 3.0},
+              'target': 36.5}]
         """
         return self._get_conf("pid")
 

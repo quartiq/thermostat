@@ -114,8 +114,6 @@ formatted as line-delimited JSON.
 | `pid <0/1> kd <value>`           | Set differential gain                                                |
 | `pid <0/1> output_min <amp>`     | Set mininum output                                                   |
 | `pid <0/1> output_max <amp>`     | Set maximum output                                                   |
-| `pid <0/1> integral_min <value>` | Set integral lower bound                                             |
-| `pid <0/1> integral_max <value>` | Set integral upper bound                                             |
 | `s-h`                            | Show Steinhart-Hart equation parameters                              |
 | `s-h <0/1> <t0/b/r0> <value>`    | Set Steinhart-Hart parameter for a channel                           |
 | `postfilter`                     | Show postfilter settings                                             |

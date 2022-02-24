@@ -114,9 +114,9 @@ class PIDAutotune:
 
         # set output
         if (self._state == PIDAutotuneState.STATE_RELAY_STEP_UP):
-            self._output = self._initial_output + self._outputstep
-        elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN:
             self._output = self._initial_output - self._outputstep
+        elif self._state == PIDAutotuneState.STATE_RELAY_STEP_DOWN:
+            self._output = self._initial_output + self._outputstep
 
         # respect output limits
         self._output = min(self._output, self._out_max)
@@ -223,7 +223,7 @@ def main():
     # Thermostat channel
     channel = 0
     # Target temperature of the autotune routine, celcius
-    target_temperature = 30
+    target_temperature = 20
     # Value by which output will be increased/decreased from zero, amps
     output_step = 1
     # Reference period for local minima/maxima, seconds

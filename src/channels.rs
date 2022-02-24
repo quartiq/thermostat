@@ -75,10 +75,9 @@ impl Channels {
     pub fn poll_adc(&mut self, instant: Instant) -> Option<u8> {
         self.adc.data_ready().unwrap().map(|channel| {
             let data = self.adc.read_data().unwrap();
-            let current = self.get_tec_i(channel.into());
             let state = self.channel_state(channel);
             state.update(instant, data);
-            match state.update_pid(current) {
+            match state.update_pid() {
                 Some(pid_output) if state.pid_engaged => {
                     // Forward PID output to i_set DAC
                     self.set_i(channel.into(), ElectricCurrent::new::<ampere>(pid_output));
@@ -437,9 +436,7 @@ impl Channels {
         let tec_i = self.get_tec_i(channel);
         let dac_value = self.get_dac(channel);
         let state = self.channel_state(channel);
-        let pid_output = state.pid.last_output.map(|last_output|
-            ElectricCurrent::new::<ampere>(last_output)
-        );
+        let pid_output = ElectricCurrent::new::<ampere>(state.pid.y1);
         Report {
             channel,
             time: state.get_adc_time(),
@@ -541,7 +538,7 @@ pub struct Report {
     i_tec: ElectricPotential,
     tec_i: ElectricCurrent,
     tec_u_meas: ElectricPotential,
-    pid_output: Option<ElectricCurrent>,
+    pid_output: ElectricCurrent,
 }
 
 pub struct CenterPointJson(CenterPoint);

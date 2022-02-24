@@ -231,10 +231,6 @@ impl Handler {
                 pid.parameters.output_min = value as f32,
             OutputMax =>
                 pid.parameters.output_max = value as f32,
-            IntegralMin =>
-                pid.parameters.integral_min = value as f32,
-            IntegralMax =>
-                pid.parameters.integral_max = value as f32,
         }
         send_line(socket, b"{}");
         Ok(Handler::Handled)

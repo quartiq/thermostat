@@ -1,12 +1,4 @@
 use serde::{Serialize, Deserialize};
-use uom::si::{
-    f64::{Time, ElectricCurrent},
-    time::second,
-    electric_current::ampere,
-};
-
-/// Allowable current error for integral accumulation
-const CURRENT_ERROR_MAX: f64 = 0.1;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Parameters {
@@ -20,10 +12,6 @@ pub struct Parameters {
     pub output_min: f32,
     /// Output limit maximum
     pub output_max: f32,
-    /// Integral clipping minimum
-    pub integral_min: f32,
-    /// Integral clipping maximum
-    pub integral_max: f32
 }
 
 impl Default for Parameters {
@@ -34,8 +22,6 @@ impl Default for Parameters {
             kd: 0.0,
             output_min: -2.0,
             output_max: 2.0,
-            integral_min: -10.0,
-            integral_max: 10.0,
         }
     }
 }
@@ -43,69 +29,50 @@ impl Default for Parameters {
 #[derive(Clone)]
 pub struct Controller {
     pub parameters: Parameters,
-    pub target: f64,
-    integral: f64,
-    last_input: Option<f64>,
-    pub last_output: Option<f64>,
+    pub target : f64,
+    u1 : f64,
+    x1 : f64,
+    x2 : f64,
+    pub y1 : f64,
 }
 
 impl Controller {
     pub const fn new(parameters: Parameters) -> Controller {
         Controller {
             parameters: parameters,
-            target: 0.0,
-            last_input: None,
-            integral: 0.0,
-            last_output: None,
+            target : 0.0,
+            u1 : 0.0,
+            x1 : 0.0,
+            x2 : 0.0,
+            y1 : 0.0,
         }
     }
 
-    pub fn update(&mut self, input: f64, time_delta: Time, current: ElectricCurrent) -> f64 {
-        let time_delta = time_delta.get::<second>();
-
-        // error
-        let error = self.target - input;
-
-        // proportional
-        let p = f64::from(self.parameters.kp) * error;
-
-        // integral
-        if let Some(last_output_val) = self.last_output {
-            let electric_current_error = ElectricCurrent::new::<ampere>(last_output_val) - current;
-            // anti integral windup
-            if last_output_val < self.parameters.output_max.into() &&
-               last_output_val > self.parameters.output_min.into() &&
-               electric_current_error < ElectricCurrent::new::<ampere>(CURRENT_ERROR_MAX) &&
-               electric_current_error > -ElectricCurrent::new::<ampere>(CURRENT_ERROR_MAX) {
-                self.integral += error * time_delta;    
-            }
-        }
-        if self.integral < self.parameters.integral_min.into() {
-            self.integral = self.parameters.integral_min.into();
-        }
-        if self.integral > self.parameters.integral_max.into() {
-            self.integral = self.parameters.integral_max.into();
-        }
-        let i = self.integral * f64::from(self.parameters.ki);
-
-        // derivative
-        let d = match self.last_input {
-            None =>
-                0.0,
-            Some(last_input) =>
-                f64::from(self.parameters.kd) * (last_input - input) / time_delta,
-        };
-        self.last_input = Some(input);
-
-        // output
-        let mut output = p + i + d;
+    // Based on https://hackmd.io/IACbwcOTSt6Adj3_F9bKuw PID implementation
+    // Input x(t), target u(t), output y(t)
+    // y0' =   y1 - ki * u0   
+    //       + x0 * (kp + ki + kd)
+    //       - x1 * (kp + 2kd)
+    //       + x2 * kd
+    //       + kp * (u0 - u1)
+    // y0  = clip(y0', ymin, ymax)
+    pub fn update(&mut self, input: f64) -> f64 {
+        
+        let mut output: f64 = self.y1 - self.target * f64::from(self.parameters.ki)
+                            + input * f64::from(self.parameters.kp + self.parameters.ki + self.parameters.kd)
+                            - self.x1 * f64::from(self.parameters.kp + 2.0 * self.parameters.kd)
+                            + self.x2 * f64::from(self.parameters.kd)
+                            + f64::from(self.parameters.kp) * (self.target - self.u1);
         if output < self.parameters.output_min.into() {
             output = self.parameters.output_min.into();
         }
         if output > self.parameters.output_max.into() {
             output = self.parameters.output_max.into();
         }
-        self.last_output = Some(output);
+        self.x2 = self.x1;
+        self.x1 = input;
+        self.u1 = self.target;
+        self.y1 = output;        
         output
     }
 
@@ -114,17 +81,10 @@ impl Controller {
             channel,
             parameters: self.parameters.clone(),
             target: self.target,
-            integral: self.integral,
         }
     }
 
     pub fn update_ki(&mut self, new_ki: f32) {
-        if new_ki == 0.0 {
-            self.integral = 0.0;
-        } else {
-            // Rescale integral with changes to kI, aka "Bumpless operation"
-            self.integral = f64::from(self.parameters.ki) * self.integral / f64::from(new_ki);
-        }
         self.parameters.ki = new_ki;
     }
 }
@@ -134,7 +94,6 @@ pub struct Summary {
     channel: usize,
     parameters: Parameters,
     target: f64,
-    integral: f64,
 }
 
 #[cfg(test)]
@@ -147,8 +106,6 @@ mod test {
         kd: 0.15,
         output_min: -10.0,
         output_max: 10.0,
-        integral_min: -1000.0,
-        integral_max: 1000.0,
     };
 
     #[test]
@@ -177,9 +134,9 @@ mod test {
         while !values.iter().all(|value| target.contains(value)) && total_t < CYCLE_LIMIT {
             let next_t = (t + 1) % DELAY;
             // Feed the oldest temperature
-            output = pid.update(values[next_t], Time::new::<second>(1.0), ElectricCurrent::new::<ampere>(output));
+            output = pid.update(values[next_t]);
             // Overwrite oldest with previous temperature - output
-            values[next_t] = values[t] + output - (values[t] - DEFAULT) * LOSS;
+            values[next_t] = values[t] - output - (values[t] - DEFAULT) * LOSS;
             t = next_t;
             total_t += 1;
             println!("{}", values[t].to_string());
