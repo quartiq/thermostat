@@ -184,7 +184,7 @@ postfilter rate can be tuned with the `postfilter` command.
 - Connect TEC module device 1 to TEC1- and TEC1+.
 - The GND pin is for shielding not for sinking TEC module currents.
 
-When using a TEC module with the Thermostat, the Thermostat expects the thermal load (where the thermistor is located) to heat up with a positive software current set point, and cool down with a negative current set point.
+When using a TEC module with the Thermostat, the Thermostat expects the thermal load (where the thermistor is located) to cool down with a positive software current set point, and heat up with a negative current set point.
 
 Testing heat flow direction with a low set current is recommended before installation of the TEC module.
 
