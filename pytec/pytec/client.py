@@ -1,5 +1,6 @@
 import socket
 import json
+import logging
 
 class CommandError(Exception):
     pass
@@ -8,6 +9,14 @@ class Client:
     def __init__(self, host="192.168.1.26", port=23, timeout=None):
         self._socket = socket.create_connection((host, port), timeout)
         self._lines = [""]
+        self._check_zero_limits()
+
+    def _check_zero_limits(self):
+        pwm_report = self.get_pwm()
+        for pwm_channel in pwm_report:
+            for limit in ["max_i_neg", "max_i_pos", "max_v"]:
+                if pwm_channel[limit]["value"] == 0.0:
+                    logging.warning("`{}` limit is set to zero on channel {}".format(limit, pwm_channel["channel"]))
 
     def _read_line(self):
         # read more lines
