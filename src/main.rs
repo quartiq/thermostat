@@ -10,7 +10,6 @@ use panic_abort as _;
 use panic_semihosting as _;
 
 use log::{error, info, warn};
-
 use cortex_m::asm::wfi;
 use cortex_m_rt::entry;
 use stm32f4xx_hal::{
@@ -54,6 +53,9 @@ mod flash_store;
 mod dfu;
 mod command_handler;
 use command_handler::Handler;
+mod fan_ctrl;
+use fan_ctrl::FanCtrl;
+mod hw_rev;
 
 const HSE: MegaHertz = MegaHertz(8);
 #[cfg(not(feature = "semihosting"))]
@@ -118,8 +120,8 @@ fn main() -> ! {
 
     timer::setup(cp.SYST, clocks);
 
-    let (pins, mut leds, mut eeprom, eth_pins, usb) = Pins::setup(
-        clocks, dp.TIM1, dp.TIM3,
+    let (pins, mut leds, mut eeprom, eth_pins, usb, fan, hwrev, hw_settings) = Pins::setup(
+        clocks, dp.TIM1, dp.TIM3, dp.TIM8,
         dp.GPIOA, dp.GPIOB, dp.GPIOC, dp.GPIOD, dp.GPIOE, dp.GPIOF, dp.GPIOG,
         dp.I2C1,
         dp.SPI2, dp.SPI4, dp.SPI5,
@@ -136,7 +138,6 @@ fn main() -> ! {
     usb::State::setup(usb);
 
     let mut store = flash_store::store(dp.FLASH);
-    
 
     let mut channels = Channels::new(pins);
     for c in 0..CHANNELS {
@@ -149,6 +150,8 @@ fn main() -> ! {
                 error!("unable to load config {} from flash: {:?}", c, e),
         }
     }
+
+    let mut fan_ctrl = FanCtrl::new(fan, hw_settings);
 
     // default net config:
     let mut ipv4_config = Ipv4Config {
@@ -183,6 +186,8 @@ fn main() -> ! {
                     server.for_each(|_, session| session.set_report_pending(channel.into()));
                 }
 
+                fan_ctrl.cycle(channels.current_abs_max_tec_i() as f32);
+
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 cortex_m::interrupt::free(net::clear_pending);
                 server.poll(instant)
@@ -206,7 +211,7 @@ fn main() -> ! {
                                 // Do nothing and feed more data to the line reader in the next loop cycle.
                                 Ok(SessionInput::Nothing) => {}
                                 Ok(SessionInput::Command(command)) => {
-                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut leds, &mut store, &mut ipv4_config) {
+                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut leds, &mut store, &mut ipv4_config, &mut fan_ctrl, hwrev) {
                                         Ok(Handler::NewIPV4(ip)) => new_ipv4_config = Some(ip),                                
                                         Ok(Handler::Handled) => {},
                                         Ok(Handler::CloseSocket) => socket.close(),

@@ -94,36 +94,42 @@ The scope of this setting is per TCP session.
 Send commands as simple text string terminated by `\n`. Responses are
 formatted as line-delimited JSON.
 
-| Syntax                           | Function                                                             |
-| ---                              | ---                                                                  |
-| `report`                         | Show current input                                                   |
-| `report mode`                    | Show current report mode                                             |
-| `report mode <off/on>`           | Set report mode                                                      |
-| `pwm`                            | Show current PWM settings                                            |
-| `pwm <0/1> max_i_pos <amp>`      | Set maximum positive output current                                  |
-| `pwm <0/1> max_i_neg <amp>`      | Set maximum negative output current                                  |
-| `pwm <0/1> max_v <volt>`         | Set maximum output voltage                                           |
-| `pwm <0/1> i_set <amp>`          | Disengage PID, set fixed output current                              |
-| `pwm <0/1> pid`                  | Let output current to be controlled by the PID                       |
-| `center <0/1> <volt>`            | Set the MAX1968 0A-centerpoint to the specified fixed voltage        |
-| `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF                  |
-| `pid`                            | Show PID configuration                                               |
-| `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature                            |
-| `pid <0/1> kp <value>`           | Set proportional gain                                                |
-| `pid <0/1> ki <value>`           | Set integral gain                                                    |
-| `pid <0/1> kd <value>`           | Set differential gain                                                |
-| `pid <0/1> output_min <amp>`     | Set mininum output                                                   |
-| `pid <0/1> output_max <amp>`     | Set maximum output                                                   |
-| `s-h`                            | Show Steinhart-Hart equation parameters                              |
-| `s-h <0/1> <t0/b/r0> <value>`    | Set Steinhart-Hart parameter for a channel                           |
-| `postfilter`                     | Show postfilter settings                                             |
-| `postfilter <0/1> off`           | Disable postfilter                                                   |
-| `postfilter <0/1> rate <rate>`   | Set postfilter output data rate                                      |
-| `load [0/1]`                     | Restore configuration for channel all/0/1 from flash                 |
-| `save [0/1]`                     | Save configuration for channel all/0/1 to flash                      |
-| `reset`                          | Reset the device                                                     |
-| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode        |
-| `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`     | Configure IPv4 address, netmask length, and optional default gateway |
+| Syntax                           | Function                                                                      |
+|----------------------------------|-------------------------------------------------------------------------------|
+| `report`                         | Show current input                                                            |
+| `report mode`                    | Show current report mode                                                      |
+| `report mode <off/on>`           | Set report mode                                                               |
+| `pwm`                            | Show current PWM settings                                                     |
+| `pwm <0/1> max_i_pos <amp>`      | Set maximum positive output current                                           |
+| `pwm <0/1> max_i_neg <amp>`      | Set maximum negative output current                                           |
+| `pwm <0/1> max_v <volt>`         | Set maximum output voltage                                                    |
+| `pwm <0/1> i_set <amp>`          | Disengage PID, set fixed output current                                       |
+| `pwm <0/1> pid`                  | Let output current to be controlled by the PID                                |
+| `center <0/1> <volt>`            | Set the MAX1968 0A-centerpoint to the specified fixed voltage                 |
+| `center <0/1> vref`              | Set the MAX1968 0A-centerpoint to measure from VREF                           |
+| `pid`                            | Show PID configuration                                                        |
+| `pid <0/1> target <deg_celsius>` | Set the PID controller target temperature                                     |
+| `pid <0/1> kp <value>`           | Set proportional gain                                                         |
+| `pid <0/1> ki <value>`           | Set integral gain                                                             |
+| `pid <0/1> kd <value>`           | Set differential gain                                                         |
+| `pid <0/1> output_min <amp>`     | Set mininum output                                                            |
+| `pid <0/1> output_max <amp>`     | Set maximum output                                                            |
+| `s-h`                            | Show Steinhart-Hart equation parameters                                       |
+| `s-h <0/1> <t0/b/r0> <value>`    | Set Steinhart-Hart parameter for a channel                                    |
+| `postfilter`                     | Show postfilter settings                                                      |
+| `postfilter <0/1> off`           | Disable postfilter                                                            |
+| `postfilter <0/1> rate <rate>`   | Set postfilter output data rate                                               |
+| `load [0/1]`                     | Restore configuration for channel all/0/1 from flash                          |
+| `save [0/1]`                     | Save configuration for channel all/0/1 to flash                               |
+| `reset`                          | Reset the device                                                              |
+| `dfu`                            | Reset device and enters USB device firmware update (DFU) mode                 |
+| `ipv4 <X.X.X.X/L> [Y.Y.Y.Y]`     | Configure IPv4 address, netmask length, and optional default gateway          |
+| `fan`                            | Show current fan settings and sensors' measurements                           |
+| `fan <value>`                    | Set fan power with values from 1 to 100                                       |
+| `fan auto`                       | Enable automatic fan speed control                                            |
+| `fcurve <a> <b> <c>`             | Set fan controller curve coefficients (see *Fan control* section)             |
+| `fcurve default`                 | Set fan controller curve coefficients to defaults (see *Fan control* section) |
+| `hwrev`                          | Show hardware revision, and settings related to it                            |
 
 
 ## USB
@@ -269,3 +275,15 @@ with the following keys.
 ## PID Tuning
 
 The thermostat implements a PID control loop for each of the TEC channels, more details on setting up the PID control loop can be found [here](./doc/PID%20tuning.md).
+
+## Fan control
+
+Fan control is available for the thermostat revisions with integrated fan system. For this purpose four commands are available:
+1. `fan` - show fan stats: `fan_pwm`, `abs_max_tec_i`, `auto_mode`, `k_a`, `k_b`, `k_c`.
+2. `fan auto` - enable auto speed controller mode, which correlates with fan curve `fcurve`.
+3. `fan <value>` - set the fan power with the value from `1` to `100` and disable auto mode. There is no way to disable the fan.
+Please note that power doesn't correlate with the actual speed linearly.
+4. `fcurve <a> <b> <c>` - set coefficients of the controlling curve `a*x^2 + b*x + c`, where `x` is `abs_max_tec_i/MAX_TEC_I`, 
+i.e. receives values from 0 to 1 linearly tied to the maximum current. The controlling curve should produce values from 0 to 1,
+as below and beyond values would be substituted by 0 and 1 respectively.
+5. `fcurve default` - restore fan curve settings to defaults: `a = 1.0, b = 0.0, c = 0.0`.

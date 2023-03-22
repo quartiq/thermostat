@@ -23,7 +23,7 @@ use stm32f4xx_hal::{
         I2C1,
         OTG_FS_GLOBAL, OTG_FS_DEVICE, OTG_FS_PWRCLK,
         SPI2, SPI4, SPI5,
-        TIM1, TIM3,
+        TIM1, TIM3, TIM8
     },
     timer::Timer,
     time::U32Ext,
@@ -33,6 +33,8 @@ use stm32_eth::EthPins;
 use crate::{
     channel::{Channel0, Channel1},
     leds::Leds,
+    fan_ctrl::FanPin,
+    hw_rev::{HWRev, HWSettings},
 };
 
 pub type Eeprom = Eeprom24x<
@@ -101,6 +103,13 @@ pub struct ChannelPinSet<C: ChannelPins> {
     pub tec_u_meas_pin: C::TecUMeasPin,
 }
 
+pub struct HWRevPins {
+    pub hwrev0: stm32f4xx_hal::gpio::gpiod::PD0<Input<Floating>>,
+    pub hwrev1: stm32f4xx_hal::gpio::gpiod::PD1<Input<Floating>>,
+    pub hwrev2: stm32f4xx_hal::gpio::gpiod::PD2<Input<Floating>>,
+    pub hwrev3: stm32f4xx_hal::gpio::gpiod::PD3<Input<Floating>>,
+}
+
 pub struct Pins {
     pub adc_spi: AdcSpi,
     pub adc_nss: AdcNss,
@@ -114,13 +123,13 @@ impl Pins {
     /// Setup GPIO pins and configure MCU peripherals
     pub fn setup(
         clocks: Clocks,
-        tim1: TIM1, tim3: TIM3,
+        tim1: TIM1, tim3: TIM3, tim8: TIM8,
         gpioa: GPIOA, gpiob: GPIOB, gpioc: GPIOC, gpiod: GPIOD, gpioe: GPIOE, gpiof: GPIOF, gpiog: GPIOG,
         i2c1: I2C1,
         spi2: SPI2, spi4: SPI4, spi5: SPI5,
         adc1: ADC1,
         otg_fs_global: OTG_FS_GLOBAL, otg_fs_device: OTG_FS_DEVICE, otg_fs_pwrclk: OTG_FS_PWRCLK,
-    ) -> (Self, Leds, Eeprom, EthernetPins, USB) {
+    ) -> (Self, Leds, Eeprom, EthernetPins, USB, Option<FanPin>, HWRev, HWSettings) {
         let gpioa = gpioa.split();
         let gpiob = gpiob.split();
         let gpioc = gpioc.split();
@@ -189,6 +198,10 @@ impl Pins {
             channel1,
         };
 
+        let hwrev = HWRev::detect_hw_rev(&HWRevPins {hwrev0: gpiod.pd0, hwrev1: gpiod.pd1,
+            hwrev2: gpiod.pd2, hwrev3: gpiod.pd3});
+        let hw_settings = hwrev.settings();
+
         let leds = Leds::new(gpiod.pd9, gpiod.pd10.into_push_pull_output(), gpiod.pd11.into_push_pull_output());
 
         let eeprom_scl = gpiob.pb8.into_alternate().set_open_drain();
@@ -215,7 +228,11 @@ impl Pins {
             hclk: clocks.hclk(),
         };
 
-        (pins, leds, eeprom, eth_pins, usb)
+        let fan = if hw_settings.fan_available {
+             Some(Timer::new(tim8, &clocks).pwm(gpioc.pc9.into_alternate(), hw_settings.fan_pwm_freq_hz.hz()))
+        } else { None };
+
+        (pins, leds, eeprom, eth_pins, usb, fan, hwrev, hw_settings)
     }
 
     /// Configure the GPIO pins for SPI operation, and initialize SPI

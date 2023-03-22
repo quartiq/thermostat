@@ -10,6 +10,7 @@ use nom::{
     sequence::preceded,
     multi::{fold_many0, fold_many1},
     error::ErrorKind,
+    Needed,
 };
 use num_traits::{Num, ParseFloatError};
 use serde::{Serialize, Deserialize};
@@ -178,6 +179,18 @@ pub enum Command {
         rate: Option<f32>,
     },
     Dfu,
+    FanSet {
+        fan_pwm: u32
+    },
+    FanAuto,
+    ShowFan,
+    FanCurve {
+        k_a: f32,
+        k_b: f32,
+        k_c: f32,
+    },
+    FanCurveDefaults,
+    ShowHWRev,
 }
 
 fn end(input: &[u8]) -> IResult<&[u8], ()> {
@@ -520,6 +533,57 @@ fn ipv4(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     ))(input)
 }
 
+fn fan(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("fan")(input)?;
+    alt((
+        |input| {
+            let (input, _) = whitespace(input)?;
+
+            let (input, result) = alt((
+                |input| {
+                    let (input, _) = tag("auto")(input)?;
+                    Ok((input, Ok(Command::FanAuto)))
+                },
+                |input| {
+                    let (input, value) = unsigned(input)?;
+                    Ok((input, Ok(Command::FanSet { fan_pwm: value.unwrap_or(0)})))
+                },
+            ))(input)?;
+            Ok((input, result))
+        },
+        value(Ok(Command::ShowFan), end)
+    ))(input)
+}
+
+fn fan_curve(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
+    let (input, _) = tag("fcurve")(input)?;
+    alt((
+        |input| {
+            let (input, _) = whitespace(input)?;
+            let (input, result) = alt((
+                |input| {
+                    let (input, _) = tag("default")(input)?;
+                    Ok((input, Ok(Command::FanCurveDefaults)))
+                },
+                |input| {
+                    let (input, k_a) = float(input)?;
+                    let (input, _) = whitespace(input)?;
+                    let (input, k_b) = float(input)?;
+                    let (input, _) = whitespace(input)?;
+                    let (input, k_c) = float(input)?;
+                    if k_a.is_ok() && k_b.is_ok() && k_c.is_ok() {
+                        Ok((input, Ok(Command::FanCurve { k_a: k_a.unwrap() as f32, k_b: k_b.unwrap() as f32, k_c: k_c.unwrap() as f32 })))
+                    } else {
+                        Err(nom::Err::Incomplete(Needed::Size(3)))
+                    }
+                },
+            ))(input)?;
+            Ok((input, result))
+        },
+        value(Err(Error::Incomplete), end)
+    ))(input)
+}
+
 fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
     alt((value(Ok(Command::Quit), tag("quit")),
          load,
@@ -533,6 +597,9 @@ fn command(input: &[u8]) -> IResult<&[u8], Result<Command, Error>> {
          steinhart_hart,
          postfilter,
          value(Ok(Command::Dfu), tag("dfu")),
+         fan,
+         fan_curve,
+         value(Ok(Command::ShowHWRev), tag("hwrev")),
     ))(input)
 }
 
@@ -753,5 +820,45 @@ mod test {
             channel: 1,
             center: CenterPoint::Vref,
         }));
+    }
+
+    #[test]
+    fn parse_fan_show() {
+        let command = Command::parse(b"fan");
+        assert_eq!(command, Ok(Command::ShowFan));
+    }
+
+    #[test]
+    fn parse_fan_set() {
+        let command = Command::parse(b"fan 42");
+        assert_eq!(command, Ok(Command::FanSet {fan_pwm: 42}));
+    }
+
+    #[test]
+    fn parse_fan_auto() {
+        let command = Command::parse(b"fan auto");
+        assert_eq!(command, Ok(Command::FanAuto));
+    }
+
+    #[test]
+    fn parse_fcurve_set() {
+        let command = Command::parse(b"fcurve 1.2 3.4 5.6");
+        assert_eq!(command, Ok(Command::FanCurve {
+            k_a: 1.2,
+            k_b: 3.4,
+            k_c: 5.6
+        }));
+    }
+
+    #[test]
+    fn parse_fcurve_default() {
+        let command = Command::parse(b"fcurve default");
+        assert_eq!(command, Ok(Command::FanCurveDefaults));
+    }
+
+    #[test]
+    fn parse_hwrev() {
+        let command = Command::parse(b"hwrev");
+        assert_eq!(command, Ok(Command::ShowHWRev));
     }
 }

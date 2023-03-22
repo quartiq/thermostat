@@ -1,6 +1,7 @@
 use smoltcp::socket::TcpSocket;
 use log::{error, warn};
 use core::fmt::Write;
+use heapless::{consts::U1024, Vec};
 use super::{
     net,
     command_parser::{
@@ -22,7 +23,9 @@ use super::{
     config::ChannelConfig,
     dfu,
     flash_store::FlashStore,
-    session::Session
+    session::Session,
+    FanCtrl,
+    hw_rev::HWRev,
 };
 
 use uom::{
@@ -54,6 +57,8 @@ pub enum Error {
     PostFilterRateError,
     FlashError
 }
+
+pub type JsonBuffer = Vec<u8, U1024>;
 
 fn send_line(socket: &mut TcpSocket, data: &[u8]) -> bool {
     let send_free = socket.send_capacity() - socket.send_queue();
@@ -341,16 +346,85 @@ impl Handler {
         Ok(Handler::Reset)
     }
 
-    pub fn handle_command (command: Command, socket: &mut TcpSocket, channels: &mut Channels, session: &Session, leds: &mut Leds, store: &mut FlashStore, ipv4_config: &mut Ipv4Config) -> Result<Self, Error> {
+    fn set_fan(socket: &mut TcpSocket, fan_pwm: u32, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
+        if !fan_ctrl.fan_available() {
+            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have fan!\" }");
+            return Ok(Handler::Handled);
+        }
+        fan_ctrl.set_auto_mode(false);
+        fan_ctrl.set_pwm(fan_pwm);
+        if fan_ctrl.fan_pwm_recommended() {
+            send_line(socket, b"{}");
+        } else {
+            send_line(socket, b"{ \"warning\": \"this fan doesn't have full PWM support. Use it at your own risk!\" }");
+        }
+        Ok(Handler::Handled)
+    }
+
+    fn show_fan(socket: &mut TcpSocket, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
+        match fan_ctrl.summary() {
+            Ok(buf) => {
+                send_line(socket, &buf);
+                Ok(Handler::Handled)
+            }
+            Err(e) => {
+                error!("unable to serialize fan summary: {:?}", e);
+                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
+                Err(Error::ReportError)
+            }
+        }
+    }
+
+    fn fan_auto(socket: &mut TcpSocket, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
+        if !fan_ctrl.fan_available() {
+            send_line(socket, b"{ \"warning\": \"this thermostat doesn't have fan!\" }");
+            return Ok(Handler::Handled);
+        }
+        fan_ctrl.set_auto_mode(true);
+        if fan_ctrl.fan_pwm_recommended() {
+            send_line(socket, b"{}");
+        } else {
+            send_line(socket, b"{ \"warning\": \"this fan doesn't have full PWM support. Use it at your own risk!\" }");
+        }
+        Ok(Handler::Handled)
+    }
+
+    fn fan_curve(socket: &mut TcpSocket, fan_ctrl: &mut FanCtrl, k_a: f32, k_b: f32, k_c: f32) -> Result<Handler, Error> {
+        fan_ctrl.set_curve(k_a, k_b, k_c);
+        send_line(socket, b"{}");
+        Ok(Handler::Handled)
+    }
+
+    fn fan_defaults(socket: &mut TcpSocket, fan_ctrl: &mut FanCtrl) -> Result<Handler, Error> {
+        fan_ctrl.restore_defaults();
+        send_line(socket, b"{}");
+        Ok(Handler::Handled)
+    }
+
+    fn show_hwrev(socket: &mut TcpSocket, hwrev: HWRev) -> Result<Handler, Error> {
+        match hwrev.summary() {
+            Ok(buf) => {
+                send_line(socket, &buf);
+                Ok(Handler::Handled)
+            }
+            Err(e) => {
+                error!("unable to serialize HWRev summary: {:?}", e);
+                let _ = writeln!(socket, "{{\"error\":\"{:?}\"}}", e);
+                Err(Error::ReportError)
+            }
+        }
+    }
+
+    pub fn handle_command(command: Command, socket: &mut TcpSocket, channels: &mut Channels, session: &Session, leds: &mut Leds, store: &mut FlashStore, ipv4_config: &mut Ipv4Config, fan_ctrl: &mut FanCtrl, hwrev: HWRev) -> Result<Self, Error> {
         match command {
             Command::Quit => Ok(Handler::CloseSocket),
             Command::Reporting(_reporting) => Handler::reporting(socket),            
             Command::Show(ShowCommand::Reporting) => Handler::show_report_mode(socket, session),            
-            Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),            
-            Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),            
-            Command::Show(ShowCommand::Pwm) => Handler::show_pwm(socket, channels),            
-            Command::Show(ShowCommand::SteinhartHart) => Handler::show_steinhart_hart(socket, channels),            
-            Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),            
+            Command::Show(ShowCommand::Input) => Handler::show_report(socket, channels),
+            Command::Show(ShowCommand::Pid) => Handler::show_pid(socket, channels),
+            Command::Show(ShowCommand::Pwm) => Handler::show_pwm(socket, channels),
+            Command::Show(ShowCommand::SteinhartHart) => Handler::show_steinhart_hart(socket, channels),
+            Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
             Command::PwmPid { channel } => Handler::engage_pid(socket, channels, leds, channel),
             Command::Pwm { channel, pin, value } => Handler::set_pwm(socket, channels, leds, channel, pin, value),
@@ -363,7 +437,13 @@ impl Handler {
             Command::Save { channel } => Handler::save_channel(socket, channels, channel, store),
             Command::Ipv4(config) => Handler::set_ipv4(socket, store, config),
             Command::Reset => Handler::reset(channels),
-            Command::Dfu => Handler::dfu(channels)
+            Command::Dfu => Handler::dfu(channels),
+            Command::FanSet {fan_pwm} => Handler::set_fan(socket, fan_pwm, fan_ctrl),
+            Command::ShowFan => Handler::show_fan(socket, fan_ctrl),
+            Command::FanAuto => Handler::fan_auto(socket, fan_ctrl),
+            Command::FanCurve { k_a, k_b, k_c } => Handler::fan_curve(socket, fan_ctrl, k_a, k_b, k_c),
+            Command::FanCurveDefaults => Handler::fan_defaults(socket, fan_ctrl),
+            Command::ShowHWRev => Handler::show_hwrev(socket, hwrev),
         }
     }
 }

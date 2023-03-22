@@ -1,4 +1,5 @@
-use heapless::{consts::{U2, U1024}, Vec};
+use core::cmp::max_by;
+use heapless::{consts::U2, Vec};
 use serde::{Serialize, Serializer};
 use smoltcp::time::Instant;
 use stm32f4xx_hal::hal;
@@ -16,6 +17,7 @@ use crate::{
     channel::{Channel, Channel0, Channel1},
     channel_state::ChannelState,
     command_parser::{CenterPoint, PwmPin},
+    command_handler::JsonBuffer,
     pins,
     steinhart_hart,
 };
@@ -518,9 +520,13 @@ impl Channels {
         }
         serde_json_core::to_vec(&summaries)
     }
-}
 
-type JsonBuffer = Vec<u8, U1024>;
+    pub fn current_abs_max_tec_i(&mut self) -> f64 {
+        max_by(self.get_tec_i(0).abs().get::<ampere>(),
+               self.get_tec_i(1).abs().get::<ampere>(),
+               |a, b| a.partial_cmp(b).unwrap_or(core::cmp::Ordering::Equal))
+    }
+}
 
 #[derive(Serialize)]
 pub struct Report {
