@@ -258,7 +258,7 @@ with the following keys.
 | Key            | Unit            | Description                                          |
 | ---            | :---:           | ---                                                  |
 | `channel`      | Integer         | Channel `0`, or `1`                                  |
-| `time`         | Milliseconds    | Temperature measurement time                         |
+| `time`         | Seconds         | Temperature measurement time                         |
 | `adc`          | Volts           | AD7172 input                                         |
 | `sens`         | Ohms            | Thermistor resistance derived from `adc`             |
 | `temperature`  | Degrees Celsius | Steinhart-Hart conversion result derived from `sens` |
