@@ -1,7 +1,7 @@
 {
   description = "Firmware for the Sinara 8451 Thermostat";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-21.11;
+  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-23.05;
   inputs.mozilla-overlay = { url = github:mozilla/nixpkgs-mozilla; flake = false; };
 
   outputs = { self, nixpkgs, mozilla-overlay }:
@@ -67,8 +67,7 @@
       devShell.x86_64-linux = pkgs.mkShell {
         name = "thermostat-dev-shell";
         buildInputs = with pkgs; [
-          rustPlatform.rust.rustc
-          rustPlatform.rust.cargo
+          rustc cargo
           openocd dfu-util
           ] ++ (with python3Packages; [
             numpy matplotlib
