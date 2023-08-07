@@ -475,6 +475,15 @@ impl Channels {
         serde_json_core::to_vec(&summaries)
     }
 
+    pub fn pid_engaged(&mut self) -> bool {
+        for channel in 0..CHANNELS {
+            if self.channel_state(channel).pid_engaged {
+                return true;
+            }
+        }
+        false
+    }
+
     fn pwm_summary(&mut self, channel: usize) -> PwmSummary {
         PwmSummary {
             channel,

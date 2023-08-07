@@ -187,7 +187,10 @@ impl Handler {
         match pin {
             PwmPin::ISet => {
                 channels.channel_state(channel).pid_engaged = false;
-                leds.g3.off();
+                // Only turn off LED when PID is disengaged on all channels
+                if !channels.pid_engaged() {
+                    leds.g3.off();
+                }
                 let current = ElectricCurrent::new::<ampere>(value);
                 channels.set_i(channel, current);
                 channels.power_up(channel);
