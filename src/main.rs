@@ -188,6 +188,12 @@ fn main() -> ! {
 
                 fan_ctrl.cycle(channels.current_abs_max_tec_i() as f32);
 
+                if channels.pid_engaged() {
+                    leds.g3.on();
+                } else {
+                    leds.g3.off();
+                }
+
                 let instant = Instant::from_millis(i64::from(timer::now()));
                 cortex_m::interrupt::free(net::clear_pending);
                 server.poll(instant)

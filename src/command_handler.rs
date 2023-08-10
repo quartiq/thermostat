@@ -178,7 +178,6 @@ impl Handler {
 
     fn engage_pid (socket: &mut TcpSocket, channels: &mut Channels, leds: &mut Leds, channel: usize) -> Result<Handler, Error> {
         channels.channel_state(channel).pid_engaged = true;
-        leds.g3.on();
         send_line(socket, b"{}");
         Ok(Handler::Handled)
     }
@@ -187,10 +186,6 @@ impl Handler {
         match pin {
             PwmPin::ISet => {
                 channels.channel_state(channel).pid_engaged = false;
-                // Only turn off LED when PID is disengaged on all channels
-                if !channels.pid_engaged() {
-                    leds.g3.off();
-                }
                 let current = ElectricCurrent::new::<ampere>(value);
                 channels.set_i(channel, current);
                 channels.power_up(channel);
