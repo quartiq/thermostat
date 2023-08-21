@@ -58,7 +58,6 @@ impl Channels {
         let pwm = pins.pwm;
         let mut channels = Channels { channel0, channel1, adc, pins_adc, pwm };
         for channel in 0..CHANNELS {
-            channels.channel_state(channel).vref = channels.read_vref(channel);
             channels.calibrate_dac_value(channel);
             channels.set_i(channel, ElectricCurrent::new::<ampere>(0.0));
         }
@@ -432,7 +431,6 @@ impl Channels {
     }
 
     fn report(&mut self, channel: usize) -> Report {
-        let vref = self.channel_state(channel).vref;
         let i_set = self.get_i(channel);
         let i_tec = self.read_itec(channel);
         let tec_i = self.get_tec_i(channel);
@@ -449,7 +447,6 @@ impl Channels {
                 .map(|temperature| temperature.get::<degree_celsius>()),
             pid_engaged: state.pid_engaged,
             i_set,
-            vref,
             dac_value,
             dac_feedback: self.read_dac_feedback(channel),
             i_tec,
@@ -547,7 +544,6 @@ pub struct Report {
     temperature: Option<f64>,
     pid_engaged: bool,
     i_set: ElectricCurrent,
-    vref: ElectricPotential,
     dac_value: ElectricPotential,
     dac_feedback: ElectricPotential,
     i_tec: ElectricPotential,

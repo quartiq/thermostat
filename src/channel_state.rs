@@ -26,8 +26,6 @@ pub struct ChannelState {
     pub adc_calibration: ad7172::ChannelCalibration,
     pub adc_time: Instant,
     pub adc_interval: Duration,
-    /// VREF for the TEC (1.5V)
-    pub vref: ElectricPotential,
     /// i_set 0A center point
     pub center: CenterPoint,
     pub dac_value: ElectricPotential,
@@ -44,8 +42,6 @@ impl ChannelState {
             adc_time: Instant::from_secs(0),
             // default: 10 Hz
             adc_interval: Duration::from_millis(100),
-            // updated later with Channels.read_vref()
-            vref: ElectricPotential::new::<volt>(1.5),
             center: CenterPoint::Vref,
             dac_value: ElectricPotential::new::<volt>(0.0),
             pid_engaged: false,
