@@ -97,11 +97,8 @@ impl Channels {
     /// calculate the TEC i_set centerpoint
     pub fn get_center(&mut self, channel: usize) -> ElectricPotential {
         match self.channel_state(channel).center {
-            CenterPoint::Vref => {
-                let vref = self.read_vref(channel);
-                self.channel_state(channel).vref = vref;
-                vref
-            },
+            CenterPoint::Vref =>
+                self.read_vref(channel),
             CenterPoint::Override(center_point) =>
                 ElectricPotential::new::<volt>(center_point.into()),
         }
