@@ -67,8 +67,7 @@
       devShell.x86_64-linux = pkgs.mkShell {
         name = "thermostat-dev-shell";
         buildInputs = with pkgs; [
-          rustc cargo
-          openocd dfu-util
+          rust openocd dfu-util
           ] ++ (with python3Packages; [
             numpy matplotlib
           ]);
