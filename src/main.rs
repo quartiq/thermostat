@@ -217,7 +217,7 @@ fn main() -> ! {
                                 // Do nothing and feed more data to the line reader in the next loop cycle.
                                 Ok(SessionInput::Nothing) => {}
                                 Ok(SessionInput::Command(command)) => {
-                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut leds, &mut store, &mut ipv4_config, &mut fan_ctrl, hwrev) {
+                                    match Handler::handle_command(command, &mut socket, &mut channels, session, &mut store, &mut ipv4_config, &mut fan_ctrl, hwrev) {
                                         Ok(Handler::NewIPV4(ip)) => new_ipv4_config = Some(ip),                                
                                         Ok(Handler::Handled) => {},
                                         Ok(Handler::CloseSocket) => socket.close(),

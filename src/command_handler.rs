@@ -13,7 +13,6 @@ use super::{
         PwmPin, 
         ShParameter
     },
-    leds::Leds,
     ad7172,
     CHANNEL_CONFIG_KEY,
     channels::{
@@ -176,13 +175,13 @@ impl Handler {
         Ok(Handler::Handled)
     }
 
-    fn engage_pid (socket: &mut TcpSocket, channels: &mut Channels, leds: &mut Leds, channel: usize) -> Result<Handler, Error> {
+    fn engage_pid (socket: &mut TcpSocket, channels: &mut Channels, channel: usize) -> Result<Handler, Error> {
         channels.channel_state(channel).pid_engaged = true;
         send_line(socket, b"{}");
         Ok(Handler::Handled)
     }
 
-    fn set_pwm (socket: &mut TcpSocket, channels: &mut Channels, leds: &mut Leds, channel: usize, pin: PwmPin, value: f64) -> Result<Handler, Error> {
+    fn set_pwm (socket: &mut TcpSocket, channels: &mut Channels, channel: usize, pin: PwmPin, value: f64) -> Result<Handler, Error> {
         match pin {
             PwmPin::ISet => {
                 channels.channel_state(channel).pid_engaged = false;
@@ -413,7 +412,7 @@ impl Handler {
         }
     }
 
-    pub fn handle_command(command: Command, socket: &mut TcpSocket, channels: &mut Channels, session: &Session, leds: &mut Leds, store: &mut FlashStore, ipv4_config: &mut Ipv4Config, fan_ctrl: &mut FanCtrl, hwrev: HWRev) -> Result<Self, Error> {
+    pub fn handle_command(command: Command, socket: &mut TcpSocket, channels: &mut Channels, session: &Session, store: &mut FlashStore, ipv4_config: &mut Ipv4Config, fan_ctrl: &mut FanCtrl, hwrev: HWRev) -> Result<Self, Error> {
         match command {
             Command::Quit => Ok(Handler::CloseSocket),
             Command::Reporting(_reporting) => Handler::reporting(socket),            
@@ -424,8 +423,8 @@ impl Handler {
             Command::Show(ShowCommand::SteinhartHart) => Handler::show_steinhart_hart(socket, channels),
             Command::Show(ShowCommand::PostFilter) => Handler::show_post_filter(socket, channels),
             Command::Show(ShowCommand::Ipv4) => Handler::show_ipv4(socket, ipv4_config),
-            Command::PwmPid { channel } => Handler::engage_pid(socket, channels, leds, channel),
-            Command::Pwm { channel, pin, value } => Handler::set_pwm(socket, channels, leds, channel, pin, value),
+            Command::PwmPid { channel } => Handler::engage_pid(socket, channels, channel),
+            Command::Pwm { channel, pin, value } => Handler::set_pwm(socket, channels, channel, pin, value),
             Command::CenterPoint { channel, center } => Handler::set_center_point(socket, channels, channel, center),
             Command::Pid { channel, parameter, value } => Handler::set_pid(socket, channels, channel, parameter, value),
             Command::SteinhartHart { channel, parameter, value } => Handler::set_steinhart_hart(socket, channels, channel, parameter, value),
