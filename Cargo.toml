@@ -34,7 +34,7 @@ nb = "1"
 uom = { version = "0.30", default-features = false, features = ["autoconvert", "si", "f64", "use_serde"] }
 eeprom24x = "0.3"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-heapless = "0.5"
+heapless = "0.6"
 serde-json-core = "0.1"
 sfkv = "0.1"
 
